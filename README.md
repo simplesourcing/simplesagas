@@ -1,4 +1,18 @@
-# Saga Proof of Concept
+# Simple Sagas
+
+## Caveat
+
+***Please note:** This repo is **experimental***.
+
+The following could happen to this code:
+* Nothing
+* It could be refactored, rewritten or modified extensively
+* It could disappear
+* It could be ported to Java, Kotlin or something else
+
+Now that that's out the way...
+
+## Introduction
 
 A Saga is a sequence of operations in a distributed environment that spans multiple transactional boundaries. 
 
@@ -6,8 +20,13 @@ A saga generally represents a single complex logical business transaction that c
 
 If one of the operations fails it may be necessary to execute compensating actions against those actions that have already been successfully executed.
 
-Simple Sagas is a simple, flexible and resilient mechanism for executing Sagas, where all interprocess communication is handled via Kafka.
+Simple Sagas is a simple, flexible and resilient mechanism for executing Sagas, where all inter-process communication is handled via Kafka. 
+It takes full advantage of the robustness and fault-tolerance provided by Kafka and Kafka Streams.
+
 It also integrates natively with the [Simple Sourcing](https://http://simplesource.io/) event sourcing framework.
+
+It also provides a simple and lightweight way of introducing operations with external effects (outside of Kafka) into the Kafka streaming world, 
+without the extensive overhead of including and interfacing with an additional framework such as [Akka Streams via Alpakka](https://doc.akka.io/docs/akka-stream-kafka/current/).
 
 ## Quick Start
 
@@ -129,6 +148,9 @@ in the action response topic, but the result value is not republished in the res
 This implementation uses the Kafka consumer / producer API as well as the streams API.
 
 This process enables the sagas with long running processes that are executed asynchronously and that have external effects.
+
+It does not currently have [back-pressure](https://www.reactivemanifesto.org/glossary#Back-Pressure) support. However it should
+be reasonably straightforward to add this in future.
 
 #### Http Action Processor
 
