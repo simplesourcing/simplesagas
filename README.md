@@ -243,6 +243,15 @@ A simple DSL is provided to simplify creating Sagas, loosely based on the [Akka 
    val eitherSaga: Either[SagaError, Saga[A]] = builder.build()
    ```
 
+### Client API
+
+Currently the only way to request a Saga and validate its response is via the 
+Saga request and response Kafka topics respectively.
+
+The intention is to build a client API that allows a user to submit a Saga request and query its state, 
+without having to interact directly with Kafka 
+(though this will still remain an option). 
+
 ### User Client Applications
 
 This consists of the following example streams apps:
