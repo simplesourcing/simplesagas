@@ -20,7 +20,7 @@ A saga generally represents a single complex logical business transaction that c
 
 If one of the operations fails it may be necessary to execute compensating actions against those actions that have already been successfully executed.
 
-Simple Sagas is a simple, flexible and resilient mechanism for executing Sagas, where all inter-process communication is handled via Kafka. 
+Simple Sagas is a simple, flexible and resilient mechanism for executing sagas, where all inter-process communication is handled via Kafka. 
 It takes full advantage of the robustness and fault-tolerance provided by Kafka and Kafka Streams.
 
 It also integrates natively with the [Simple Sourcing](https://http://simplesource.io/) event sourcing framework.
@@ -179,7 +179,7 @@ Actions are undone in the reverse order that.
 
 ### Saga DSL
 
-A simple DSL is provided to simplify creating Sagas, loosely based on the [Akka Streams Graph DSL](https://doc.akka.io/docs/akka/2.5/stream/stream-graphs.html)
+A simple DSL is provided to simplify creating sagas, loosely based on the [Akka Streams Graph DSL](https://doc.akka.io/docs/akka/2.5/stream/stream-graphs.html)
 
 1. Create a builder:
     ```scala
