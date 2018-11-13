@@ -91,7 +91,7 @@ The components are:
 * A command processor (typically Simple Sourcing App)
 * A saga coordinator
 * Action processor (an adaptor between the saga coordinator and the command processor)
-* A simple example implementation of the above components
+* A simprle example implementation of the above components
 * A saga requester that sends saga requests to the saga request topic
 
 All communication between each of these processes is via Kafka topics.
@@ -129,7 +129,7 @@ It's important that only one action processor handles an action.
 
 This is the base implementation of an action processor. It turns saga action requests into Simple Sourcing action requests.
 It gets the latest sequence Id from the the stream of command responses for the aggregate. 
-It then forwards the Simple Sourcing command response back to the Saga coordinator. 
+It then forwards the Simple Sourcing command response back to the sagas coordinator. 
 
 #### Async Action Processor
 
@@ -163,7 +163,7 @@ The choice of http client implementation is left to the user. A simple example u
 
 ### Saga Coordinator
 
-Accepts a dependency graph of Saga actions. It then executes these actions in the order specified by
+Accepts a dependency graph of sagas actions. It then executes these actions in the order specified by
 the dependency graph. An action is executed once its dependencies have successfully executed. 
 Actions that are not dependent on one another can be executed in parallel.
 
@@ -237,7 +237,7 @@ A simple DSL is provided to simplify creating sagas, loosely based on the [Akka 
     Note that the `~>` operator is associative, so 
     `(a ~> b) ~> c` is equivalent to `a ~> (b ~> c)`.
    
-4. Build the immutable Saga graph:
+4. Build the immutable sagas graph:
    
    ```scala
    val eitherSaga: Either[SagaError, Saga[A]] = builder.build()
@@ -245,10 +245,10 @@ A simple DSL is provided to simplify creating sagas, loosely based on the [Akka 
 
 ### Client API
 
-Currently the only way to request a Saga and validate its response is via the 
-Saga request and response Kafka topics respectively.
+Currently the only way to request a sagas and validate its response is via the 
+sagas request and response Kafka topics respectively.
 
-The intention is to build a client API that allows a user to submit a Saga request and query its state, 
+The intention is to build a client API that allows a user to submit a sagas request and query its state, 
 without having to interact directly with Kafka 
 (though this will still remain an option). 
 
@@ -258,7 +258,7 @@ This consists of the following example streams apps:
 
 * Example command processor
 * Example action processors - a "Sourcing" that interacts with Simple Sourcing, and a "Async" processor that executes some basic arbitrary function.
-* A Saga manager that is aware of these action processors
+* A sagas manager that is aware of these action processors
 * A simple Kafka producer client to submit sagas
 
 ## PoC Scope
@@ -290,10 +290,10 @@ action processor fails to forward this result to the saga manager, the saga will
       So if we want to retry submitting a failed action (e.g. optimistic locking fails with an invalid sequence number), we need to modify the command ID.
     - Commands are effectively action executions. So an action has associated with it a command, and optionally, and undo command.
 
-1. Saga commands must have a uniform representation for all action / command types in the Saga. 
+1. Saga commands must have a uniform representation for all action / command types in the sagas. 
     It's a hard to offer anything better in a way that can be ported to Java. It could be done in Scala with dependent types.
     
-    This uniform type is the type `A` is the Saga and Action APIs. 
+    This uniform type is the type `A` is the sagas and action APIs. 
     In the example, this is `Json`. In production code with Avro, something like `Record` may be suitable.
     
     The action processor needs to know how to turn an `A` into a `C` (the Simple Sourcing command type) and a `K` (the aggregate key).
@@ -304,7 +304,7 @@ action processor fails to forward this result to the saga manager, the saga will
 
 
 1. The saga implementation follows a state transition model. 
-    This may not be the most efficient, but I think it is pretty clean. It makes the Saga execution fully event sourced.
+    This may not be the most efficient, but I think it is pretty clean. It makes the sagas execution fully event sourced.
     
     The alternative may be to apply the state changes directly. This may be more efficient as it cuts out an extra step.
     I think it's nice to have the full audit trail of saga state changes.
@@ -316,7 +316,7 @@ action processor fails to forward this result to the saga manager, the saga will
     This would result in an action request being processed twice, which result in undetermined behaviour.
     
     A more robust configuration would be for each action request type to be published to a separate topic.
-    This results in a lot more topics, and a more complex topology for the Saga app.
+    This results in a lot more topics, and a more complex topology for the sagas app.
     
     As it is, care must be taken not to reuse the `actionType` parameter across different action processor handlers. 
 
@@ -329,10 +329,10 @@ The saga state transition model is quite flexible. Currently we're using it for:
 * Switching the saga into failure mode if an action fails
 * Concluding the saga
 
-At the moment the Saga definition is static. It should be possible to extend the design to accommodate saga transitions that modify the action definitions and even the saga dependency graph.
+At the moment the sagas definition is static. It should be possible to extend the design to accommodate saga transitions that modify the action definitions and even the saga dependency graph.
 
 Because the state transitions are published in a streams, it could be possible to introduce custom saga state transitions processes that
-deployed separately from the Saga coordinator app.
+deployed separately from the sagas coordinator app.
 
 Some specific use cases:
 
