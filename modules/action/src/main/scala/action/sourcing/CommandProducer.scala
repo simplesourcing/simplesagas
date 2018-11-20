@@ -11,7 +11,7 @@ object CommandProducer {
     // publish to command request topic
     commandRequestByAggregate.to(
       cSpec.topicNamer(topics.CommandTopic.request),
-      Produced.`with`(cSpec.serdes.aggregateKey, cSpec.serdes.request)
+      Produced.`with`(cSpec.serdes.aggregateKey, cSpec.serdes.commandRequest())
     )
   }
 }

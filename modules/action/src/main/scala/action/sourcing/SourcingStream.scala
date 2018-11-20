@@ -80,7 +80,7 @@ object SourcingStream {
           .as[K, CommandResponse, KeyValueStore[Bytes, Array[Byte]]](
             "last_command_by_aggregate_" + ctx.commandSpec.aggregateName)
           .withKeySerde(ctx.cSerdes.aggregateKey)
-          .withValueSerde(ctx.cSerdes.response)
+          .withValueSerde(ctx.cSerdes.commandResponse())
 
       commandResponseByAggregate
         .groupByKey()
@@ -109,7 +109,7 @@ object SourcingStream {
         valueJoiner,
         Joined.`with`[K, ActionRequest[A], CommandResponse](ctx.cSerdes.aggregateKey,
                                                             ctx.aSerdes.request,
-                                                            ctx.cSerdes.response)
+                                                            ctx.cSerdes.commandResponse())
       )
     }.peek(logValues[K, CommandRequest[K, C]]("commandRequestByAggregate"))
 
@@ -134,7 +134,7 @@ object SourcingStream {
           responseByCommandId,
           valueJoiner,
           JoinWindows.of(timeOutMillis).until(timeOutMillis * 2 + 1),
-          Joined.`with`(ctx.aSerdes.uuid, ctx.aSerdes.request, ctx.cSerdes.response)
+          Joined.`with`(ctx.aSerdes.uuid, ctx.aSerdes.request, ctx.cSerdes.commandResponse())
         )
         .peek(logValues[UUID, (ActionRequest[A], CommandResponse)]("handleCommandResponse"))
 

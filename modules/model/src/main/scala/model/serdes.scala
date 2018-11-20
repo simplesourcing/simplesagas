@@ -21,10 +21,4 @@ object serdes {
     def request: Serde[ActionRequest[A]]
     def response: Serde[ActionResponse]
   }
-
-  trait CommandSerdes[K, C] {
-    def request: Serde[CommandRequest[K, C]]
-    def response: Serde[CommandResponse]
-    def aggregateKey: Serde[K]
-  }
 }

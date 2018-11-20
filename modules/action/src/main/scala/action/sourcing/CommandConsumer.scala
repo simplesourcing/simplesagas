@@ -11,7 +11,7 @@ object CommandConsumer {
                                         builder: StreamsBuilder): KStream[K, CommandResponse] = {
     val responseByAggregate = builder
       .stream[K, CommandResponse](spec.topicNamer(topics.CommandTopic.response),
-                                  Consumed.`with`(spec.serdes.aggregateKey, spec.serdes.response))
+                                  Consumed.`with`(spec.serdes.aggregateKey, spec.serdes.commandResponse()))
       .peek(SourcingStream.logValues[K, CommandResponse]("commandResponseStream"))
     responseByAggregate
   }

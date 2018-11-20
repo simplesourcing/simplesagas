@@ -15,4 +15,6 @@ package object constants {
   // account aggregate
   val accountAggregateName = "account"
   val accountActionType    = "sourcing_action_account"
+
+  val kafkaBootstrap = "localhost:9092"
 }

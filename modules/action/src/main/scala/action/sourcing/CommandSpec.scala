@@ -1,5 +1,5 @@
 package action.sourcing
-import model.serdes.CommandSerdes
+import io.simplesource.kafka.api.CommandSerdes
 import model.topics.TopicNamer
 
 /**

@@ -16,7 +16,7 @@ import shared.utils.{StreamAppConfig, StreamAppUtils}
 import scala.concurrent.ExecutionContext
 
 final case class AsyncApp[A](actionSpec: ActionProcessorSpec[A]) {
-  private val logger = LoggerFactory.getLogger("AsyncApp")
+  private val logger = LoggerFactory.getLogger(classOf[AsyncApp[A]])
 
   final case class AsyncTransformerInput(builder: StreamsBuilder,
                                          actionRequests: KStream[UUID, ActionRequest[A]],

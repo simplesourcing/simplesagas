@@ -5,10 +5,10 @@ import java.util.UUID
 import io.circe.{Decoder, Encoder}
 import io.simplesource.api.CommandError
 import io.simplesource.data.{NonEmptyList, Result, Sequence}
-import io.simplesource.kafka.api.AggregateSerdes
+import io.simplesource.kafka.api.{AggregateSerdes, CommandSerdes}
 import io.simplesource.kafka.model._
 import io.simplesource.kafka.serialization.util.GenericSerde
-import model.serdes.{ActionSerdes, CommandSerdes, SagaSerdes}
+import model.serdes.{ActionSerdes, SagaSerdes}
 import model.messages._
 import model.saga.Saga
 import org.apache.kafka.common.serialization.{Serde, Serdes => KafkaSerdes}
@@ -102,9 +102,7 @@ object JsonSerdes {
         (v, s) => new AggregateUpdate(v, Sequence.position(s))
       )
 
-    def cr[A](implicit enc: Encoder[A], dec: Decoder[A]): Serde[CommandResponse] = {
-      implicit val aue = au[A]._1
-      implicit val aud = au[A]._2
+    def cr: Serde[CommandResponse] = {
 
       type ErrorOrSequence =
         Either[NonEmptyList[CommandError], Sequence]
@@ -199,7 +197,7 @@ object JsonSerdes {
       }.asSerde
 
       val aus = au.asSerde
-      val cr  = ResultParts.cr[A]
+      val cr  = ResultParts.cr
 
       override def aggregateKey(): Serde[K]                         = aks
       override def commandRequest(): Serde[CommandRequest[K, C]]    = crs
@@ -210,8 +208,10 @@ object JsonSerdes {
       override def commandResponse(): Serde[CommandResponse]        = cr
     }
 
-  def commandSerdes[A: Encoder: Decoder, K: Encoder: Decoder, C: Encoder: Decoder]: CommandSerdes[K, C] =
+  def commandSerdes[K: Encoder: Decoder, C: Encoder: Decoder]: CommandSerdes[K, C] =
     new CommandSerdes[K, C] {
+
+      val aks = serdeFromCodecs[K]
 
       val crs =
         productCodecs4[K, C, Long, UUID, CommandRequest[K, C]]("key", "command", "readSequence", "commandId")(
@@ -219,15 +219,17 @@ object JsonSerdes {
           (k, v, rs, id) => new CommandRequest(k, v, Sequence.position(rs), id)
         ).asSerde
 
-      val cr = ResultParts.cr[A]
+      val crks = serdeFromCodecs[UUID]
+      val cr  = ResultParts.cr
 
-      val aks = serdeFromCodecs[K]
 
-      override def request: Serde[CommandRequest[K, C]] = crs
-
-      override def response: Serde[CommandResponse] = cr
-
-      override def aggregateKey: Serde[K] = aks
+      override def aggregateKey(): Serde[K] = aks
+      override def commandRequest(): Serde[
+        CommandRequest[K, C]] = crs
+      override def commandResponseKey()
+        : Serde[UUID] = crks
+      override def commandResponse(): Serde[
+        CommandResponse] = cr
     }
 
   def actionSerdes[A: Encoder: Decoder]: ActionSerdes[A] = new ActionSerdes[A] {

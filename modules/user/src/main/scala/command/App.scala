@@ -4,10 +4,10 @@ import java.util.UUID
 import command.handlers.{AccountHandlers, UserHandlers}
 import command.model.auction.{Account, AccountCommand, AccountEvent}
 import command.model.user.{User, UserCommand, UserEvent}
-import io.simplesource.kafka.dsl.{AggregateBuilder, AggregateSetBuilder, InvalidSequenceStrategy}
-import io.simplesource.kafka.internal.streams.PrefixResourceNamingStrategy
+import io.simplesource.kafka.dsl.{AggregateBuilder, EventSourcedApp, InvalidSequenceStrategy}
 import shared.serdes.JsonSerdes
 import io.circe.generic.auto._
+import io.simplesource.kafka.util.PrefixResourceNamingStrategy
 
 object App {
   def main(args: Array[String]): Unit = {
@@ -15,13 +15,10 @@ object App {
   }
 
   def startCommandProcessor(): Unit = {
-    new AggregateSetBuilder()
-      .withKafkaConfig(
-        builder =>
-          builder
+    new EventSourcedApp()
+      .withKafkaConfig(builder => builder
             .withKafkaApplicationId("ScalaUserRunner")
-            .withKafkaBootstrap("localhost:9092")
-            .withApplicationServer("localhost:1234")
+            .withKafkaBootstrap(constants.kafkaBootstrap)
             .build)
       .addAggregate(
         AggregateBuilder
@@ -45,7 +42,7 @@ object App {
           .withInitialValue(_ => None)
           .withInvalidSequenceStrategy(InvalidSequenceStrategy.Strict)
           .build())
-      .build
+      .start()
     ()
   }
 }
