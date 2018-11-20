@@ -6,17 +6,16 @@ import action.common.ActionConsumer
 import io.circe.Json
 import io.circe.generic.auto._
 import io.circe.syntax._
-import io.simplesource.kafka.internal.streams.PrefixResourceNamingStrategy
+import io.simplesource.kafka.util.PrefixResourceNamingStrategy
 import model.messages.ActionRequest
 import model.saga.ActionCommand
 import model.specs.ActionProcessorSpec
 import model.topics
 import model.topics.{ActionTopic, CommandTopic}
-import org.apache.kafka.streams._
 import org.scalatest.{Matchers, WordSpec}
 import shared.serdes.JsonSerdes
 import shared.serdes.TestTypes.UserCommand
-import shared.utils.{StreamAppConfig, StreamAppUtils, TopicNamer}
+import shared.utils.TopicNamer
 
 class SourcingStreamTests extends WordSpec with Matchers {
   import TestUtils._
@@ -28,7 +27,7 @@ class SourcingStreamTests extends WordSpec with Matchers {
   val userSpec = CommandSpec[Json, UserCommand, UUID, UserCommand](
     actionType = "user_action",
     decode = json => json.as[UserCommand],
-    serdes = JsonSerdes.commandSerdes[Json, UUID, UserCommand],
+    serdes = JsonSerdes.commandSerdes[UUID, UserCommand],
     commandMapper = identity,
     keyMapper = _.userId,
     topicNamer = TopicNamer.forStrategy(new PrefixResourceNamingStrategy(""), "user", topics.CommandTopic.all),
@@ -71,7 +70,7 @@ class SourcingStreamTests extends WordSpec with Matchers {
         .pipeInput(sagaId, actionRequest)
 
       val output =
-        ctxDriver.readOutput(userSpec.topicNamer(CommandTopic.request), cSerdes.aggregateKey, cSerdes.request)
+        ctxDriver.readOutput(userSpec.topicNamer(CommandTopic.request), cSerdes.aggregateKey, cSerdes.commandRequest())
       output.value().command() shouldBe command
     }
   }

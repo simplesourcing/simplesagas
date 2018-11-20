@@ -20,7 +20,7 @@ import shared.utils.{StreamAppConfig, StreamAppUtils}
 import saga.dsl._
 
 object App {
-  private val logger = LoggerFactory.getLogger("ClientApp")
+  private val logger = LoggerFactory.getLogger(classOf[App])
   def main(args: Array[String]): Unit = {
 
     val config = StreamAppUtils.getConfig(StreamAppConfig("saga-client-2", "127.0.0.1:9092"))

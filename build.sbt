@@ -9,7 +9,7 @@ version := "0.1.0"
 
 val circeV          = "0.10.0"
 val avro4sV         = "2.0.0-M1"
-val simpleSourcingV = "0.1.6"
+val simpleSourcingV = "0.2.0"
 val kafkaVersion    = "2.0.0"
 val catsV           = "1.4.0"
 
@@ -53,6 +53,7 @@ lazy val httpDependencies = modelDeps ++ Seq(
 resolvers in Global ++= Seq(
   Resolver.sonatypeRepo("releases"),
   Resolver.sonatypeRepo("snapshots"),
+  Resolver.mavenLocal,
   "confluent" at "http://packages.confluent.io/maven/"
 )
 

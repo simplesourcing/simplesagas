@@ -12,7 +12,7 @@ import model.{messages, saga}
 import shared.utils.{StreamAppConfig, StreamAppUtils}
 
 final case class SagaApp[A](sagaSpec: SagaSpec[A]) {
-  private val logger = LoggerFactory.getLogger("SagaApp")
+  private val logger = LoggerFactory.getLogger(classOf[SagaApp[A]])
 
   final case class ActionProcessorInput(builder: StreamsBuilder,
                                         sagaRequest: KStream[UUID, messages.SagaRequest[A]],

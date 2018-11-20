@@ -7,7 +7,7 @@ import command.model.auction.AccountCommand
 import command.model.user.UserCommand
 import io.circe.Json
 import io.circe.generic.auto._
-import io.simplesource.kafka.internal.streams.PrefixResourceNamingStrategy
+import io.simplesource.kafka.util.PrefixResourceNamingStrategy
 import model.specs.ActionProcessorSpec
 import model.topics
 import org.apache.kafka.common.serialization.Serdes
@@ -58,7 +58,7 @@ object App {
     topicNamer = TopicNamer.forStrategy(new PrefixResourceNamingStrategy(constants.commandTopicPrefix),
                                         topicBaseName = constants.userAggregateName,
                                         allTopics = topics.CommandTopic.all),
-    serdes = JsonSerdes.commandSerdes[Json, UUID, UserCommand],
+    serdes = JsonSerdes.commandSerdes[UUID, UserCommand],
     aggregateName = constants.userAggregateName,
     timeOutMillis = 30000L
   )
@@ -71,7 +71,7 @@ object App {
     topicNamer = TopicNamer.forStrategy(new PrefixResourceNamingStrategy(constants.commandTopicPrefix),
                                         topicBaseName = constants.accountAggregateName,
                                         allTopics = topics.CommandTopic.all),
-    serdes = JsonSerdes.commandSerdes[Json, UUID, AccountCommand],
+    serdes = JsonSerdes.commandSerdes[UUID, AccountCommand],
     aggregateName = constants.accountAggregateName,
     timeOutMillis = 30000L
   )

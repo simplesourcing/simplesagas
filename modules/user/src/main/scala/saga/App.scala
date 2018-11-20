@@ -1,7 +1,7 @@
 package saga
 
 import io.circe.Json
-import io.simplesource.kafka.internal.streams.PrefixResourceNamingStrategy
+import io.simplesource.kafka.util.PrefixResourceNamingStrategy
 import model.specs.{ActionProcessorSpec, SagaSpec}
 import model.topics
 import shared.utils.{StreamAppConfig, TopicNamer}
@@ -15,7 +15,7 @@ object App {
   def startSagaCoordinator(): Unit = {
     SagaApp[Json](sagaSpec)
       .addActionProcessor(actionProcessorSpec)
-      .run(StreamAppConfig(appId = "saga-coordinator-1", bootstrapServers = "127.0.0.1:9092"))
+      .run(StreamAppConfig(appId = "saga-coordinator-1", bootstrapServers = constants.kafkaBootstrap))
   }
 
   lazy val sagaSpec: SagaSpec[Json] = SagaSpec[Json](

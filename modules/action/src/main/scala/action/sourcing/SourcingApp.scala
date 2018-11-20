@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory
 import shared.utils.{StreamAppConfig, StreamAppUtils}
 
 final case class SourcingApp[A](actionSpec: ActionProcessorSpec[A]) {
-  private val logger = LoggerFactory.getLogger("SourcingApp")
+  private val logger = LoggerFactory.getLogger(classOf[SourcingApp[A]])
 
   final case class CommandInput(builder: StreamsBuilder,
                                 actionRequests: KStream[UUID, ActionRequest[A]],
