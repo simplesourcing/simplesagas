@@ -13,17 +13,17 @@ object SagaConsumer {
   private val logger = LoggerFactory.getLogger("SagaConsumer")
 
   def sagaRequest[A](spec: SagaSpec[A], builder: StreamsBuilder): KStream[UUID, SagaRequest[A]] =
-    builder.stream[UUID, SagaRequest[A]](spec.topicNamer(SagaTopic.request),
+    builder.stream[UUID, SagaRequest[A]](spec.topicConfig.namer(SagaTopic.request),
                                          Consumed.`with`(spec.serdes.uuid, spec.serdes.request))
 
   def stateTransition[A](spec: SagaSpec[A], builder: StreamsBuilder): KStream[UUID, SagaStateTransition[A]] =
     builder
-      .stream[UUID, SagaStateTransition[A]](spec.topicNamer(SagaTopic.stateTransition),
+      .stream[UUID, SagaStateTransition[A]](spec.topicConfig.namer(SagaTopic.stateTransition),
                                             Consumed.`with`(spec.serdes.uuid, spec.serdes.transition))
 
   def state[A](spec: SagaSpec[A], builder: StreamsBuilder): KStream[UUID, Saga[A]] = {
     builder
-      .stream[UUID, Saga[A]](spec.topicNamer(SagaTopic.state),
+      .stream[UUID, Saga[A]](spec.topicConfig.namer(SagaTopic.state),
                              Consumed.`with`(spec.serdes.uuid, spec.serdes.state))
       .peek((k, state) =>
         logger.info(
@@ -34,6 +34,6 @@ object SagaConsumer {
 
   def actionResponse[A](actionSpec: ActionProcessorSpec[A],
                         builder: StreamsBuilder): KStream[UUID, ActionResponse] =
-    builder.stream[UUID, ActionResponse](actionSpec.topicNamer(ActionTopic.response),
+    builder.stream[UUID, ActionResponse](actionSpec.topicConfig.namer(ActionTopic.response),
                                          Consumed.`with`(actionSpec.serdes.uuid, actionSpec.serdes.response))
 }

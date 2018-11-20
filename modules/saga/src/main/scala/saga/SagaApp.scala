@@ -66,5 +66,4 @@ final case class SagaApp[A](sagaSpec: SagaSpec[A]) {
     logger.info("Topology description {}", topology.describe())
     StreamAppUtils.runStreamApp(config, topology)
   }
-
 }
