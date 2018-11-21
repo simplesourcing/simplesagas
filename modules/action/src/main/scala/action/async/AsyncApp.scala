@@ -4,7 +4,7 @@ import java.util.concurrent.TimeUnit
 
 import action.async.AsyncTransform.AsyncPipe
 import action.common.ActionConsumer
-import model.{messages, topics}
+import model.messages
 import model.messages.{ActionRequest, ActionResponse}
 import model.serdes.ActionSerdes
 import model.specs.ActionProcessorSpec
@@ -12,8 +12,8 @@ import org.apache.kafka.clients.admin.AdminClient
 import org.apache.kafka.streams.StreamsBuilder
 import org.apache.kafka.streams.kstream.KStream
 import org.slf4j.LoggerFactory
-import shared.utils.{StreamAppConfig, StreamAppUtils, TopicConfigBuilder}
-import shared.utils.TopicConfigurer.TopicCreation
+import topics.topics.{TopicConfigBuilder, TopicCreation, TopicTypes}
+import topics.utils.{StreamAppConfig, StreamAppUtils}
 
 import scala.concurrent.ExecutionContext
 
@@ -24,7 +24,7 @@ final case class AsyncApp[A](actionSerdes: ActionSerdes[A], topicBuildFn: TopicC
                                          actionRequests: KStream[UUID, ActionRequest[A]],
                                          actionResponses: KStream[UUID, ActionResponse])
 
-  val expectedTopicList = topics.ActionTopic.requestUnprocessed :: topics.ActionTopic.all
+  val expectedTopicList = TopicTypes.ActionTopic.requestUnprocessed :: TopicTypes.ActionTopic.all
 
   private val actionTopicConfig = TopicConfigBuilder.buildTopics(expectedTopicList, Map.empty)(topicBuildFn)
   private val actionSpec        = ActionProcessorSpec[A](actionSerdes)
@@ -32,7 +32,7 @@ final case class AsyncApp[A](actionSerdes: ActionSerdes[A], topicBuildFn: TopicC
   type AsyncTransformer = AsyncTransformerInput => Properties => AsyncPipe
 
   private var transformers: List[AsyncTransformer] = List.empty
-  private var expectedTopics                       = expectedTopicList.map(TopicCreation(actionTopicConfig))
+  private var expectedTopics                       = TopicCreation.allTopics(actionTopicConfig)
 
   private var closeHandlers: List[() => Unit] = List.empty
 

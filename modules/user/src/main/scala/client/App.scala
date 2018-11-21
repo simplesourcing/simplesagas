@@ -12,12 +12,12 @@ import io.circe.generic.auto._
 import io.circe.syntax._
 import model.messages.SagaRequest
 import model.saga.{ActionCommand, SagaError}
-import model.topics
 import org.apache.kafka.clients.producer.{KafkaProducer, Producer, ProducerRecord}
 import org.slf4j.LoggerFactory
-import shared.serdes.JsonSerdes
-import shared.utils.{StreamAppConfig, StreamAppUtils}
+import topics.serdes.JsonSerdes
+import topics.utils.{StreamAppConfig, StreamAppUtils}
 import saga.dsl._
+import topics.topics.TopicTypes
 
 object App {
   private val logger = LoggerFactory.getLogger(classOf[App])
@@ -25,7 +25,7 @@ object App {
 
     val config = StreamAppUtils.getConfig(StreamAppConfig("saga-client-2", "127.0.0.1:9092"))
 
-    for (_ <- 1 to 4) {
+    for (_ <- 1 to 1000) {
       val shouldSucceed = actionSequence("Harry", "Hughley", 1000.0, List(500, 100), 0)
       submitSagaRequest(config, shouldSucceed)
 
@@ -52,7 +52,7 @@ object App {
       _.messages.toList.foreach(logger.error),
       r => {
         val requestTopic =
-          s"${constants.sagaTopicPrefix}${constants.sagaBaseName}-${topics.SagaTopic.request}"
+          s"${constants.sagaTopicPrefix}${constants.sagaBaseName}-${TopicTypes.SagaTopic.request}"
 
         val sagaSerdes = JsonSerdes.sagaSerdes[Json]
         val producer: Producer[UUID, SagaRequest[Json]] =

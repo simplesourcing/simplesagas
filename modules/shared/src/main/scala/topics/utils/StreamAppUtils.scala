@@ -1,4 +1,4 @@
-package shared.utils
+package topics.utils
 
 import java.util.Properties
 
@@ -7,7 +7,7 @@ import org.apache.kafka.clients.admin.{AdminClient, CreateTopicsResult, NewTopic
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.streams.errors.LogAndContinueExceptionHandler
 import org.apache.kafka.streams.{KafkaStreams, StreamsConfig, Topology}
-import shared.utils.TopicConfigurer.TopicCreation
+import topics.topics.TopicCreation
 
 final case class StreamAppConfig(appId: String, bootstrapServers: String)
 
@@ -23,9 +23,9 @@ object StreamAppUtils {
     config
   }
 
-  def addMissingTopics(adminClient: AdminClient)(topicNames: List[TopicCreation]): CreateTopicsResult = {
+  def addMissingTopics(adminClient: AdminClient)(topics: List[TopicCreation]): CreateTopicsResult = {
     val existingTopics = adminClient.listTopics().names().get().asScala
-    val newTopics = topicNames.toSet
+    val newTopics = topics.toSet
       .filter(t => !existingTopics.contains(t.topicName))
       .map(t => {
         val spec = t.topicSpec

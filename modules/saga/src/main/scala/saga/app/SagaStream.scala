@@ -8,7 +8,7 @@ import org.apache.kafka.common.utils.Bytes
 import org.apache.kafka.streams.kstream._
 import org.apache.kafka.streams.state.KeyValueStore
 import org.slf4j.LoggerFactory
-import shared.streams.syntax._
+import topics.streams.syntax._
 
 object SagaStream {
   private val logger = LoggerFactory.getLogger("SagaStream")

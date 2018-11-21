@@ -1,9 +1,10 @@
-package shared.utils
+package topics.topics
+
 import java.util.concurrent.TimeUnit
 
 import io.simplesource.kafka.spec.TopicSpec
 import org.apache.kafka.common.config.{TopicConfig => KafkaTopicConfig}
-import model.topics.{TopicConfig, TopicNamer}
+
 import scala.collection.JavaConverters._
 
 final case class TopicConfigBuilder(topicTypes: List[String],

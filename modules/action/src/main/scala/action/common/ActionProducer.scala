@@ -4,9 +4,8 @@ import java.util.UUID
 
 import model.messages.{ActionRequest, ActionResponse}
 import model.specs.ActionProcessorSpec
-import model.topics
-import model.topics.TopicNamer
 import org.apache.kafka.streams.kstream.{KStream, Produced}
+import topics.topics.{TopicNamer, TopicTypes}
 
 object ActionProducer {
 
@@ -15,7 +14,7 @@ object ActionProducer {
                         responses: KStream[UUID, ActionResponse]*): Unit = {
     responses.foreach(
       _.to(
-        topicNamer(topics.ActionTopic.response),
+        topicNamer(TopicTypes.ActionTopic.response),
         Produced.`with`(actionProcessorSpec.serdes.uuid, actionProcessorSpec.serdes.response)
       ))
   }
@@ -24,7 +23,7 @@ object ActionProducer {
                        topicNamer: TopicNamer,
                        request: KStream[UUID, ActionRequest[A]],
                        unprocessed: Boolean): Unit = {
-    request.to(topicNamer(topics.ActionTopic.requestUnprocessed),
+    request.to(topicNamer(TopicTypes.ActionTopic.requestUnprocessed),
                Produced.`with`(actionSpec.serdes.uuid, actionSpec.serdes.request))
   }
 }

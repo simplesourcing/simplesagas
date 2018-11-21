@@ -1,6 +1,5 @@
 package action.sourcing
 import io.simplesource.kafka.api.CommandSerdes
-import model.topics.TopicConfig
 
 /**
   * @param actionType

@@ -5,7 +5,7 @@ import command.handlers.{AccountHandlers, UserHandlers}
 import command.model.auction.{Account, AccountCommand, AccountEvent}
 import command.model.user.{User, UserCommand, UserEvent}
 import io.simplesource.kafka.dsl.{AggregateBuilder, EventSourcedApp, InvalidSequenceStrategy}
-import shared.serdes.JsonSerdes
+import topics.serdes.JsonSerdes
 import io.circe.generic.auto._
 import io.simplesource.kafka.util.PrefixResourceNamingStrategy
 
@@ -32,6 +32,7 @@ object App {
           .withName(constants.userAggregateName)
           .withInitialValue(_ => None)
           .withInvalidSequenceStrategy(InvalidSequenceStrategy.Strict)
+          .withDefaultTopicSpec(constants.partitions, constants.replication, constants.retentionDays)
           .build())
       .addAggregate(
         AggregateBuilder
@@ -43,6 +44,7 @@ object App {
           .withName(constants.accountAggregateName)
           .withInitialValue(_ => None)
           .withInvalidSequenceStrategy(InvalidSequenceStrategy.Strict)
+          .withDefaultTopicSpec(constants.partitions, constants.replication, constants.retentionDays)
           .build())
       .start()
     ()

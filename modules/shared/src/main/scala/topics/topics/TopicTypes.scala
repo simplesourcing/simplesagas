@@ -1,7 +1,6 @@
-package model
-import io.simplesource.kafka.spec.TopicSpec
+package topics.topics
 
-object topics {
+object TopicTypes {
   object CommandTopic {
     val request  = "command_request"
     val response = "command_response"
@@ -26,11 +25,5 @@ object topics {
     val all = List(request, response, state, stateTransition)
   }
 
-  trait TopicNamer {
-    def apply(topicType: String): String
-  }
-
-  final case class TopicConfig(namer: TopicNamer,
-                               topicTypes: List[String],
-                               topicSpecs: Map[String, TopicSpec])
+  case class X[A]()
 }

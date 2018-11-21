@@ -6,18 +6,18 @@ import action.common.ActionConsumer
 import model.messages.{ActionRequest, ActionResponse}
 import model.serdes.ActionSerdes
 import model.specs.ActionProcessorSpec
-import model.{messages, topics => topicNames}
+import model.messages
 import org.apache.kafka.clients.admin.AdminClient
 import org.apache.kafka.streams.StreamsBuilder
 import org.apache.kafka.streams.kstream.KStream
 import org.slf4j.LoggerFactory
-import shared.utils.TopicConfigurer.TopicCreation
-import shared.utils.{StreamAppConfig, StreamAppUtils, TopicConfigBuilder}
+import topics.topics.{TopicConfigBuilder, TopicCreation, TopicTypes}
+import topics.utils._
 
 final case class SourcingApp[A](actionSerdes: ActionSerdes[A], topicBuildFn: TopicConfigBuilder.BuildSteps) {
 
   private val actionTopicConfig =
-    TopicConfigBuilder.buildTopics(topicNames.ActionTopic.all, Map.empty)(topicBuildFn)
+    TopicConfigBuilder.buildTopics(TopicTypes.ActionTopic.all, Map.empty)(topicBuildFn)
   private val actionSpec = ActionProcessorSpec[A](actionSerdes)
   private val logger     = LoggerFactory.getLogger(classOf[SourcingApp[A]])
 
@@ -27,13 +27,14 @@ final case class SourcingApp[A](actionSerdes: ActionSerdes[A], topicBuildFn: Top
 
   type Command = CommandInput => Unit
 
-  private var commands: List[Command]     = List.empty
-  private var topics: List[TopicCreation] = topicNames.ActionTopic.all.map(TopicCreation(actionTopicConfig))
+  private var commands: List[Command] = List.empty
+  private var topics
+    : List[TopicCreation] = TopicCreation.allTopics(actionTopicConfig) //   topicNames.ActionTopic.all.map(TopicCreation(actionTopicConfig))
 
   def addCommand[I, K, C](cSpec: CommandSpec[A, I, K, C],
                           topicBuildFn: TopicConfigBuilder.BuildSteps): SourcingApp[A] = {
     val commandTopicConfig =
-      TopicConfigBuilder.buildTopics(topicNames.CommandTopic.all, Map.empty)(topicBuildFn)
+      TopicConfigBuilder.buildTopics(TopicTypes.CommandTopic.all, Map.empty)(topicBuildFn)
     val actionContext = SourcingContext(actionSpec, cSpec, actionTopicConfig.namer, commandTopicConfig.namer)
     val command: Command = input => {
       val commandResponses =
@@ -44,7 +45,7 @@ final case class SourcingApp[A](actionSerdes: ActionSerdes[A], topicBuildFn: Top
                                     commandResponses)
     }
     commands = command :: commands
-    topics = topics ++ topicNames.CommandTopic.all.map(TopicCreation(commandTopicConfig))
+    topics = topics ++ TopicCreation.allTopics(commandTopicConfig)
     this
   }
 

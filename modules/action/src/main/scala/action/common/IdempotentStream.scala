@@ -6,7 +6,7 @@ import model.specs.ActionProcessorSpec
 import org.apache.kafka.common.utils.Bytes
 import org.apache.kafka.streams.kstream._
 import org.apache.kafka.streams.state.KeyValueStore
-import shared.streams.syntax._
+import topics.streams.syntax._
 
 object IdempotentStream {
   final case class IdempotentAction[A](priorResponses: KStream[UUID, ActionResponse],

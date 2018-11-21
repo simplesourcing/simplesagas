@@ -17,4 +17,8 @@ package object constants {
   val accountActionType    = "sourcing_action_account"
 
   val kafkaBootstrap = "localhost:9092"
+
+  val partitions    = 6
+  val replication   = 1
+  val retentionDays = 7
 }

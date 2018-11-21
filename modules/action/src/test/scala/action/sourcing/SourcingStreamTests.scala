@@ -6,26 +6,22 @@ import action.common.ActionConsumer
 import io.circe.Json
 import io.circe.generic.auto._
 import io.circe.syntax._
-import io.simplesource.kafka.util.PrefixResourceNamingStrategy
 import model.messages.ActionRequest
 import model.saga.ActionCommand
 import model.specs.ActionProcessorSpec
-import model.topics
-import model.topics.{ActionTopic, CommandTopic}
+import topics.topics.TopicTypes.{ActionTopic, CommandTopic}
 import org.scalatest.{Matchers, WordSpec}
-import shared.serdes.JsonSerdes
-import shared.serdes.TestTypes.UserCommand
-import shared.utils.TopicConfigurer._
-import shared.utils.TopicNamer
-
+import topics.serdes.JsonSerdes
+import topics.serdes.TestTypes.UserCommand
+import topics.topics.TopicNamer
 class SourcingStreamTests extends WordSpec with Matchers {
   import TestUtils._
 
-  val actionSpec        = ActionProcessorSpec[Json](serdes = JsonSerdes.actionSerdes[Json])
-  val actionTopicNamer  = TopicNamer.forPrefix("", "action")
-  val commandTopicNamer = TopicNamer.forPrefix("", "user")
+  private val actionSpec        = ActionProcessorSpec[Json](serdes = JsonSerdes.actionSerdes[Json])
+  private val actionTopicNamer  = TopicNamer.forPrefix("", "action")
+  private val commandTopicNamer = TopicNamer.forPrefix("", "user")
 
-  val userSpec = CommandSpec[Json, UserCommand, UUID, UserCommand](
+  private val userSpec = CommandSpec[Json, UserCommand, UUID, UserCommand](
     actionType = "user_action",
     decode = json => json.as[UserCommand],
     serdes = JsonSerdes.commandSerdes[UUID, UserCommand],

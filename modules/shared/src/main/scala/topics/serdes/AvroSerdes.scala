@@ -1,4 +1,4 @@
-package shared.serdes
+package topics.serdes
 
 import com.sksamuel.avro4s.RecordFormat
 import io.simplesource.kafka.serialization.util.GenericMapper

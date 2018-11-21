@@ -1,4 +1,4 @@
-package shared.streams
+package topics.streams
 import org.apache.kafka.streams.kstream._
 import java.lang.Iterable
 

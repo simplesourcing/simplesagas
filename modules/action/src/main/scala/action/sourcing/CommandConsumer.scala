@@ -1,10 +1,9 @@
 package action.sourcing
 
 import io.simplesource.kafka.model.CommandResponse
-import model.topics
-import model.topics.TopicNamer
 import org.apache.kafka.streams.StreamsBuilder
 import org.apache.kafka.streams.kstream.{Consumed, KStream}
+import topics.topics.{TopicNamer, TopicTypes}
 
 object CommandConsumer {
 
@@ -12,7 +11,7 @@ object CommandConsumer {
                                         commandTopicNamer: TopicNamer,
                                         builder: StreamsBuilder): KStream[K, CommandResponse] = {
     val responseByAggregate = builder
-      .stream[K, CommandResponse](commandTopicNamer(topics.CommandTopic.response),
+      .stream[K, CommandResponse](commandTopicNamer(TopicTypes.CommandTopic.response),
                                   Consumed.`with`(spec.serdes.aggregateKey, spec.serdes.commandResponse()))
       .peek(SourcingStream.logValues[K, CommandResponse]("commandResponseStream"))
     responseByAggregate

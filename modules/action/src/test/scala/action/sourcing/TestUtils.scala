@@ -1,10 +1,9 @@
 package action.sourcing
-import model.topics.CommandTopic
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.common.serialization.Serde
 import org.apache.kafka.streams.test.ConsumerRecordFactory
 import org.apache.kafka.streams.{StreamsBuilder, TopologyTestDriver}
-import shared.utils.{StreamAppConfig, StreamAppUtils}
+import topics.utils.{StreamAppConfig, StreamAppUtils}
 
 object TestUtils {
   trait TestProducer[K, V] {

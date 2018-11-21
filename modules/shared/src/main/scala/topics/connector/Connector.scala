@@ -1,4 +1,4 @@
-package shared.connector
+package topics.connector
 
 import java.util
 

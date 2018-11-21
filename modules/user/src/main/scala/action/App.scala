@@ -7,14 +7,13 @@ import command.model.auction.AccountCommand
 import command.model.user.UserCommand
 import io.circe.Json
 import io.circe.generic.auto._
-
 import org.apache.kafka.common.serialization.Serdes
-import shared.utils.{StreamAppConfig, TopicNamer}
-import shared.serdes.JsonSerdes
+import topics.utils.StreamAppConfig
+import topics.serdes.JsonSerdes
 import http._
 import http.implicits._
 import io.simplesource.kafka.spec.TopicSpec
-import shared.utils.TopicConfigurer.TopicCreation
+import topics.topics.TopicCreation
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -33,20 +32,16 @@ object App {
   def startSourcingActionProcessor(): Unit = {
     SourcingApp[Json](
       JsonSerdes.actionSerdes[Json],
-      _.withTopicNamer(TopicNamer.forPrefix(constants.actionTopicPrefix, constants.sagaActionBaseName)))
-      .addCommand(
-        accountSpec,
-        _.withTopicNamer(TopicNamer.forPrefix(constants.commandTopicPrefix, constants.accountAggregateName)))
-      .addCommand(
-        userSpec,
-        _.withTopicNamer(TopicNamer.forPrefix(constants.commandTopicPrefix, constants.userAggregateName)))
+      topics.buildSteps(constants.actionTopicPrefix, constants.sagaActionBaseName)
+    ).addCommand(accountSpec,
+                  topics.buildSteps(constants.commandTopicPrefix, constants.accountAggregateName))
+      .addCommand(userSpec, topics.buildSteps(constants.commandTopicPrefix, constants.userAggregateName))
       .run(sourcingConfig)
   }
 
   def startAsyncActionProcessor(): Unit = {
-    AsyncApp[Json](
-      JsonSerdes.actionSerdes[Json],
-      _.withTopicNamer(TopicNamer.forPrefix(constants.actionTopicPrefix, constants.sagaActionBaseName)))
+    AsyncApp[Json](JsonSerdes.actionSerdes[Json],
+                   topics.buildSteps(constants.actionTopicPrefix, constants.sagaActionBaseName))
       .addAsync(asyncSpec)
       .addHttpProcessor(httpSpec)
       .run(asyncConfig)
