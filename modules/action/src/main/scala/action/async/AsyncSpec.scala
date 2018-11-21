@@ -1,11 +1,13 @@
 package action.async
 
+import shared.utils.TopicConfigurer.TopicCreation
+
 import scala.concurrent.Future
 
 final case class AsyncOutput[I, K, O, R](outputDecoder: O => Option[Either[Throwable, R]],
                                          serdes: AsyncSerdes[K, R],
                                          topicName: I => Option[String],
-                                         topicNames: List[String])
+                                         topicCreation: List[TopicCreation])
 
 /**
   * @param actionType

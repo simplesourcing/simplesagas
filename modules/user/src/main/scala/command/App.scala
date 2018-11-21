@@ -16,7 +16,9 @@ object App {
 
   def startCommandProcessor(): Unit = {
     new EventSourcedApp()
-      .withKafkaConfig(builder => builder
+      .withKafkaConfig(
+        builder =>
+          builder
             .withKafkaApplicationId("ScalaUserRunner")
             .withKafkaBootstrap(constants.kafkaBootstrap)
             .build)

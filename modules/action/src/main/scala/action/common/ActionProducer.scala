@@ -12,14 +12,16 @@ object ActionProducer {
   def actionResponse[A](actionProcessorSpec: ActionProcessorSpec[A],
                         responses: KStream[UUID, ActionResponse]*): Unit = {
     responses.foreach(
-      _.to(actionProcessorSpec.topicNamer(topics.ActionTopic.response),
-           Produced.`with`(actionProcessorSpec.serdes.uuid, actionProcessorSpec.serdes.response)))
+      _.to(
+        actionProcessorSpec.topicConfig.namer(topics.ActionTopic.response),
+        Produced.`with`(actionProcessorSpec.serdes.uuid, actionProcessorSpec.serdes.response)
+      ))
   }
 
   def actionRequest[A](actionSpec: ActionProcessorSpec[A],
                        request: KStream[UUID, ActionRequest[A]],
                        unprocessed: Boolean): Unit = {
-    request.to(actionSpec.topicNamer(topics.ActionTopic.requestUnprocessed),
+    request.to(actionSpec.topicConfig.namer(topics.ActionTopic.requestUnprocessed),
                Produced.`with`(actionSpec.serdes.uuid, actionSpec.serdes.request))
   }
 }

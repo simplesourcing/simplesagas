@@ -9,6 +9,7 @@ import org.apache.kafka.streams.kstream.KStream
 import org.slf4j.LoggerFactory
 import saga.app.{SagaConsumer, SagaContext, SagaStream}
 import model.{messages, saga}
+import shared.utils.TopicConfigurer.{TopicCreation, getTopics}
 import shared.utils.{StreamAppConfig, StreamAppUtils}
 
 final case class SagaApp[A](sagaSpec: SagaSpec[A]) {
@@ -22,7 +23,7 @@ final case class SagaApp[A](sagaSpec: SagaSpec[A]) {
   type ActionProcessor = ActionProcessorInput => Unit
 
   private var actionProcessors: List[ActionProcessor] = List.empty
-  private var topics: List[String]                    = sagaSpec.topicNamer.all()
+  private var topics: List[TopicCreation]             = getTopics(sagaSpec.topicConfig)
 
   def addActionProcessor(actionSpec: ActionProcessorSpec[A]): SagaApp[A] = {
     val actionProcessor: ActionProcessor = input => {
@@ -40,7 +41,7 @@ final case class SagaApp[A](sagaSpec: SagaSpec[A]) {
     }
 
     actionProcessors = actionProcessor :: actionProcessors
-    topics = topics ++ actionSpec.topicNamer.all()
+    topics = topics ++ getTopics(actionSpec.topicConfig)
     this
   }
 

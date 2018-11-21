@@ -15,6 +15,7 @@ import model.topics.{ActionTopic, CommandTopic}
 import org.scalatest.{Matchers, WordSpec}
 import shared.serdes.JsonSerdes
 import shared.serdes.TestTypes.UserCommand
+import shared.utils.TopicConfigurer._
 import shared.utils.TopicNamer
 
 class SourcingStreamTests extends WordSpec with Matchers {
@@ -22,7 +23,7 @@ class SourcingStreamTests extends WordSpec with Matchers {
 
   val actionSpec = ActionProcessorSpec[Json](
     serdes = JsonSerdes.actionSerdes[Json],
-    TopicNamer.forStrategy(new PrefixResourceNamingStrategy(""), "action", topics.ActionTopic.all))
+    forStrategy(new PrefixResourceNamingStrategy(""), "action", topics.ActionTopic.all))
 
   val userSpec = CommandSpec[Json, UserCommand, UUID, UserCommand](
     actionType = "user_action",
@@ -30,28 +31,33 @@ class SourcingStreamTests extends WordSpec with Matchers {
     serdes = JsonSerdes.commandSerdes[UUID, UserCommand],
     commandMapper = identity,
     keyMapper = _.userId,
-    topicNamer = TopicNamer.forStrategy(new PrefixResourceNamingStrategy(""), "user", topics.CommandTopic.all),
     aggregateName = "user",
     timeOutMillis = 30000L
   )
 
   "action streams" must {
     "turn an action request into a command request" in {
-      val ctx = SourcingContext(actionSpec, userSpec)
+      val commandTopicNamer = TopicNamer.forPrefix("", "user")
+      val ctx = SourcingContext(
+        actionSpec,
+        userSpec,
+        TopicNamer.forStrategy(new PrefixResourceNamingStrategy(""), "user", topics.CommandTopic.all))
 
       val ctxDriver = ContextDriver(
         ctx,
         builder => {
           val actionRequestStream = ActionConsumer.actionRequestStream(actionSpec, builder)
           val commandResponseByAggregate =
-            CommandConsumer.commandResponseStream[Json, UserCommand, UUID, UserCommand](userSpec, builder)
+            CommandConsumer.commandResponseStream[Json, UserCommand, UUID, UserCommand](userSpec,
+                                                                                        commandTopicNamer,
+                                                                                        builder)
 
           val (_ /* error responses */, commandRequests) =
             SourcingStream.handleActionRequest[Json, UserCommand, UUID, UserCommand](
               ctx,
               actionRequestStream,
               commandResponseByAggregate)
-          CommandProducer.commandRequest(userSpec, commandRequests)
+          CommandProducer.commandRequest(userSpec, commandTopicNamer, commandRequests)
         }
       )
 
@@ -66,11 +72,13 @@ class SourcingStreamTests extends WordSpec with Matchers {
                                         "user_action")
 
       ctxDriver
-        .produce(actionSpec.topicNamer(ActionTopic.request), aSerdes.uuid, aSerdes.request)
+        .produce(actionSpec.topicConfig.namer(ActionTopic.request), aSerdes.uuid, aSerdes.request)
         .pipeInput(sagaId, actionRequest)
 
       val output =
-        ctxDriver.readOutput(userSpec.topicNamer(CommandTopic.request), cSerdes.aggregateKey, cSerdes.commandRequest())
+        ctxDriver.readOutput(commandTopicNamer(CommandTopic.request),
+                             cSerdes.aggregateKey,
+                             cSerdes.commandRequest())
       output.value().command() shouldBe command
     }
   }

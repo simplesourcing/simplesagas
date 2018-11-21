@@ -3,17 +3,30 @@ import java.util.concurrent.TimeUnit
 import java.util.{Properties, UUID}
 
 import action.common.ActionConsumer
-import model.messages
+import io.simplesource.kafka.spec.TopicSpec
+import model.{messages, topics => topicNames}
 import model.messages.{ActionRequest, ActionResponse}
+import model.serdes.ActionSerdes
 import model.specs.ActionProcessorSpec
+import model.topics.{TopicConfig, TopicNamer}
 import org.apache.kafka.clients.admin.AdminClient
+import org.apache.kafka.common.config.{TopicConfig => KafkaTopicConfig}
 import org.apache.kafka.streams.StreamsBuilder
 import org.apache.kafka.streams.kstream.KStream
 import org.slf4j.LoggerFactory
-import shared.utils.{StreamAppConfig, StreamAppUtils}
+import shared.utils.TopicConfigurer.TopicCreation
+import shared.utils.{StreamAppConfig, StreamAppUtils, TopicConfigBuilder}
 
-final case class SourcingApp[A](actionSpec: ActionProcessorSpec[A]) {
-  private val logger = LoggerFactory.getLogger(classOf[SourcingApp[A]])
+import scala.collection.JavaConverters._
+
+final case class SourcingApp[A](actionSerdes: ActionSerdes[A],
+                                topicBuildFn: TopicConfigBuilder => TopicConfigBuilder) {
+  private val actionTopicConfig = {
+    val topicConfigBuilder = TopicConfigBuilder(topicNames.ActionTopic.all, Map.empty)
+    topicBuildFn(topicConfigBuilder).build()
+  }
+  private val actionSpec = ActionProcessorSpec[A](actionSerdes, actionTopicConfig)
+  private val logger     = LoggerFactory.getLogger(classOf[SourcingApp[A]])
 
   final case class CommandInput(builder: StreamsBuilder,
                                 actionRequests: KStream[UUID, ActionRequest[A]],
@@ -21,20 +34,26 @@ final case class SourcingApp[A](actionSpec: ActionProcessorSpec[A]) {
 
   type Command = CommandInput => Unit
 
-  private var commands: List[Command] = List.empty
-  private var topics: List[String]    = actionSpec.topicNamer.all()
+  private var commands: List[Command]     = List.empty
+  private var topics: List[TopicCreation] = topicNames.ActionTopic.all.map(TopicCreation(actionTopicConfig))
 
-  def addCommand[I, K, C](cSpec: CommandSpec[A, I, K, C]): SourcingApp[A] = {
-    val actionContext = SourcingContext(actionSpec, cSpec)
+  def addCommand[I, K, C](cSpec: CommandSpec[A, I, K, C],
+                          topicBuildFn: TopicConfigBuilder => TopicConfigBuilder): SourcingApp[A] = {
+    val commandTopicConfig = {
+      val topicConfigBuilder = TopicConfigBuilder(topicNames.CommandTopic.all, Map.empty)
+      topicBuildFn(topicConfigBuilder).build()
+    }
+    val actionContext = SourcingContext(actionSpec, cSpec, commandTopicConfig.namer)
     val command: Command = input => {
-      val commandResponses = CommandConsumer.commandResponseStream(cSpec, input.builder)
+      val commandResponses =
+        CommandConsumer.commandResponseStream(cSpec, commandTopicConfig.namer, input.builder)
       SourcingStream.addSubTopology(actionContext,
                                     input.actionRequests,
                                     input.actionResponses,
                                     commandResponses)
     }
     commands = command :: commands
-    topics = topics ++ cSpec.topicNamer.all()
+    topics = topics ++ topicNames.CommandTopic.all.map(TopicCreation(commandTopicConfig))
     this
   }
 

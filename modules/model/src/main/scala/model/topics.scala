@@ -30,7 +30,7 @@ object topics {
     def apply(topicType: String): String
   }
 
-  final case class TopicConfig(namer: TopicNamer, topicConfig: Map[String, TopicSpec])
-
-
+  final case class TopicConfig(namer: TopicNamer,
+                               topicTypes: List[String],
+                               topicSpecs: Map[String, TopicSpec])
 }

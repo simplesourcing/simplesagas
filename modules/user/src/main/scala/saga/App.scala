@@ -4,7 +4,7 @@ import io.circe.Json
 import io.simplesource.kafka.util.PrefixResourceNamingStrategy
 import model.specs.{ActionProcessorSpec, SagaSpec}
 import model.topics
-import shared.utils.{StreamAppConfig, TopicNamer}
+import shared.utils.{StreamAppConfig, TopicConfigurer}
 import shared.serdes.JsonSerdes
 
 object App {
@@ -20,15 +20,15 @@ object App {
 
   lazy val sagaSpec: SagaSpec[Json] = SagaSpec[Json](
     JsonSerdes.sagaSerdes[Json],
-    TopicNamer.forStrategy(new PrefixResourceNamingStrategy(constants.sagaTopicPrefix),
-                           constants.sagaBaseName,
-                           topics.SagaTopic.all)
+    TopicConfigurer.forStrategy(new PrefixResourceNamingStrategy(constants.sagaTopicPrefix),
+                                constants.sagaBaseName,
+                                topics.SagaTopic.all)
   )
 
   lazy val actionProcessorSpec: ActionProcessorSpec[Json] = ActionProcessorSpec[Json](
     JsonSerdes.actionSerdes[Json],
-    TopicNamer.forStrategy(new PrefixResourceNamingStrategy(constants.actionTopicPrefix),
-                           constants.sagaActionBaseName,
-                           topics.ActionTopic.all)
+    TopicConfigurer.forStrategy(new PrefixResourceNamingStrategy(constants.actionTopicPrefix),
+                                constants.sagaActionBaseName,
+                                topics.ActionTopic.all)
   )
 }

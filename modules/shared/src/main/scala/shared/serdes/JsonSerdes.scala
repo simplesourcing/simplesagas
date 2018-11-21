@@ -220,16 +220,12 @@ object JsonSerdes {
         ).asSerde
 
       val crks = serdeFromCodecs[UUID]
-      val cr  = ResultParts.cr
+      val cr   = ResultParts.cr
 
-
-      override def aggregateKey(): Serde[K] = aks
-      override def commandRequest(): Serde[
-        CommandRequest[K, C]] = crs
-      override def commandResponseKey()
-        : Serde[UUID] = crks
-      override def commandResponse(): Serde[
-        CommandResponse] = cr
+      override def aggregateKey(): Serde[K]                      = aks
+      override def commandRequest(): Serde[CommandRequest[K, C]] = crs
+      override def commandResponseKey(): Serde[UUID]             = crks
+      override def commandResponse(): Serde[CommandResponse]     = cr
     }
 
   def actionSerdes[A: Encoder: Decoder]: ActionSerdes[A] = new ActionSerdes[A] {

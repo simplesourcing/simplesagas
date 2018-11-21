@@ -12,6 +12,7 @@ import org.apache.kafka.streams.StreamsBuilder
 import org.apache.kafka.streams.kstream.KStream
 import org.slf4j.LoggerFactory
 import shared.utils.{StreamAppConfig, StreamAppUtils}
+import shared.utils.TopicConfigurer.TopicCreation
 
 import scala.concurrent.ExecutionContext
 
@@ -25,8 +26,9 @@ final case class AsyncApp[A](actionSpec: ActionProcessorSpec[A]) {
   type AsyncTransformer = AsyncTransformerInput => Properties => AsyncPipe
 
   private var transformers: List[AsyncTransformer] = List.empty
-  private var expectedTopics = actionSpec.topicNamer(topics.ActionTopic.requestUnprocessed) :: actionSpec.topicNamer
-    .all()
+  private var expectedTopics = (topics.ActionTopic.requestUnprocessed :: topics.ActionTopic.all)
+    .map(TopicCreation(actionSpec.topicConfig))
+
   private var closeHandlers: List[() => Unit] = List.empty
 
   def addAsync[I, K, O, R](spec: AsyncSpec[A, I, K, O, R])(
@@ -41,7 +43,7 @@ final case class AsyncApp[A](actionSpec: ActionProcessorSpec[A]) {
       AsyncTransform.async(ctx)
     }
     transformers = transformer :: transformers
-    expectedTopics = expectedTopics ++ spec.outputSpec.fold(List.empty[String])(_.topicNames)
+    expectedTopics = expectedTopics ++ spec.outputSpec.fold(List.empty[TopicCreation])(_.topicCreation)
     this
   }
 

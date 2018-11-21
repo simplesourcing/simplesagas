@@ -1,5 +1,6 @@
 package action.sourcing
 import model.specs.ActionProcessorSpec
+import model.topics.TopicNamer
 
 /**
   * @param actionSpec
@@ -10,7 +11,8 @@ import model.specs.ActionProcessorSpec
   * @tparam C - simple sourcing command type
   */
 final case class SourcingContext[A, I, K, C](actionSpec: ActionProcessorSpec[A],
-                                             commandSpec: CommandSpec[A, I, K, C]) {
+                                             commandSpec: CommandSpec[A, I, K, C],
+                                             commandTopicNamer: TopicNamer) {
   val cSerdes = commandSpec.serdes
   val aSerdes = actionSpec.serdes
 }

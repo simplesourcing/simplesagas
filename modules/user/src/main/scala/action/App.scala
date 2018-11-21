@@ -11,13 +11,16 @@ import io.simplesource.kafka.util.PrefixResourceNamingStrategy
 import model.specs.ActionProcessorSpec
 import model.topics
 import org.apache.kafka.common.serialization.Serdes
-import shared.utils.{StreamAppConfig, TopicNamer}
+import shared.utils.{StreamAppConfig, TopicConfigurer, TopicNamer}
 import shared.serdes.JsonSerdes
 import http._
 import http.implicits._
-import scala.concurrent.ExecutionContext.Implicits.global
+import io.simplesource.kafka.spec.TopicSpec
+import shared.utils.TopicConfigurer.TopicCreation
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.collection.JavaConverters._
 
 object App {
   val sourcingConfig =
@@ -30,9 +33,15 @@ object App {
   }
 
   def startSourcingActionProcessor(): Unit = {
-    SourcingApp[Json](actionProcessorSpec)
-      .addCommand(accountSpec)
-      .addCommand(userSpec)
+    SourcingApp[Json](
+      JsonSerdes.actionSerdes[Json],
+      _.withTopicNamer(TopicNamer.forPrefix(constants.actionTopicPrefix, constants.sagaActionBaseName)))
+      .addCommand(
+        accountSpec,
+        _.withTopicNamer(TopicNamer.forPrefix(constants.commandTopicPrefix, constants.accountAggregateName)))
+      .addCommand(
+        userSpec,
+        _.withTopicNamer(TopicNamer.forPrefix(constants.commandTopicPrefix, constants.userAggregateName)))
       .run(sourcingConfig)
   }
 
@@ -45,9 +54,9 @@ object App {
 
   lazy val actionProcessorSpec = ActionProcessorSpec[Json](
     serdes = JsonSerdes.actionSerdes[Json],
-    TopicNamer.forStrategy(new PrefixResourceNamingStrategy(constants.actionTopicPrefix),
-                           constants.sagaActionBaseName,
-                           topics.ActionTopic.all)
+    TopicConfigurer.forStrategy(new PrefixResourceNamingStrategy(constants.actionTopicPrefix),
+                                constants.sagaActionBaseName,
+                                topics.ActionTopic.all)
   )
 
   lazy val userSpec = CommandSpec[Json, UserCommand, UUID, UserCommand](
@@ -55,9 +64,6 @@ object App {
     decode = json => json.as[UserCommand],
     commandMapper = identity,
     keyMapper = _.userId,
-    topicNamer = TopicNamer.forStrategy(new PrefixResourceNamingStrategy(constants.commandTopicPrefix),
-                                        topicBaseName = constants.userAggregateName,
-                                        allTopics = topics.CommandTopic.all),
     serdes = JsonSerdes.commandSerdes[UUID, UserCommand],
     aggregateName = constants.userAggregateName,
     timeOutMillis = 30000L
@@ -68,9 +74,6 @@ object App {
     decode = json => json.as[AccountCommand],
     commandMapper = identity,
     keyMapper = _.accountId,
-    topicNamer = TopicNamer.forStrategy(new PrefixResourceNamingStrategy(constants.commandTopicPrefix),
-                                        topicBaseName = constants.accountAggregateName,
-                                        allTopics = topics.CommandTopic.all),
     serdes = JsonSerdes.commandSerdes[UUID, AccountCommand],
     aggregateName = constants.accountAggregateName,
     timeOutMillis = 30000L
@@ -86,10 +89,13 @@ object App {
     actionType = "async_test_action_type",
     groupId = asyncConfig.appId,
     outputSpec = Some(
-      AsyncOutput(o => Some(Right(o)),
-                  AsyncSerdes(Serdes.String(), Serdes.String()),
-                  _ => Some("async_test_topic"),
-                  topicNames = List("async_test_topic"))),
+      AsyncOutput(
+        o => Some(Right(o)),
+        AsyncSerdes(Serdes.String(), Serdes.String()),
+        _ => Some("async_test_topic"),
+        topicCreation =
+          List(TopicCreation("async_test_topic", new TopicSpec(6, 1, Map.empty[String, String].asJava)))
+      )),
   )
 
   // Http currency fetch example
@@ -105,8 +111,10 @@ object App {
     HttpClient.requester[Key, Body, Output],
     asyncConfig.appId,
     Some(
-      HttpOutput(o => Some(o.as[FXRates]),
-                 AsyncSerdes(JsonSerdes.serdeFromCodecs[Key], JsonSerdes.serdeFromCodecs[FXRates]),
-                 topicNames = List("fx_rates")))
+      HttpOutput(
+        o => Some(o.as[FXRates]),
+        AsyncSerdes(JsonSerdes.serdeFromCodecs[Key], JsonSerdes.serdeFromCodecs[FXRates]),
+        topicCreation = List(TopicCreation("fx_rates", new TopicSpec(6, 1, Map.empty[String, String].asJava)))
+      ))
   )
 }

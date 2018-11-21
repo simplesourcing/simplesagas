@@ -2,7 +2,6 @@ package model
 
 import java.util.UUID
 
-import io.simplesource.kafka.model.{CommandRequest, CommandResponse}
 import model.messages._
 import model.saga.Saga
 import org.apache.kafka.common.serialization.Serde

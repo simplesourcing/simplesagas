@@ -46,7 +46,9 @@ class JsonCommandTests extends WordSpec with Matchers {
 
     "serialise and deserialise command response failure" in {
       val initial =
-        new CommandResponse(UUID.randomUUID(), Sequence.first(), Result.failure(CommandError.of(Reason.InvalidCommand, "Invalid command")))
+        new CommandResponse(UUID.randomUUID(),
+                            Sequence.first(),
+                            Result.failure(CommandError.of(Reason.InvalidCommand, "Invalid command")))
       val ser = serdes.commandResponse().serializer().serialize(topic, initial)
       val de  = serdes.commandResponse().deserializer().deserialize(topic, ser)
       de shouldBe initial

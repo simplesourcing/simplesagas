@@ -15,7 +15,7 @@ trait HttpOps {
         _.key,
         httpSpec.httpClient,
         httpSpec.groupId,
-        httpSpec.outputSpec.map(o => AsyncOutput(o.resultDecoder, o.serdes, _.topicName, o.topicNames))
+        httpSpec.outputSpec.map(o => AsyncOutput(o.resultDecoder, o.serdes, _.topicName, o.topicCreation))
       )
       asyncApp.addAsync(asyncSpec)
     }

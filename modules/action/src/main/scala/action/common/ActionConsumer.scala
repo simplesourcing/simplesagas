@@ -14,14 +14,14 @@ object ActionConsumer {
   def actionRequestStream[A](spec: ActionProcessorSpec[A],
                              builder: StreamsBuilder): KStream[UUID, ActionRequest[A]] =
     builder.stream[UUID, ActionRequest[A]](
-      spec.topicNamer(topics.ActionTopic.request),
+      spec.topicConfig.namer(topics.ActionTopic.request),
       Consumed.`with`(spec.serdes.uuid, spec.serdes.request)
     )
 
   def actionResponseStream[A](spec: ActionProcessorSpec[A],
                               builder: StreamsBuilder): KStream[UUID, ActionResponse] =
     builder.stream[UUID, ActionResponse](
-      spec.topicNamer(topics.ActionTopic.response),
+      spec.topicConfig.namer(topics.ActionTopic.response),
       Consumed.`with`(spec.serdes.uuid, spec.serdes.response)
     )
 }

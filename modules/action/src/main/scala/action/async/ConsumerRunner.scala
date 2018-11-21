@@ -40,7 +40,7 @@ class ConsumerRunner[A, I, K, O, R](asyncContext: AsyncContext[A, I, K, O, R],
     val consumer = new KafkaConsumer[UUID, ActionRequest[A]](consumerConfig,
                                                              actionSpec.serdes.uuid.deserializer(),
                                                              actionSpec.serdes.request.deserializer())
-    consumer.subscribe(List(actionSpec.topicNamer.apply(topics.ActionTopic.requestUnprocessed)).asJava)
+    consumer.subscribe(List(actionSpec.topicConfig.namer(topics.ActionTopic.requestUnprocessed)).asJava)
     this.consumer = Some(consumer)
 
     try {
@@ -124,9 +124,10 @@ class ConsumerRunner[A, I, K, O, R](asyncContext: AsyncContext[A, I, K, O, R],
                                               commandId = request.actionCommand.commandId,
                                               response)
           val responseRecord =
-            new ProducerRecord[UUID, ActionResponse](actionSpec.topicNamer(topics.ActionTopic.response),
-                                                     sagaId,
-                                                     actionResponse)
+            new ProducerRecord[UUID, ActionResponse](
+              actionSpec.topicConfig.namer(topics.ActionTopic.response),
+              sagaId,
+              actionResponse)
           producer.send(responseRecord.toByteArray(actionSpec.serdes.uuid, actionSpec.serdes.response))
         } catch {
           case error: Throwable =>

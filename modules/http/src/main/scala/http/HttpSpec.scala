@@ -1,6 +1,8 @@
 package http
 
 import action.async.AsyncSerdes
+import shared.utils.TopicConfigurer.TopicCreation
+
 import scala.concurrent.Future
 
 sealed trait HttpVerb
@@ -32,7 +34,7 @@ final case class HttpRequest[K, B](key: K,
   */
 final case class HttpOutput[K, O, R](resultDecoder: O => Option[Either[Throwable, R]],
                                      serdes: AsyncSerdes[K, R],
-                                     topicNames: List[String])
+                                     topicCreation: List[TopicCreation])
 
 /**
   * @param actionType
