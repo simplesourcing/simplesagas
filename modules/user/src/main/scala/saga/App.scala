@@ -4,7 +4,7 @@ import io.circe.Json
 import io.simplesource.kafka.util.PrefixResourceNamingStrategy
 import model.specs.{ActionProcessorSpec, SagaSpec}
 import model.topics
-import shared.utils.{StreamAppConfig, TopicConfigurer}
+import shared.utils.{StreamAppConfig, TopicConfigurer, TopicNamer}
 import shared.serdes.JsonSerdes
 
 object App {
@@ -13,8 +13,11 @@ object App {
   }
 
   def startSagaCoordinator(): Unit = {
-    SagaApp[Json](sagaSpec)
-      .addActionProcessor(actionProcessorSpec)
+    SagaApp[Json](JsonSerdes.sagaSerdes[Json],
+                  _.withTopicNamer(TopicNamer.forPrefix(constants.sagaTopicPrefix, constants.sagaBaseName)))
+      .addActionProcessor(
+        actionProcessorSpec,
+        _.withTopicNamer(TopicNamer.forPrefix(constants.actionTopicPrefix, constants.sagaActionBaseName)))
       .run(StreamAppConfig(appId = "saga-coordinator-1", bootstrapServers = constants.kafkaBootstrap))
   }
 
@@ -25,10 +28,6 @@ object App {
                                 topics.SagaTopic.all)
   )
 
-  lazy val actionProcessorSpec: ActionProcessorSpec[Json] = ActionProcessorSpec[Json](
-    JsonSerdes.actionSerdes[Json],
-    TopicConfigurer.forStrategy(new PrefixResourceNamingStrategy(constants.actionTopicPrefix),
-                                constants.sagaActionBaseName,
-                                topics.ActionTopic.all)
-  )
+  lazy val actionProcessorSpec: ActionProcessorSpec[Json] =
+    ActionProcessorSpec[Json](JsonSerdes.actionSerdes[Json])
 }

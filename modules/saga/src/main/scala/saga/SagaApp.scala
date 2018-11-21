@@ -4,6 +4,7 @@ import java.util.{Properties, UUID}
 
 import model.serdes.SagaSerdes
 import model.specs.{ActionProcessorSpec, SagaSpec}
+import org.apache.kafka.common.config.{TopicConfig => KafkaTopicConfig}
 import org.apache.kafka.clients.admin.AdminClient
 import org.apache.kafka.streams.StreamsBuilder
 import org.apache.kafka.streams.kstream.KStream
@@ -13,10 +14,19 @@ import model.{messages, saga, topics => topicNames}
 import shared.utils.TopicConfigurer.{TopicCreation, getTopics}
 import shared.utils.{StreamAppConfig, StreamAppUtils, TopicConfigBuilder}
 
-final case class SagaApp[A](serdes: SagaSerdes[A], topicBuildFn: TopicConfigBuilder => TopicConfigBuilder) {
+final case class SagaApp[A](serdes: SagaSerdes[A], topicBuildFn: TopicConfigBuilder.BuildSteps) {
   private val logger = LoggerFactory.getLogger(classOf[SagaApp[A]])
 
-  private val sagaTopicConfig = TopicConfigBuilder.buildTopics(topicNames.SagaTopic.all, Map.empty)(topicBuildFn)
+  private val sagaTopicConfig =
+    TopicConfigBuilder.buildTopics(
+      topicNames.SagaTopic.all,
+      Map.empty,
+      Map(
+        topicNames.SagaTopic.state -> Map(
+          KafkaTopicConfig.CLEANUP_POLICY_CONFIG -> KafkaTopicConfig.CLEANUP_POLICY_COMPACT,
+        )
+      )
+    )(topicBuildFn)
   private val sagaSpec = SagaSpec[A](serdes, sagaTopicConfig)
 
   final case class ActionProcessorInput(builder: StreamsBuilder,
@@ -29,7 +39,8 @@ final case class SagaApp[A](serdes: SagaSerdes[A], topicBuildFn: TopicConfigBuil
   private var actionProcessors: List[ActionProcessor] = List.empty
   private var topics: List[TopicCreation]             = getTopics(sagaSpec.topicConfig)
 
-  def addActionProcessor(actionSpec: ActionProcessorSpec[A], buildFn: TopicConfigBuilder => TopicConfigBuilder): SagaApp[A] = {
+  def addActionProcessor(actionSpec: ActionProcessorSpec[A],
+                         buildFn: TopicConfigBuilder.BuildSteps): SagaApp[A] = {
     val topicConfig = TopicConfigBuilder.buildTopics(topicNames.ActionTopic.all, Map.empty)(buildFn)
     val actionProcessor: ActionProcessor = input => {
       val ctx = SagaContext(sagaSpec, actionSpec, topicConfig.namer)

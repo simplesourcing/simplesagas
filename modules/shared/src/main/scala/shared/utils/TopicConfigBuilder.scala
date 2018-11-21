@@ -9,17 +9,13 @@ import scala.collection.JavaConverters._
 final case class TopicConfigBuilder(topicTypes: List[String],
                                     defaultConfigs: Map[String, String],
                                     defaultOverrides: Map[String, Map[String, String]] = Map.empty) {
-  val configMap                      = new scala.collection.mutable.HashMap[String, TopicSpec]()
-  var default: String => TopicSpec   = defaultMap(1, 1, 7)
-  var topicNamer: Option[TopicNamer] = None
+
+  val configMap                    = new scala.collection.mutable.HashMap[String, TopicSpec]()
+  var default: String => TopicSpec = defaultMap(1, 1, 7)
+  var topicNamer: TopicNamer       = name => name // identity
 
   def withTopicNamer(topicNamer: TopicNamer): TopicConfigBuilder = {
-    this.topicNamer = Some(topicNamer)
-    this
-  }
-
-  def withDefaultConfig(partitions: Int, replication: Int, retentionInDays: Long): TopicConfigBuilder = {
-    default = defaultMap(partitions, replication, retentionInDays)
+    this.topicNamer = topicNamer
     this
   }
 
@@ -28,30 +24,49 @@ final case class TopicConfigBuilder(topicTypes: List[String],
     this
   }
 
-  private def defaultMap(partitions: Int, replication: Int, retentionInDays: Long)(
-      topicType: String): TopicSpec = {
-    val retMap = Map(
-      KafkaTopicConfig.RETENTION_MS_CONFIG -> String.valueOf(TimeUnit.DAYS.toMillis(retentionInDays)))
-    val usedMap = defaultOverrides.getOrElse(topicType, defaultConfigs) ++ retMap
-    new TopicSpec(partitions, replication.toShort, usedMap.asJava)
+  def withDefaultConfig(partitions: Int, replication: Int, retentionInDays: Long): TopicConfigBuilder = {
+    default = defaultMap(partitions, replication, retentionInDays)
+    this
   }
 
   def build(): TopicConfig = {
     val topicSpecs = topicTypes.map { tt =>
       (tt, configMap.getOrElse(tt, default(tt)))
     }.toMap
-    // TODO check topicNamer is defined
-    TopicConfig(topicNamer.get, topicTypes, topicSpecs)
+    TopicConfig(topicNamer, topicTypes, topicSpecs)
+  }
+
+  private def defaultMap(partitions: Int, replication: Int, retentionInDays: Long)(
+      topicType: String): TopicSpec = {
+    val configMap = defaultOverrides.getOrElse(topicType, defaultConfigs)
+    // configure retention if it is not already set
+    val retentionMap =
+      if (configMap
+            .getOrElse(KafkaTopicConfig.CLEANUP_POLICY_CONFIG, "") == KafkaTopicConfig.CLEANUP_POLICY_COMPACT &&
+          configMap.getOrElse(KafkaTopicConfig.DELETE_RETENTION_MS_CONFIG, "") != "")
+        Map(
+          KafkaTopicConfig.DELETE_RETENTION_MS_CONFIG -> String.valueOf(
+            TimeUnit.DAYS.toMillis(retentionInDays)),
+          KafkaTopicConfig.MIN_COMPACTION_LAG_MS_CONFIG -> String.valueOf(
+            TimeUnit.DAYS.toMillis(retentionInDays))
+        )
+      else
+        Map(
+          KafkaTopicConfig.RETENTION_MS_CONFIG -> String.valueOf(TimeUnit.DAYS.toMillis(retentionInDays))
+        )
+    val usedMap = defaultOverrides.getOrElse(topicType, defaultConfigs) ++ retentionMap
+    new TopicSpec(partitions, replication.toShort, usedMap.asJava)
   }
 }
 
 object TopicConfigBuilder {
+  type BuildSteps = TopicConfigBuilder => TopicConfigBuilder
+
   def buildTopics(topicTypes: List[String],
                   defaultConfigs: Map[String, String],
-                  defaultOverrides: Map[String, Map[String, String]] = Map.empty)(topicBuildFn: TopicConfigBuilder => TopicConfigBuilder) = {
-    val topicBuilder = TopicConfigBuilder(topicTypes,
-      defaultConfigs,
-      defaultOverrides)
+                  defaultOverrides: Map[String, Map[String, String]] = Map.empty)(
+      topicBuildFn: TopicConfigBuilder.BuildSteps): TopicConfig = {
+    val topicBuilder = TopicConfigBuilder(topicTypes, defaultConfigs, defaultOverrides)
     topicBuildFn(topicBuilder).build()
   }
 }

@@ -21,9 +21,9 @@ import shared.utils.TopicNamer
 class SourcingStreamTests extends WordSpec with Matchers {
   import TestUtils._
 
-  val actionSpec = ActionProcessorSpec[Json](
-    serdes = JsonSerdes.actionSerdes[Json],
-    forStrategy(new PrefixResourceNamingStrategy(""), "action", topics.ActionTopic.all))
+  val actionSpec        = ActionProcessorSpec[Json](serdes = JsonSerdes.actionSerdes[Json])
+  val actionTopicNamer  = TopicNamer.forPrefix("", "action")
+  val commandTopicNamer = TopicNamer.forPrefix("", "user")
 
   val userSpec = CommandSpec[Json, UserCommand, UUID, UserCommand](
     actionType = "user_action",
@@ -37,16 +37,12 @@ class SourcingStreamTests extends WordSpec with Matchers {
 
   "action streams" must {
     "turn an action request into a command request" in {
-      val commandTopicNamer = TopicNamer.forPrefix("", "user")
-      val ctx = SourcingContext(
-        actionSpec,
-        userSpec,
-        TopicNamer.forStrategy(new PrefixResourceNamingStrategy(""), "user", topics.CommandTopic.all))
+      val ctx = SourcingContext(actionSpec, userSpec, actionTopicNamer, commandTopicNamer)
 
       val ctxDriver = ContextDriver(
         ctx,
         builder => {
-          val actionRequestStream = ActionConsumer.actionRequestStream(actionSpec, builder)
+          val actionRequestStream = ActionConsumer.actionRequestStream(actionSpec, actionTopicNamer, builder)
           val commandResponseByAggregate =
             CommandConsumer.commandResponseStream[Json, UserCommand, UUID, UserCommand](userSpec,
                                                                                         commandTopicNamer,
@@ -72,7 +68,7 @@ class SourcingStreamTests extends WordSpec with Matchers {
                                         "user_action")
 
       ctxDriver
-        .produce(actionSpec.topicConfig.namer(ActionTopic.request), aSerdes.uuid, aSerdes.request)
+        .produce(actionTopicNamer(ActionTopic.request), aSerdes.uuid, aSerdes.request)
         .pipeInput(sagaId, actionRequest)
 
       val output =

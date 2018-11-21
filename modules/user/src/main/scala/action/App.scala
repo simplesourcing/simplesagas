@@ -7,11 +7,9 @@ import command.model.auction.AccountCommand
 import command.model.user.UserCommand
 import io.circe.Json
 import io.circe.generic.auto._
-import io.simplesource.kafka.util.PrefixResourceNamingStrategy
-import model.specs.ActionProcessorSpec
-import model.topics
+
 import org.apache.kafka.common.serialization.Serdes
-import shared.utils.{StreamAppConfig, TopicConfigurer, TopicNamer}
+import shared.utils.{StreamAppConfig, TopicNamer}
 import shared.serdes.JsonSerdes
 import http._
 import http.implicits._
@@ -46,8 +44,9 @@ object App {
   }
 
   def startAsyncActionProcessor(): Unit = {
-    AsyncApp[Json](JsonSerdes.actionSerdes[Json], _.withTopicNamer(TopicNamer.forPrefix(constants.actionTopicPrefix,
-      constants.sagaActionBaseName)))
+    AsyncApp[Json](
+      JsonSerdes.actionSerdes[Json],
+      _.withTopicNamer(TopicNamer.forPrefix(constants.actionTopicPrefix, constants.sagaActionBaseName)))
       .addAsync(asyncSpec)
       .addHttpProcessor(httpSpec)
       .run(asyncConfig)

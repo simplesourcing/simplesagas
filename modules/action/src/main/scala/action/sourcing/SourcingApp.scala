@@ -14,11 +14,11 @@ import org.slf4j.LoggerFactory
 import shared.utils.TopicConfigurer.TopicCreation
 import shared.utils.{StreamAppConfig, StreamAppUtils, TopicConfigBuilder}
 
-final case class SourcingApp[A](actionSerdes: ActionSerdes[A],
-                                topicBuildFn: TopicConfigBuilder => TopicConfigBuilder) {
+final case class SourcingApp[A](actionSerdes: ActionSerdes[A], topicBuildFn: TopicConfigBuilder.BuildSteps) {
 
-  private val actionTopicConfig = TopicConfigBuilder.buildTopics(topicNames.ActionTopic.all, Map.empty)(topicBuildFn)
-  private val actionSpec = ActionProcessorSpec[A](actionSerdes, actionTopicConfig)
+  private val actionTopicConfig =
+    TopicConfigBuilder.buildTopics(topicNames.ActionTopic.all, Map.empty)(topicBuildFn)
+  private val actionSpec = ActionProcessorSpec[A](actionSerdes)
   private val logger     = LoggerFactory.getLogger(classOf[SourcingApp[A]])
 
   final case class CommandInput(builder: StreamsBuilder,
@@ -31,9 +31,10 @@ final case class SourcingApp[A](actionSerdes: ActionSerdes[A],
   private var topics: List[TopicCreation] = topicNames.ActionTopic.all.map(TopicCreation(actionTopicConfig))
 
   def addCommand[I, K, C](cSpec: CommandSpec[A, I, K, C],
-                          topicBuildFn: TopicConfigBuilder => TopicConfigBuilder): SourcingApp[A] = {
-    val commandTopicConfig = TopicConfigBuilder.buildTopics(topicNames.CommandTopic.all, Map.empty)(topicBuildFn)
-    val actionContext = SourcingContext(actionSpec, cSpec, commandTopicConfig.namer)
+                          topicBuildFn: TopicConfigBuilder.BuildSteps): SourcingApp[A] = {
+    val commandTopicConfig =
+      TopicConfigBuilder.buildTopics(topicNames.CommandTopic.all, Map.empty)(topicBuildFn)
+    val actionContext = SourcingContext(actionSpec, cSpec, actionTopicConfig.namer, commandTopicConfig.namer)
     val command: Command = input => {
       val commandResponses =
         CommandConsumer.commandResponseStream(cSpec, commandTopicConfig.namer, input.builder)
@@ -57,9 +58,9 @@ final case class SourcingApp[A](actionSerdes: ActionSerdes[A],
 
     val builder = new StreamsBuilder()
     val actionRequests: KStream[UUID, messages.ActionRequest[A]] =
-      ActionConsumer.actionRequestStream(actionSpec, builder)
+      ActionConsumer.actionRequestStream(actionSpec, actionTopicConfig.namer, builder)
     val actionResponses: KStream[UUID, messages.ActionResponse] =
-      ActionConsumer.actionResponseStream(actionSpec, builder)
+      ActionConsumer.actionResponseStream(actionSpec, actionTopicConfig.namer, builder)
 
     val commandInput = CommandInput(builder, actionRequests, actionResponses)
     commands.foreach(_(commandInput))

@@ -12,6 +12,7 @@ import model.topics.TopicNamer
   */
 final case class SourcingContext[A, I, K, C](actionSpec: ActionProcessorSpec[A],
                                              commandSpec: CommandSpec[A, I, K, C],
+                                             actionTopicNamer: TopicNamer,
                                              commandTopicNamer: TopicNamer) {
   val cSerdes = commandSpec.serdes
   val aSerdes = actionSpec.serdes

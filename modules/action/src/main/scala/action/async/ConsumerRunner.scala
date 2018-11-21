@@ -40,7 +40,7 @@ class ConsumerRunner[A, I, K, O, R](asyncContext: AsyncContext[A, I, K, O, R],
     val consumer = new KafkaConsumer[UUID, ActionRequest[A]](consumerConfig,
                                                              actionSpec.serdes.uuid.deserializer(),
                                                              actionSpec.serdes.request.deserializer())
-    consumer.subscribe(List(actionSpec.topicConfig.namer(topics.ActionTopic.requestUnprocessed)).asJava)
+    consumer.subscribe(List(asyncContext.actionTopicNamer(topics.ActionTopic.requestUnprocessed)).asJava)
     this.consumer = Some(consumer)
 
     try {
@@ -125,7 +125,7 @@ class ConsumerRunner[A, I, K, O, R](asyncContext: AsyncContext[A, I, K, O, R],
                                               response)
           val responseRecord =
             new ProducerRecord[UUID, ActionResponse](
-              actionSpec.topicConfig.namer(topics.ActionTopic.response),
+              asyncContext.actionTopicNamer(topics.ActionTopic.response),
               sagaId,
               actionResponse)
           producer.send(responseRecord.toByteArray(actionSpec.serdes.uuid, actionSpec.serdes.response))

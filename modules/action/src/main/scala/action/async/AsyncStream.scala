@@ -22,7 +22,10 @@ object AsyncStream {
                                                      ctx.asyncSpec.actionType)
 
     // publish to output topics
-    ActionProducer.actionResponse(ctx.actionSpec, idempotentAction.priorResponses)
-    ActionProducer.actionRequest(ctx.actionSpec, idempotentAction.unprocessedRequests, unprocessed = true)
+    ActionProducer.actionResponse(ctx.actionSpec, ctx.actionTopicNamer, idempotentAction.priorResponses)
+    ActionProducer.actionRequest(ctx.actionSpec,
+                                 ctx.actionTopicNamer,
+                                 idempotentAction.unprocessedRequests,
+                                 unprocessed = true)
   }
 }

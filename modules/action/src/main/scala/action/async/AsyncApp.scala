@@ -17,8 +17,7 @@ import shared.utils.TopicConfigurer.TopicCreation
 
 import scala.concurrent.ExecutionContext
 
-final case class AsyncApp[A](actionSerdes: ActionSerdes[A],
-                             topicBuildFn: TopicConfigBuilder => TopicConfigBuilder) {
+final case class AsyncApp[A](actionSerdes: ActionSerdes[A], topicBuildFn: TopicConfigBuilder.BuildSteps) {
   private val logger = LoggerFactory.getLogger(classOf[AsyncApp[A]])
 
   final case class AsyncTransformerInput(builder: StreamsBuilder,
@@ -28,18 +27,18 @@ final case class AsyncApp[A](actionSerdes: ActionSerdes[A],
   val expectedTopicList = topics.ActionTopic.requestUnprocessed :: topics.ActionTopic.all
 
   private val actionTopicConfig = TopicConfigBuilder.buildTopics(expectedTopicList, Map.empty)(topicBuildFn)
-  private val actionSpec = ActionProcessorSpec[A](actionSerdes, actionTopicConfig)
+  private val actionSpec        = ActionProcessorSpec[A](actionSerdes)
 
   type AsyncTransformer = AsyncTransformerInput => Properties => AsyncPipe
 
   private var transformers: List[AsyncTransformer] = List.empty
-  private var expectedTopics = expectedTopicList.map(TopicCreation(actionSpec.topicConfig))
+  private var expectedTopics                       = expectedTopicList.map(TopicCreation(actionTopicConfig))
 
   private var closeHandlers: List[() => Unit] = List.empty
 
   def addAsync[I, K, O, R](spec: AsyncSpec[A, I, K, O, R])(
       implicit executionContext: ExecutionContext): AsyncApp[A] = {
-    val ctx = AsyncContext(actionSpec, spec)
+    val ctx = AsyncContext(actionSpec, actionTopicConfig.namer, spec)
     val transformer: AsyncTransformer = input => {
 
       // join the action request with corresponding prior command responses
@@ -67,9 +66,9 @@ final case class AsyncApp[A](actionSerdes: ActionSerdes[A],
 
     val builder = new StreamsBuilder()
     val actionRequests: KStream[UUID, messages.ActionRequest[A]] =
-      ActionConsumer.actionRequestStream(actionSpec, builder)
+      ActionConsumer.actionRequestStream(actionSpec, actionTopicConfig.namer, builder)
     val actionResponses: KStream[UUID, messages.ActionResponse] =
-      ActionConsumer.actionResponseStream(actionSpec, builder)
+      ActionConsumer.actionResponseStream(actionSpec, actionTopicConfig.namer, builder)
 
     val commandInput          = AsyncTransformerInput(builder, actionRequests, actionResponses)
     val pipes: Seq[AsyncPipe] = transformers.map(x => x(commandInput)(config))
