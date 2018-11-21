@@ -2,18 +2,22 @@ package saga
 import java.util.concurrent.TimeUnit
 import java.util.{Properties, UUID}
 
+import model.serdes.SagaSerdes
 import model.specs.{ActionProcessorSpec, SagaSpec}
 import org.apache.kafka.clients.admin.AdminClient
 import org.apache.kafka.streams.StreamsBuilder
 import org.apache.kafka.streams.kstream.KStream
 import org.slf4j.LoggerFactory
 import saga.app.{SagaConsumer, SagaContext, SagaStream}
-import model.{messages, saga}
+import model.{messages, saga, topics => topicNames}
 import shared.utils.TopicConfigurer.{TopicCreation, getTopics}
-import shared.utils.{StreamAppConfig, StreamAppUtils}
+import shared.utils.{StreamAppConfig, StreamAppUtils, TopicConfigBuilder}
 
-final case class SagaApp[A](sagaSpec: SagaSpec[A]) {
+final case class SagaApp[A](serdes: SagaSerdes[A], topicBuildFn: TopicConfigBuilder => TopicConfigBuilder) {
   private val logger = LoggerFactory.getLogger(classOf[SagaApp[A]])
+
+  private val sagaTopicConfig = TopicConfigBuilder.buildTopics(topicNames.SagaTopic.all, Map.empty)(topicBuildFn)
+  private val sagaSpec = SagaSpec[A](serdes, sagaTopicConfig)
 
   final case class ActionProcessorInput(builder: StreamsBuilder,
                                         sagaRequest: KStream[UUID, messages.SagaRequest[A]],
@@ -25,12 +29,13 @@ final case class SagaApp[A](sagaSpec: SagaSpec[A]) {
   private var actionProcessors: List[ActionProcessor] = List.empty
   private var topics: List[TopicCreation]             = getTopics(sagaSpec.topicConfig)
 
-  def addActionProcessor(actionSpec: ActionProcessorSpec[A]): SagaApp[A] = {
+  def addActionProcessor(actionSpec: ActionProcessorSpec[A], buildFn: TopicConfigBuilder => TopicConfigBuilder): SagaApp[A] = {
+    val topicConfig = TopicConfigBuilder.buildTopics(topicNames.ActionTopic.all, Map.empty)(buildFn)
     val actionProcessor: ActionProcessor = input => {
-      val ctx = SagaContext(sagaSpec, actionSpec)
+      val ctx = SagaContext(sagaSpec, actionSpec, topicConfig.namer)
 
       val actionResponse: KStream[UUID, messages.ActionResponse] =
-        SagaConsumer.actionResponse(actionSpec, input.builder)
+        SagaConsumer.actionResponse(actionSpec, topicConfig.namer, input.builder)
 
       // add in stream transformations
       SagaStream.addSubTopology(ctx,
@@ -41,7 +46,7 @@ final case class SagaApp[A](sagaSpec: SagaSpec[A]) {
     }
 
     actionProcessors = actionProcessor :: actionProcessors
-    topics = topics ++ getTopics(actionSpec.topicConfig)
+    topics = topics ++ getTopics(topicConfig)
     this
   }
 

@@ -4,7 +4,7 @@ import java.util.UUID
 import model.messages.{ActionResponse, SagaRequest, SagaStateTransition}
 import model.saga.Saga
 import model.specs.{ActionProcessorSpec, SagaSpec}
-import model.topics.{ActionTopic, SagaTopic}
+import model.topics.{ActionTopic, SagaTopic, TopicConfig, TopicNamer}
 import org.apache.kafka.streams.StreamsBuilder
 import org.apache.kafka.streams.kstream.{Consumed, KStream}
 import org.slf4j.LoggerFactory
@@ -33,7 +33,8 @@ object SagaConsumer {
   }
 
   def actionResponse[A](actionSpec: ActionProcessorSpec[A],
+                        topicNamer: TopicNamer,
                         builder: StreamsBuilder): KStream[UUID, ActionResponse] =
-    builder.stream[UUID, ActionResponse](actionSpec.topicConfig.namer(ActionTopic.response),
+    builder.stream[UUID, ActionResponse](topicNamer(ActionTopic.response),
                                          Consumed.`with`(actionSpec.serdes.uuid, actionSpec.serdes.response))
 }

@@ -46,18 +46,12 @@ object App {
   }
 
   def startAsyncActionProcessor(): Unit = {
-    AsyncApp[Json](actionProcessorSpec)
+    AsyncApp[Json](JsonSerdes.actionSerdes[Json], _.withTopicNamer(TopicNamer.forPrefix(constants.actionTopicPrefix,
+      constants.sagaActionBaseName)))
       .addAsync(asyncSpec)
       .addHttpProcessor(httpSpec)
       .run(asyncConfig)
   }
-
-  lazy val actionProcessorSpec = ActionProcessorSpec[Json](
-    serdes = JsonSerdes.actionSerdes[Json],
-    TopicConfigurer.forStrategy(new PrefixResourceNamingStrategy(constants.actionTopicPrefix),
-                                constants.sagaActionBaseName,
-                                topics.ActionTopic.all)
-  )
 
   lazy val userSpec = CommandSpec[Json, UserCommand, UUID, UserCommand](
     actionType = constants.userActionType,

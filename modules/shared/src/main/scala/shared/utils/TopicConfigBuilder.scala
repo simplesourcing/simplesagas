@@ -44,3 +44,14 @@ final case class TopicConfigBuilder(topicTypes: List[String],
     TopicConfig(topicNamer.get, topicTypes, topicSpecs)
   }
 }
+
+object TopicConfigBuilder {
+  def buildTopics(topicTypes: List[String],
+                  defaultConfigs: Map[String, String],
+                  defaultOverrides: Map[String, Map[String, String]] = Map.empty)(topicBuildFn: TopicConfigBuilder => TopicConfigBuilder) = {
+    val topicBuilder = TopicConfigBuilder(topicTypes,
+      defaultConfigs,
+      defaultOverrides)
+    topicBuildFn(topicBuilder).build()
+  }
+}

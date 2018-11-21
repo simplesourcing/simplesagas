@@ -26,7 +26,7 @@ object StreamAppUtils {
   def addMissingTopics(adminClient: AdminClient)(topicNames: List[TopicCreation]): CreateTopicsResult = {
     val existingTopics = adminClient.listTopics().names().get().asScala
     val newTopics = topicNames.toSet
-      .filter(t => existingTopics.contains(t.topicName))
+      .filter(t => !existingTopics.contains(t.topicName))
       .map(t => {
         val spec = t.topicSpec
         val newTopic =

@@ -3,28 +3,21 @@ import java.util.concurrent.TimeUnit
 import java.util.{Properties, UUID}
 
 import action.common.ActionConsumer
-import io.simplesource.kafka.spec.TopicSpec
-import model.{messages, topics => topicNames}
 import model.messages.{ActionRequest, ActionResponse}
 import model.serdes.ActionSerdes
 import model.specs.ActionProcessorSpec
-import model.topics.{TopicConfig, TopicNamer}
+import model.{messages, topics => topicNames}
 import org.apache.kafka.clients.admin.AdminClient
-import org.apache.kafka.common.config.{TopicConfig => KafkaTopicConfig}
 import org.apache.kafka.streams.StreamsBuilder
 import org.apache.kafka.streams.kstream.KStream
 import org.slf4j.LoggerFactory
 import shared.utils.TopicConfigurer.TopicCreation
 import shared.utils.{StreamAppConfig, StreamAppUtils, TopicConfigBuilder}
 
-import scala.collection.JavaConverters._
-
 final case class SourcingApp[A](actionSerdes: ActionSerdes[A],
                                 topicBuildFn: TopicConfigBuilder => TopicConfigBuilder) {
-  private val actionTopicConfig = {
-    val topicConfigBuilder = TopicConfigBuilder(topicNames.ActionTopic.all, Map.empty)
-    topicBuildFn(topicConfigBuilder).build()
-  }
+
+  private val actionTopicConfig = TopicConfigBuilder.buildTopics(topicNames.ActionTopic.all, Map.empty)(topicBuildFn)
   private val actionSpec = ActionProcessorSpec[A](actionSerdes, actionTopicConfig)
   private val logger     = LoggerFactory.getLogger(classOf[SourcingApp[A]])
 
@@ -39,10 +32,7 @@ final case class SourcingApp[A](actionSerdes: ActionSerdes[A],
 
   def addCommand[I, K, C](cSpec: CommandSpec[A, I, K, C],
                           topicBuildFn: TopicConfigBuilder => TopicConfigBuilder): SourcingApp[A] = {
-    val commandTopicConfig = {
-      val topicConfigBuilder = TopicConfigBuilder(topicNames.CommandTopic.all, Map.empty)
-      topicBuildFn(topicConfigBuilder).build()
-    }
+    val commandTopicConfig = TopicConfigBuilder.buildTopics(topicNames.CommandTopic.all, Map.empty)(topicBuildFn)
     val actionContext = SourcingContext(actionSpec, cSpec, commandTopicConfig.namer)
     val command: Command = input => {
       val commandResponses =
