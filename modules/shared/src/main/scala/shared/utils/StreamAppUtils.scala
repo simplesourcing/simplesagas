@@ -1,4 +1,4 @@
-package topics.utils
+package shared.utils
 
 import java.util.Properties
 
@@ -7,7 +7,7 @@ import org.apache.kafka.clients.admin.{AdminClient, CreateTopicsResult, NewTopic
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.streams.errors.LogAndContinueExceptionHandler
 import org.apache.kafka.streams.{KafkaStreams, StreamsConfig, Topology}
-import topics.topics.TopicCreation
+import shared.topics.TopicCreation
 
 final case class StreamAppConfig(appId: String, bootstrapServers: String)
 

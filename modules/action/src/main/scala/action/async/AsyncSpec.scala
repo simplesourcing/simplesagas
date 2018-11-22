@@ -1,6 +1,6 @@
 package action.async
 
-import topics.topics.TopicCreation
+import shared.topics.TopicCreation
 
 import scala.concurrent.Future
 

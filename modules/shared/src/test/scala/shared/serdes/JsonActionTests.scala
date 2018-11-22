@@ -1,4 +1,4 @@
-package topics.serdes
+package shared.serdes
 import java.util.UUID
 
 import cats.data.NonEmptyList

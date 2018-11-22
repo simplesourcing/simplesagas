@@ -1,7 +1,7 @@
-package topics.topics
+package shared.topics
 
 import io.simplesource.kafka.spec.TopicSpec
-import topics.topics
+import shared.topics
 
 final case class TopicCreation(topicName: String, topicSpec: TopicSpec)
 

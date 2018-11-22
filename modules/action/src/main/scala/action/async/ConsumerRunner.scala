@@ -11,7 +11,7 @@ import org.apache.kafka.common.errors.WakeupException
 import org.apache.kafka.common.serialization.Serdes
 import org.slf4j.LoggerFactory
 import cats.implicits._
-import topics.topics.TopicTypes
+import shared.topics.TopicTypes
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try

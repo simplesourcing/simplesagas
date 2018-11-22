@@ -5,7 +5,7 @@ import java.util.UUID
 import model.messages.{ActionRequest, ActionResponse}
 import model.specs.ActionProcessorSpec
 import org.apache.kafka.streams.kstream.{KStream, Produced}
-import topics.topics.{TopicNamer, TopicTypes}
+import shared.topics.{TopicNamer, TopicTypes}
 
 object ActionProducer {
 

@@ -1,4 +1,4 @@
-package topics.serdes
+package shared.serdes
 
 import java.util.UUID
 
@@ -9,11 +9,11 @@ import io.simplesource.data.{Result, Sequence}
 import io.simplesource.kafka.model._
 import org.scalatest.{Matchers, WordSpec}
 
-class JsonCommandTests extends WordSpec with Matchers {
+class JsonAggregateTests extends WordSpec with Matchers {
   import TestTypes._
-  "command shared.serdes" must {
+  "aggregate shared.serdes" must {
     val serdes =
-      JsonSerdes.commandSerdes[UUID, UserCommand]
+      JsonSerdes.aggregateSerdes[UUID, UserCommand, UserEvent, Option[User]]
     val topic = "topic"
 
     "serialise and deserialise command key UUIDs" in {
@@ -25,6 +25,13 @@ class JsonCommandTests extends WordSpec with Matchers {
       de shouldBe initial
     }
 
+    "serialise and deserialise aggregate key UUIDs" in {
+      val initial = UUID.randomUUID()
+      val ser     = serdes.aggregateKey().serializer().serialize(topic, initial)
+      val de      = serdes.aggregateKey().deserializer().deserialize(topic, ser)
+      de shouldBe initial
+    }
+
     "serialise and deserialise command requests" in {
       val initial =
         new CommandRequest[UUID, UserCommand](UUID.randomUUID(),
@@ -33,6 +40,22 @@ class JsonCommandTests extends WordSpec with Matchers {
                                               UUID.randomUUID())
       val ser = serdes.commandRequest().serializer().serialize(topic, initial)
       val de  = serdes.commandRequest().deserializer().deserialize(topic, ser)
+      de shouldBe initial
+    }
+
+    "serialise and deserialise events" in {
+      val initial =
+        new ValueWithSequence[UserEvent](UserEvent.Inserted("fn", "ln"), Sequence.first())
+      val ser =
+        serdes.valueWithSequence().serializer().serialize(topic, initial)
+      val de = serdes.valueWithSequence().deserializer().deserialize(topic, ser)
+      de shouldBe initial
+    }
+
+    "serialise and deserialise aggregate updates" in {
+      val initial = new AggregateUpdate[Option[User]](Some(User("fn", "ln", 0)), Sequence.first())
+      val ser     = serdes.aggregateUpdate().serializer().serialize(topic, initial)
+      val de      = serdes.aggregateUpdate().deserializer().deserialize(topic, ser)
       de shouldBe initial
     }
 

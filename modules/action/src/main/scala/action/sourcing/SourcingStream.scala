@@ -11,7 +11,7 @@ import org.apache.kafka.common.utils.Bytes
 import org.apache.kafka.streams.kstream._
 import org.apache.kafka.streams.state.KeyValueStore
 import org.slf4j.LoggerFactory
-import topics.streams.syntax._
+import shared.streams.syntax._
 
 object SourcingStream {
   private val logger = LoggerFactory.getLogger("SourcingStream")

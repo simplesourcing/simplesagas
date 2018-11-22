@@ -1,6 +1,6 @@
 package action.sourcing
 import model.specs.ActionProcessorSpec
-import topics.topics.TopicNamer
+import shared.topics.TopicNamer
 
 /**
   * @param actionSpec

@@ -9,11 +9,11 @@ import io.circe.syntax._
 import model.messages.ActionRequest
 import model.saga.ActionCommand
 import model.specs.ActionProcessorSpec
-import topics.topics.TopicTypes.{ActionTopic, CommandTopic}
+import shared.topics.TopicTypes.{ActionTopic, CommandTopic}
 import org.scalatest.{Matchers, WordSpec}
-import topics.serdes.JsonSerdes
-import topics.serdes.TestTypes.UserCommand
-import topics.topics.TopicNamer
+import shared.serdes.JsonSerdes
+import shared.serdes.TestTypes.UserCommand
+import shared.topics.TopicNamer
 class SourcingStreamTests extends WordSpec with Matchers {
   import TestUtils._
 

@@ -1,4 +1,4 @@
-package topics.topics
+package shared.topics
 
 import java.util.concurrent.TimeUnit
 

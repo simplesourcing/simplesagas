@@ -3,7 +3,7 @@ package action.sourcing
 import io.simplesource.kafka.model.CommandResponse
 import org.apache.kafka.streams.StreamsBuilder
 import org.apache.kafka.streams.kstream.{Consumed, KStream}
-import topics.topics.{TopicNamer, TopicTypes}
+import shared.topics.{TopicNamer, TopicTypes}
 
 object CommandConsumer {
 

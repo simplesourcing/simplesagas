@@ -3,7 +3,7 @@ import java.util.UUID
 
 import model.messages.{ActionRequest, SagaResponse, SagaStateTransition}
 import model.saga.Saga
-import topics.topics.TopicTypes.{ActionTopic, SagaTopic}
+import shared.topics.TopicTypes.{ActionTopic, SagaTopic}
 import org.apache.kafka.streams.kstream.{KStream, Produced}
 
 object SagaProducer {

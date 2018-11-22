@@ -12,8 +12,8 @@ import org.apache.kafka.clients.admin.AdminClient
 import org.apache.kafka.streams.StreamsBuilder
 import org.apache.kafka.streams.kstream.KStream
 import org.slf4j.LoggerFactory
-import topics.topics.{TopicConfigBuilder, TopicCreation, TopicTypes}
-import topics.utils.{StreamAppConfig, StreamAppUtils}
+import shared.topics.{TopicConfigBuilder, TopicCreation, TopicTypes}
+import shared.utils.{StreamAppConfig, StreamAppUtils}
 
 import scala.concurrent.ExecutionContext
 

@@ -11,8 +11,8 @@ import org.apache.kafka.streams.kstream.KStream
 import org.slf4j.LoggerFactory
 import saga.app.{SagaConsumer, SagaContext, SagaStream}
 import model.{messages, saga}
-import topics.topics.{TopicConfigBuilder, TopicCreation, TopicTypes}
-import topics.utils._
+import shared.topics.{TopicConfigBuilder, TopicCreation, TopicTypes}
+import shared.utils._
 
 final case class SagaApp[A](serdes: SagaSerdes[A], topicBuildFn: TopicConfigBuilder.BuildSteps) {
   private val logger = LoggerFactory.getLogger(classOf[SagaApp[A]])

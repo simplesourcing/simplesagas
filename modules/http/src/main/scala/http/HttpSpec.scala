@@ -1,7 +1,7 @@
 package http
 
 import action.async.AsyncSerdes
-import topics.topics.TopicCreation
+import shared.topics.TopicCreation
 
 import scala.concurrent.Future
 

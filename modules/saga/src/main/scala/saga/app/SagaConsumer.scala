@@ -4,11 +4,11 @@ import java.util.UUID
 import model.messages.{ActionResponse, SagaRequest, SagaStateTransition}
 import model.saga.Saga
 import model.specs.{ActionProcessorSpec, SagaSpec}
-import topics.topics.TopicTypes.{ActionTopic, SagaTopic}
+import shared.topics.TopicTypes.{ActionTopic, SagaTopic}
 import org.apache.kafka.streams.StreamsBuilder
 import org.apache.kafka.streams.kstream.{Consumed, KStream}
 import org.slf4j.LoggerFactory
-import topics.topics.TopicNamer
+import shared.topics.TopicNamer
 object SagaConsumer {
   private val logger = LoggerFactory.getLogger("SagaConsumer")
 

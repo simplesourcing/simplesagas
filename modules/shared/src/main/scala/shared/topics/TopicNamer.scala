@@ -1,4 +1,4 @@
-package topics.topics
+package shared.topics
 
 import io.simplesource.kafka.api.ResourceNamingStrategy
 import io.simplesource.kafka.util.PrefixResourceNamingStrategy

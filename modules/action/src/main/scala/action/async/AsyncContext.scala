@@ -1,6 +1,6 @@
 package action.async
 import model.specs.ActionProcessorSpec
-import topics.topics.TopicNamer
+import shared.topics.TopicNamer
 
 /**
   * @tparam A - common representation form for all action commands (typically Json / or GenericRecord for Avro)

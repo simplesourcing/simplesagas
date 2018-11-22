@@ -1,7 +1,7 @@
 package saga.app
 import model.serdes
 import model.specs.{ActionProcessorSpec, SagaSpec}
-import topics.topics.TopicNamer
+import shared.topics.TopicNamer
 final case class SagaContext[A](sSpec: SagaSpec[A],
                                 aSpec: ActionProcessorSpec[A],
                                 sagaTopicNamer: TopicNamer,

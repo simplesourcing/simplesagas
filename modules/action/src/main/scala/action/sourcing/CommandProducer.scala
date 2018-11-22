@@ -2,7 +2,7 @@ package action.sourcing
 
 import io.simplesource.kafka.model.CommandRequest
 import org.apache.kafka.streams.kstream.{KStream, Produced}
-import topics.topics.{TopicNamer, TopicTypes}
+import shared.topics.{TopicNamer, TopicTypes}
 
 object CommandProducer {
 

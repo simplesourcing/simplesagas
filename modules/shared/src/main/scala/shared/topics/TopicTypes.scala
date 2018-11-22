@@ -1,4 +1,4 @@
-package topics.topics
+package shared.topics
 
 object TopicTypes {
   object CommandTopic {
@@ -17,10 +17,11 @@ object TopicTypes {
   }
 
   object SagaTopic {
-    val request         = "saga_request"
-    val response        = "saga_response"
-    val state           = "saga_state"
-    val stateTransition = "saga_state_transition"
+    val request          = "saga_request"
+    val response         = "saga_response"
+    val responseTopicMap = "saga_response_topic_map"
+    val state            = "saga_state"
+    val stateTransition  = "saga_state_transition"
 
     val all = List(request, response, state, stateTransition)
   }

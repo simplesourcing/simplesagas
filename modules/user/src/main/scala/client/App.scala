@@ -14,10 +14,10 @@ import model.messages.SagaRequest
 import model.saga.{ActionCommand, SagaError}
 import org.apache.kafka.clients.producer.{KafkaProducer, Producer, ProducerRecord}
 import org.slf4j.LoggerFactory
-import topics.serdes.JsonSerdes
-import topics.utils.{StreamAppConfig, StreamAppUtils}
+import shared.serdes.JsonSerdes
+import shared.utils.{StreamAppConfig, StreamAppUtils}
 import saga.dsl._
-import topics.topics.TopicTypes
+import shared.topics.TopicTypes
 
 object App {
   private val logger = LoggerFactory.getLogger(classOf[App])
