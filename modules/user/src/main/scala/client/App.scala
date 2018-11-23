@@ -20,7 +20,6 @@ import saga.dsl._
 import shared.TopicUtils
 import shared.serdes.JsonSerdes
 
-import scala.concurrent.ExecutionContext
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 
@@ -39,7 +38,7 @@ object App {
         .withClientId("saga-client-1")
     }
 
-    for (_ <- 1 to 100) {
+    for (_ <- 1 to 20) {
       val shouldSucceed = actionSequence("Harry", "Hughley", 1000.0, List(500, 100), 0)
       submitSagaRequest(api, shouldSucceed)
 
@@ -57,7 +56,7 @@ object App {
       r => {
         for {
           _        <- sagaApi.submitSaga(r)
-          response <- sagaApi.getSagaResponse(r.sagaId, 30.seconds)
+          response <- sagaApi.getSagaResponse(r.sagaId, 60.seconds)
           _ = {
             val count = responseCount.incrementAndGet()
             logger.info(s"Saga response $count received:\n$response")
