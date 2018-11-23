@@ -39,8 +39,9 @@ object SourcingStream {
     val newActionResponses = handleCommandResponse(ctx, actionRequest, commandResponseByCommandId)
 
     // publish to output topics
-    CommandProducer.commandRequest(ctx.commandSpec, commandRequests)
+    CommandProducer.commandRequest(ctx.commandSpec, ctx.commandTopicNamer, commandRequests)
     ActionProducer.actionResponse(ctx.actionSpec,
+                                  ctx.actionTopicNamer,
                                   idempotentAction.priorResponses,
                                   newActionResponses,
                                   requestErrorResponses)

@@ -1,6 +1,5 @@
 package action.sourcing
 import io.simplesource.kafka.api.CommandSerdes
-import model.topics.TopicNamer
 
 /**
   * @param actionType
@@ -8,7 +7,6 @@ import model.topics.TopicNamer
   * @param commandMapper
   * @param keyMapper
   * @param serdes
-  * @param topicNamer
   * @param aggregateName
   * @param timeOutMillis
   * @tparam A - common representation form for all action commands (typically Json / GenericRecord for Avro)
@@ -21,6 +19,5 @@ final case class CommandSpec[A, I, K, C](actionType: String,
                                          commandMapper: I => C,
                                          keyMapper: I => K,
                                          serdes: CommandSerdes[K, C],
-                                         topicNamer: TopicNamer[String],
                                          aggregateName: String,
                                          timeOutMillis: Long)

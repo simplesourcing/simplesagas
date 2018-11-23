@@ -5,13 +5,13 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 import model.messages.{ActionRequest, ActionResponse}
 import model.saga.SagaError
-import model.topics
 import org.apache.kafka.clients.consumer.{ConsumerRecords, KafkaConsumer}
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord}
 import org.apache.kafka.common.errors.WakeupException
 import org.apache.kafka.common.serialization.Serdes
 import org.slf4j.LoggerFactory
 import cats.implicits._
+import shared.topics.TopicTypes
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
@@ -40,7 +40,7 @@ class ConsumerRunner[A, I, K, O, R](asyncContext: AsyncContext[A, I, K, O, R],
     val consumer = new KafkaConsumer[UUID, ActionRequest[A]](consumerConfig,
                                                              actionSpec.serdes.uuid.deserializer(),
                                                              actionSpec.serdes.request.deserializer())
-    consumer.subscribe(List(actionSpec.topicNamer.apply(topics.ActionTopic.requestUnprocessed)).asJava)
+    consumer.subscribe(List(asyncContext.actionTopicNamer(TopicTypes.ActionTopic.requestUnprocessed)).asJava)
     this.consumer = Some(consumer)
 
     try {
@@ -124,9 +124,10 @@ class ConsumerRunner[A, I, K, O, R](asyncContext: AsyncContext[A, I, K, O, R],
                                               commandId = request.actionCommand.commandId,
                                               response)
           val responseRecord =
-            new ProducerRecord[UUID, ActionResponse](actionSpec.topicNamer(topics.ActionTopic.response),
-                                                     sagaId,
-                                                     actionResponse)
+            new ProducerRecord[UUID, ActionResponse](
+              asyncContext.actionTopicNamer(TopicTypes.ActionTopic.response),
+              sagaId,
+              actionResponse)
           producer.send(responseRecord.toByteArray(actionSpec.serdes.uuid, actionSpec.serdes.response))
         } catch {
           case error: Throwable =>

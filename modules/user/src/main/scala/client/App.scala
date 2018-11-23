@@ -2,7 +2,8 @@ package client
 
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import java.util.{Properties, UUID}
+import java.util.UUID
+import java.util.concurrent.atomic.AtomicInteger
 
 import command.model.auction.AccountCommand
 import command.model.user.UserCommand
@@ -10,57 +11,57 @@ import http.{HttpRequest, HttpVerb}
 import io.circe.Json
 import io.circe.generic.auto._
 import io.circe.syntax._
+import model.api.SagaAPI
 import model.messages.SagaRequest
 import model.saga.{ActionCommand, SagaError}
-import model.topics
-import org.apache.kafka.clients.producer.{KafkaProducer, Producer, ProducerRecord}
 import org.slf4j.LoggerFactory
-import shared.serdes.JsonSerdes
-import shared.utils.{StreamAppConfig, StreamAppUtils}
+import saga.SagaClient
 import saga.dsl._
+import shared.TopicUtils
+import shared.serdes.JsonSerdes
+
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
 
 object App {
-  private val logger = LoggerFactory.getLogger(classOf[App])
+  private val logger                       = LoggerFactory.getLogger(classOf[App])
+  private val responseCount: AtomicInteger = new AtomicInteger(0)
+
   def main(args: Array[String]): Unit = {
 
-    val config = StreamAppUtils.getConfig(StreamAppConfig("saga-client-2", "127.0.0.1:9092"))
+    val sagaClient = SagaClient(kafkaConfigBuilder => kafkaConfigBuilder.withKafkaBootstrap("127.0.0.1:9092"))
 
-    for (_ <- 1 to 4) {
-      val shouldSucceed = actionSequence("Harry", "Hughley", 1000.0, List(500, 100), 0)
-      submitSagaRequest(config, shouldSucceed)
-
-//      println("Press any key to continue...")
-//      System.console().reader().read()
-
-      val shouldFailReservation = actionSequence("Peter", "Bogue", 1000.0, List(500, 100, 550), 0)
-      submitSagaRequest(config, shouldFailReservation)
-
-//      println("Press any key to continue...")
-//      System.console().reader().read()
-
-      val shouldFailConfirmation = actionSequence("Lemuel", "Osorio", 1000.0, List(500, 100, 350), 50)
-      submitSagaRequest(config, shouldFailConfirmation)
+    val api: SagaAPI[Json] = sagaClient.createSagaApi[Json] { builder =>
+      builder
+        .withSerdes(JsonSerdes.sagaSerdes[Json])
+        .withTopicConfig(TopicUtils.buildSteps(constants.sagaTopicPrefix, constants.sagaBaseName))
+        .withClientId("saga-client-1")
     }
 
-    //println("Press any key to continue...")
-    //System.console().reader().read()
-    //()
+    for (_ <- 1 to 20) {
+      val shouldSucceed = actionSequence("Harry", "Hughley", 1000.0, List(500, 100), 0)
+      submitSagaRequest(api, shouldSucceed)
+
+      val shouldFailReservation = actionSequence("Peter", "Bogue", 1000.0, List(500, 100, 550), 0)
+      submitSagaRequest(api, shouldFailReservation)
+
+      val shouldFailConfirmation = actionSequence("Lemuel", "Osorio", 1000.0, List(500, 100, 350), 50)
+      submitSagaRequest(api, shouldFailConfirmation)
+    }
   }
 
-  private def submitSagaRequest(config: Properties, request: Either[SagaError, SagaRequest[Json]]): Unit =
+  private def submitSagaRequest(sagaApi: SagaAPI[Json], request: Either[SagaError, SagaRequest[Json]]): Unit =
     request.fold(
       _.messages.toList.foreach(logger.error),
       r => {
-        val requestTopic =
-          s"${constants.sagaTopicPrefix}${constants.sagaBaseName}-${topics.SagaTopic.request}"
-
-        val sagaSerdes = JsonSerdes.sagaSerdes[Json]
-        val producer: Producer[UUID, SagaRequest[Json]] =
-          new KafkaProducer[UUID, SagaRequest[Json]](config,
-                                                     sagaSerdes.uuid.serializer(),
-                                                     sagaSerdes.request.serializer())
-
-        producer.send(new ProducerRecord[UUID, SagaRequest[Json]](requestTopic, r.sagaId, r))
+        for {
+          _        <- sagaApi.submitSaga(r)
+          response <- sagaApi.getSagaResponse(r.sagaId, 60.seconds)
+          _ = {
+            val count = responseCount.incrementAndGet()
+            logger.info(s"Saga response $count received:\n$response")
+          }
+        } yield ()
         ()
       }
     )

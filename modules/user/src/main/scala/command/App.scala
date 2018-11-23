@@ -16,7 +16,9 @@ object App {
 
   def startCommandProcessor(): Unit = {
     new EventSourcedApp()
-      .withKafkaConfig(builder => builder
+      .withKafkaConfig(
+        builder =>
+          builder
             .withKafkaApplicationId("ScalaUserRunner")
             .withKafkaBootstrap(constants.kafkaBootstrap)
             .build)
@@ -30,6 +32,7 @@ object App {
           .withName(constants.userAggregateName)
           .withInitialValue(_ => None)
           .withInvalidSequenceStrategy(InvalidSequenceStrategy.Strict)
+          .withDefaultTopicSpec(constants.partitions, constants.replication, constants.retentionDays)
           .build())
       .addAggregate(
         AggregateBuilder
@@ -41,6 +44,7 @@ object App {
           .withName(constants.accountAggregateName)
           .withInitialValue(_ => None)
           .withInvalidSequenceStrategy(InvalidSequenceStrategy.Strict)
+          .withDefaultTopicSpec(constants.partitions, constants.replication, constants.retentionDays)
           .build())
       .start()
     ()

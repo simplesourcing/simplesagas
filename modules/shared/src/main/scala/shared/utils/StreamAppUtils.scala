@@ -7,6 +7,7 @@ import org.apache.kafka.clients.admin.{AdminClient, CreateTopicsResult, NewTopic
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.streams.errors.LogAndContinueExceptionHandler
 import org.apache.kafka.streams.{KafkaStreams, StreamsConfig, Topology}
+import shared.topics.TopicCreation
 
 final case class StreamAppConfig(appId: String, bootstrapServers: String)
 
@@ -22,11 +23,16 @@ object StreamAppUtils {
     config
   }
 
-  def addMissingTopics(adminClient: AdminClient, partitions: Int = 3, replication: Short = 1)(
-      topicNames: List[String]): CreateTopicsResult = {
-    val newTopics = topicNames.toSet
-      .diff(adminClient.listTopics().names().get().asScala)
-      .map(topicName => new NewTopic(topicName, partitions, replication))
+  def addMissingTopics(adminClient: AdminClient)(topics: List[TopicCreation]): CreateTopicsResult = {
+    val existingTopics = adminClient.listTopics().names().get().asScala
+    val newTopics = topics.toSet
+      .filter(t => !existingTopics.contains(t.topicName))
+      .map(t => {
+        val spec = t.topicSpec
+        val newTopic =
+          new NewTopic(t.topicName, spec.partitionCount(), spec.replicaCount()).configs(spec.config())
+        newTopic
+      })
     adminClient.createTopics(newTopics.asJava)
   }
 

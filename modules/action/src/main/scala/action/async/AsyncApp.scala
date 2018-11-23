@@ -4,34 +4,41 @@ import java.util.concurrent.TimeUnit
 
 import action.async.AsyncTransform.AsyncPipe
 import action.common.ActionConsumer
-import model.{messages, topics}
+import model.messages
 import model.messages.{ActionRequest, ActionResponse}
+import model.serdes.ActionSerdes
 import model.specs.ActionProcessorSpec
 import org.apache.kafka.clients.admin.AdminClient
 import org.apache.kafka.streams.StreamsBuilder
 import org.apache.kafka.streams.kstream.KStream
 import org.slf4j.LoggerFactory
+import shared.topics.{TopicConfigBuilder, TopicCreation, TopicTypes}
 import shared.utils.{StreamAppConfig, StreamAppUtils}
 
 import scala.concurrent.ExecutionContext
 
-final case class AsyncApp[A](actionSpec: ActionProcessorSpec[A]) {
+final case class AsyncApp[A](actionSerdes: ActionSerdes[A], topicBuildFn: TopicConfigBuilder.BuildSteps) {
   private val logger = LoggerFactory.getLogger(classOf[AsyncApp[A]])
 
   final case class AsyncTransformerInput(builder: StreamsBuilder,
                                          actionRequests: KStream[UUID, ActionRequest[A]],
                                          actionResponses: KStream[UUID, ActionResponse])
 
+  val expectedTopicList = TopicTypes.ActionTopic.requestUnprocessed :: TopicTypes.ActionTopic.all
+
+  private val actionTopicConfig = TopicConfigBuilder.buildTopics(expectedTopicList, Map.empty)(topicBuildFn)
+  private val actionSpec        = ActionProcessorSpec[A](actionSerdes)
+
   type AsyncTransformer = AsyncTransformerInput => Properties => AsyncPipe
 
   private var transformers: List[AsyncTransformer] = List.empty
-  private var expectedTopics = actionSpec.topicNamer(topics.ActionTopic.requestUnprocessed) :: actionSpec.topicNamer
-    .all()
+  private var expectedTopics                       = TopicCreation.allTopics(actionTopicConfig)
+
   private var closeHandlers: List[() => Unit] = List.empty
 
   def addAsync[I, K, O, R](spec: AsyncSpec[A, I, K, O, R])(
       implicit executionContext: ExecutionContext): AsyncApp[A] = {
-    val ctx = AsyncContext(actionSpec, spec)
+    val ctx = AsyncContext(actionSpec, actionTopicConfig.namer, spec)
     val transformer: AsyncTransformer = input => {
 
       // join the action request with corresponding prior command responses
@@ -41,7 +48,7 @@ final case class AsyncApp[A](actionSpec: ActionProcessorSpec[A]) {
       AsyncTransform.async(ctx)
     }
     transformers = transformer :: transformers
-    expectedTopics = expectedTopics ++ spec.outputSpec.fold(List.empty[String])(_.topicNames)
+    expectedTopics = expectedTopics ++ spec.outputSpec.fold(List.empty[TopicCreation])(_.topicCreation)
     this
   }
 
@@ -59,9 +66,9 @@ final case class AsyncApp[A](actionSpec: ActionProcessorSpec[A]) {
 
     val builder = new StreamsBuilder()
     val actionRequests: KStream[UUID, messages.ActionRequest[A]] =
-      ActionConsumer.actionRequestStream(actionSpec, builder)
+      ActionConsumer.actionRequestStream(actionSpec, actionTopicConfig.namer, builder)
     val actionResponses: KStream[UUID, messages.ActionResponse] =
-      ActionConsumer.actionResponseStream(actionSpec, builder)
+      ActionConsumer.actionResponseStream(actionSpec, actionTopicConfig.namer, builder)
 
     val commandInput          = AsyncTransformerInput(builder, actionRequests, actionResponses)
     val pipes: Seq[AsyncPipe] = transformers.map(x => x(commandInput)(config))

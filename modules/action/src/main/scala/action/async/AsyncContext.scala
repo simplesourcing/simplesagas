@@ -1,5 +1,6 @@
 package action.async
 import model.specs.ActionProcessorSpec
+import shared.topics.TopicNamer
 
 /**
   * @tparam A - common representation form for all action commands (typically Json / or GenericRecord for Avro)
@@ -9,6 +10,7 @@ import model.specs.ActionProcessorSpec
   * @tparam R - final result type that ends up in output topic
   */
 final case class AsyncContext[A, I, K, O, R](actionSpec: ActionProcessorSpec[A],
+                                             actionTopicNamer: TopicNamer,
                                              asyncSpec: AsyncSpec[A, I, K, O, R]) {
   val outputSerdes = asyncSpec.outputSpec.map(_.serdes)
   val actionSerdes = actionSpec.serdes

@@ -59,15 +59,6 @@ class JsonAggregateTests extends WordSpec with Matchers {
       de shouldBe initial
     }
 
-    "serialise and deserialise aggregate update result" in {
-      val update = new AggregateUpdate[Option[User]](Some(User("fn", "ln", 0)), Sequence.first())
-      val initial =
-        new AggregateUpdateResult[Option[User]](UUID.randomUUID(), Sequence.first(), Result.success(update))
-      val ser = serdes.updateResult().serializer().serialize(topic, initial)
-      val de  = serdes.updateResult().deserializer().deserialize(topic, ser)
-      de shouldBe initial
-    }
-
     "serialise and deserialise command response success" in {
       val initial =
         new CommandResponse(UUID.randomUUID(), Sequence.first(), Result.success(Sequence.first().next()))
@@ -78,7 +69,9 @@ class JsonAggregateTests extends WordSpec with Matchers {
 
     "serialise and deserialise command response failure" in {
       val initial =
-        new CommandResponse(UUID.randomUUID(), Sequence.first(), Result.failure(CommandError.of(Reason.InvalidCommand, "Invalid command")))
+        new CommandResponse(UUID.randomUUID(),
+                            Sequence.first(),
+                            Result.failure(CommandError.of(Reason.InvalidCommand, "Invalid command")))
       val ser = serdes.commandResponse().serializer().serialize(topic, initial)
       val de  = serdes.commandResponse().deserializer().deserialize(topic, ser)
       de shouldBe initial

@@ -1,5 +1,4 @@
 package action.sourcing
-import model.topics.CommandTopic
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.common.serialization.Serde
 import org.apache.kafka.streams.test.ConsumerRecordFactory
