@@ -1,6 +1,5 @@
 package saga.api
 
-import java.util
 import java.util.UUID
 import java.util.concurrent.{CompletableFuture, ScheduledExecutorService, TimeUnit}
 import java.util.function.BiFunction
@@ -11,6 +10,7 @@ import io.simplesource.kafka.internal.client.{KafkaRequestAPI, RequestAPIContext
 import io.simplesource.kafka.spec.WindowSpec
 import model.api.SagaAPI
 import model.messages._
+import model.saga.SagaError
 import model.specs.SagaSpec
 import shared.topics.{TopicConfig, TopicTypes}
 
@@ -21,10 +21,13 @@ import scala.concurrent.{Future, Promise}
 object FutureResultOps {
   implicit class FPOps[A](fr: FutureResult[Exception, A]) {
     def asScalaFuture: Future[A] = {
-      import scala.concurrent.ExecutionContext.Implicits.global
-      val v: util.concurrent.Future[A] =
-        fr.fold[A]((e: NonEmptyList[Exception]) => throw e.head(), (a: A) => a)
-      Future { v.get() }
+      val p = Promise[A]
+      fr.fold[Unit]((e: NonEmptyList[Exception]) => {
+        p.failure(e.head())
+      }, (a: A) => {
+        p.success(a)
+      })
+      p.future
     }
   }
 
@@ -59,20 +62,22 @@ class KafkaSagaAPI[A](sagaSpec: SagaSpec[A],
     .kafkaConfig(kConfig)
     .requestTopic(sagaTopicConfig.namer(TopicTypes.SagaTopic.request))
     .responseTopicMapTopic(sagaTopicConfig.namer(TopicTypes.SagaTopic.responseTopicMap))
-    .privateResponseTopic(sagaTopicConfig.namer(TopicTypes.SagaTopic.response) + clientId)
+    .privateResponseTopic(sagaTopicConfig.namer(TopicTypes.SagaTopic.response) + "_" + clientId)
     .requestKeySerde(sagaSpec.serdes.uuid)
     .requestValueSerde(sagaSpec.serdes.request)
     .responseKeySerde(sagaSpec.serdes.uuid)
     .responseValueSerde(sagaSpec.serdes.response)
     .responseWindowSpec(new WindowSpec(TimeUnit.DAYS.toSeconds(7)))
     .outputTopicConfig(sagaTopicConfig.topicSpecs(TopicTypes.SagaTopic.response))
+    .errorValue((request, error) => SagaResponse(request.sagaId, Left(SagaError.of(error.getMessage))))
+    .scheduler(scheduler)
     .build()
 
   private val requestAPI = new KafkaRequestAPI[UUID, SagaRequest[A], SagaResponse](apiContext)
 
-  override def submitSaga(request: SagaRequest[A], timeout: Duration): Future[SagaResponse] = {
+  override def submitSaga(request: SagaRequest[A]): Future[UUID] = {
     val result = requestAPI.publishRequest(request.sagaId, request.sagaId, request)
-    result.asScalaFuture.flatMap(_ => getSagaResponse(request.sagaId, timeout))
+    result.asScalaFuture.map(_ => request.sagaId)
   }
 
   override def getSagaResponse(requestId: UUID, timeout: Duration): Future[SagaResponse] = {

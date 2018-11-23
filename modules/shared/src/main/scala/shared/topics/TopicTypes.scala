@@ -23,7 +23,8 @@ object TopicTypes {
     val state            = "saga_state"
     val stateTransition  = "saga_state_transition"
 
-    val all = List(request, response, state, stateTransition)
+    val all    = List(request, response, responseTopicMap, state, stateTransition)
+    val client = List(request, response)
   }
 
   case class X[A]()

@@ -68,6 +68,7 @@ object TopicConfigBuilder {
                   defaultOverrides: Map[String, Map[String, String]] = Map.empty)(
       topicBuildFn: TopicConfigBuilder.BuildSteps): TopicConfig = {
     val topicBuilder = TopicConfigBuilder(topicTypes, defaultConfigs, defaultOverrides)
-    topicBuildFn(topicBuilder).build()
+    topicBuildFn(topicBuilder)
+    topicBuilder.build()
   }
 }

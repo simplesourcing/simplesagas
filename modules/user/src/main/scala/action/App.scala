@@ -13,6 +13,7 @@ import shared.serdes.JsonSerdes
 import http._
 import http.implicits._
 import io.simplesource.kafka.spec.TopicSpec
+import shared.TopicUtils
 import shared.topics.TopicCreation
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -32,16 +33,16 @@ object App {
   def startSourcingActionProcessor(): Unit = {
     SourcingApp[Json](
       JsonSerdes.actionSerdes[Json],
-      shared.buildSteps(constants.actionTopicPrefix, constants.sagaActionBaseName)
+      TopicUtils.buildSteps(constants.actionTopicPrefix, constants.sagaActionBaseName)
     ).addCommand(accountSpec,
-                  shared.buildSteps(constants.commandTopicPrefix, constants.accountAggregateName))
-      .addCommand(userSpec, shared.buildSteps(constants.commandTopicPrefix, constants.userAggregateName))
+                  TopicUtils.buildSteps(constants.commandTopicPrefix, constants.accountAggregateName))
+      .addCommand(userSpec, TopicUtils.buildSteps(constants.commandTopicPrefix, constants.userAggregateName))
       .run(sourcingConfig)
   }
 
   def startAsyncActionProcessor(): Unit = {
     AsyncApp[Json](JsonSerdes.actionSerdes[Json],
-                   shared.buildSteps(constants.actionTopicPrefix, constants.sagaActionBaseName))
+                   TopicUtils.buildSteps(constants.actionTopicPrefix, constants.sagaActionBaseName))
       .addAsync(asyncSpec)
       .addHttpProcessor(httpSpec)
       .run(asyncConfig)

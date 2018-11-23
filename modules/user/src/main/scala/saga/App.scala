@@ -1,7 +1,9 @@
 package saga
 
 import io.circe.Json
-import model.specs.ActionProcessorSpec
+import io.simplesource.kafka.spec.WindowSpec
+import model.specs.{ActionProcessorSpec, SagaSpec}
+import shared.TopicUtils
 import shared.serdes.JsonSerdes
 import shared.utils.StreamAppConfig
 
@@ -11,10 +13,10 @@ object App {
   }
 
   def startSagaCoordinator(): Unit = {
-    SagaApp[Json](JsonSerdes.sagaSerdes[Json],
-                  shared.buildSteps(constants.sagaTopicPrefix, constants.sagaBaseName))
+    val sagaSpec = SagaSpec(JsonSerdes.sagaSerdes[Json], new WindowSpec(3600L))
+    SagaApp[Json](sagaSpec, TopicUtils.buildSteps(constants.sagaTopicPrefix, constants.sagaBaseName))
       .addActionProcessor(actionProcessorSpec,
-                          shared.buildSteps(constants.actionTopicPrefix, constants.sagaActionBaseName))
+                          TopicUtils.buildSteps(constants.actionTopicPrefix, constants.sagaActionBaseName))
       .run(StreamAppConfig(appId = "saga-coordinator-1", bootstrapServers = constants.kafkaBootstrap))
   }
 

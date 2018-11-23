@@ -1,7 +1,7 @@
 package saga.app
 import java.util.UUID
 
-import model.messages.{ActionResponse, SagaRequest, SagaStateTransition}
+import model.messages.{ActionResponse, SagaRequest, SagaResponse, SagaStateTransition}
 import model.saga.Saga
 import model.specs.{ActionProcessorSpec, SagaSpec}
 import shared.topics.TopicTypes.{ActionTopic, SagaTopic}
@@ -17,6 +17,12 @@ object SagaConsumer {
                      builder: StreamsBuilder): KStream[UUID, SagaRequest[A]] =
     builder.stream[UUID, SagaRequest[A]](sagaTopicNamer(SagaTopic.request),
                                          Consumed.`with`(spec.serdes.uuid, spec.serdes.request))
+
+  def sagaResponse[A](spec: SagaSpec[A],
+                      sagaTopicNamer: TopicNamer,
+                      builder: StreamsBuilder): KStream[UUID, SagaResponse] =
+    builder.stream[UUID, SagaResponse](sagaTopicNamer(SagaTopic.response),
+                                       Consumed.`with`(spec.serdes.uuid, spec.serdes.response))
 
   def stateTransition[A](spec: SagaSpec[A],
                          sagaTopicNamer: TopicNamer,
