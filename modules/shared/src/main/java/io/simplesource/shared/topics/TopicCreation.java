@@ -1,28 +1,32 @@
-package io.simplesource.shared.topics
+package io.simplesource.shared.topics;
 
-import io.simplesource.kafka.spec.TopicSpec
-import io.simplesource.shared
+import io.simplesource.kafka.spec.TopicSpec;
+import lombok.Value;
 
-final case class TopicCreation(topicName: String, topicSpec: TopicSpec)
+import java.util.List;
+import java.util.stream.Collectors;
 
-object TopicCreation {
-  def apply(topicConfig: TopicConfig)(topicType: String): TopicCreation = {
-    val name = topicConfig.namer(topicType)
-    val spec = topicConfig.topicSpecs(topicType)
-    shared.topics.TopicCreation(name, spec)
-  }
+@Value
+public class TopicCreation {
+    public String topicName;
+    public TopicSpec topicSpec;
 
-  def withCustomName(topicConfig: TopicConfig, topicType: String)(topicName: String): TopicCreation = {
-    val spec = topicConfig.topicSpecs(topicType)
-    shared.topics.TopicCreation(topicName, spec)
-  }
+    static TopicCreation apply(TopicConfig topicConfig, String topicType) {
+        String name = topicConfig.namer.apply(topicType);
+        TopicSpec spec = topicConfig.topicSpecs.get(topicType);
+        return new TopicCreation(name, spec);
+    }
 
-  def allTopics(topicConfig: TopicConfig): List[TopicCreation] = {
-    topicConfig.topicSpecs.map {
-      case (topicBase, config) => {
-        val name = topicConfig.namer(topicBase)
-        shared.topics.TopicCreation(name, config)
-      }
-    }.toList
-  }
+    TopicCreation withCustomName(TopicConfig topicConfig, String topicType, String topicName) {
+        TopicSpec spec = topicConfig.topicSpecs.get(topicType);
+        return new TopicCreation(topicName, spec);
+    }
+
+    List<TopicCreation> allTopics(TopicConfig topicConfig) {
+        return topicConfig.topicSpecs.entrySet().stream().map(kv -> {
+            String topicBase = kv.getKey();
+            String name = topicConfig.namer.apply(topicBase);
+            return new TopicCreation(name, kv.getValue());
+        }).collect(Collectors.toList());
+    }
 }
