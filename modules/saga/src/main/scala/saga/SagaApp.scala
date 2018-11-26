@@ -12,7 +12,7 @@ import org.apache.kafka.streams.kstream.KStream
 import org.slf4j.LoggerFactory
 import saga.app._
 import model.{messages, saga}
-import shared.topics.{TopicConfigBuilder, TopicCreation, TopicTypes}
+import shared.topics.{TopicCreation, TopicTypes}
 import shared.utils._
 
 final case class SagaApp[A](sagaSpec: SagaSpec[A], topicBuildFn: TopicConfigBuilder.BuildSteps) {

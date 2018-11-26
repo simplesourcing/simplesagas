@@ -1,17 +1,18 @@
-package action.sourcing
+package io.simplesource.action.sourcing
+
 import java.util.concurrent.TimeUnit
 import java.util.{Properties, UUID}
 
 import action.common.ActionConsumer
+import model.messages
 import model.messages.{ActionRequest, ActionResponse}
 import model.serdes.ActionSerdes
 import model.specs.ActionProcessorSpec
-import model.messages
 import org.apache.kafka.clients.admin.AdminClient
 import org.apache.kafka.streams.StreamsBuilder
 import org.apache.kafka.streams.kstream.KStream
 import org.slf4j.LoggerFactory
-import shared.topics.{TopicCreation, TopicTypes}
+import shared.topics.{TopicConfigBuilder, TopicCreation, TopicTypes}
 import shared.utils._
 
 final case class SourcingApp[A](actionSerdes: ActionSerdes[A], topicBuildFn: TopicConfigBuilder.BuildSteps) {

@@ -8,7 +8,6 @@ import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.streams.errors.LogAndContinueExceptionHandler
 import org.apache.kafka.streams.{KafkaStreams, StreamsConfig, Topology}
 import shared.topics.TopicCreation
-
 final case class StreamAppConfig(appId: String, bootstrapServers: String)
 
 object StreamAppUtils {

@@ -1,6 +1,5 @@
-package action.sourcing
-import model.specs.ActionProcessorSpec
-import shared.topics.TopicNamer
+package io.simplesource.action.sourcing
+
 /**
   * @param actionSpec
   * @param commandSpec
