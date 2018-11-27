@@ -1,4 +1,4 @@
-package io.simplesource.shared.topics;
+package io.simplesource.saga.shared.topics;
 import io.simplesource.kafka.spec.TopicSpec;
 import lombok.Value;
 

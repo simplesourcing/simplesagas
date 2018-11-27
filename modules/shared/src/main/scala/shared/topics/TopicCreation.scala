@@ -2,8 +2,8 @@ package shared.topics
 
 import _root_.shared.topics
 import io.simplesource.kafka.spec.TopicSpec
-import io.simplesource.shared
-import io.simplesource.shared.topics
+import io.simplesource.saga.shared
+import io.simplesource.saga.shared.topics
 
 final case class TopicCreation(topicName: String, topicSpec: TopicSpec)
 
@@ -11,12 +11,12 @@ object TopicCreation {
   def apply(topicConfig: TopicConfig)(topicType: String): TopicCreation = {
     val name = topicConfig.namer(topicType)
     val spec = topicConfig.topicSpecs(topicType)
-    topics.TopicCreation(name, spec)
+    new TopicCreation(name, spec)
   }
 
   def withCustomName(topicConfig: TopicConfig, topicType: String)(topicName: String): TopicCreation = {
     val spec = topicConfig.topicSpecs(topicType)
-    topics.TopicCreation(topicName, spec)
+    new TopicCreation(topicName, spec)
   }
 
   def allTopics(topicConfig: TopicConfig): List[TopicCreation] = {

@@ -1,4 +1,4 @@
-package io.simplesource.shared.topics;
+package io.simplesource.saga.shared.topics;
 
 import io.simplesource.kafka.spec.TopicSpec;
 import lombok.Value;
@@ -11,18 +11,18 @@ public class TopicCreation {
     public String topicName;
     public TopicSpec topicSpec;
 
-    static TopicCreation apply(TopicConfig topicConfig, String topicType) {
+    public static TopicCreation apply(TopicConfig topicConfig, String topicType) {
         String name = topicConfig.namer.apply(topicType);
         TopicSpec spec = topicConfig.topicSpecs.get(topicType);
         return new TopicCreation(name, spec);
     }
 
-    TopicCreation withCustomName(TopicConfig topicConfig, String topicType, String topicName) {
+    public static TopicCreation withCustomName(TopicConfig topicConfig, String topicType, String topicName) {
         TopicSpec spec = topicConfig.topicSpecs.get(topicType);
         return new TopicCreation(topicName, spec);
     }
 
-    List<TopicCreation> allTopics(TopicConfig topicConfig) {
+    public static List<TopicCreation> allTopics(TopicConfig topicConfig) {
         return topicConfig.topicSpecs.entrySet().stream().map(kv -> {
             String topicBase = kv.getKey();
             String name = topicConfig.namer.apply(topicBase);
