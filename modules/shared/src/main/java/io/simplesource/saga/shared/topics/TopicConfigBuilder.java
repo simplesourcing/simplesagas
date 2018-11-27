@@ -63,4 +63,14 @@ public class TopicConfigBuilder {
         usedMap.forEach(dMap::put);
         return new TopicSpec(partitions, (short)replication, dMap);
     }
+
+    public static TopicConfig buildTopics(List<String> topicTypes,
+                                   Map<String, String> defaultConfigs,
+                                   Map<String, Map<String, String>> defaultOverrides,
+                                   Function<TopicConfigBuilder, TopicConfigBuilder> topicBuildFn) {
+        TopicConfigBuilder topicBuilder = new TopicConfigBuilder(topicTypes, defaultConfigs, defaultOverrides);
+        topicBuildFn.apply(topicBuilder);
+        return topicBuilder.build();
+    }
+
 }

@@ -7,7 +7,7 @@ import java.util.Map;
 
 
 @Value
-final class TopicConfig {
+public final class TopicConfig {
     public TopicNamer namer;
     public List<String> topicTypes;
     public Map<String, TopicSpec> topicSpecs;
