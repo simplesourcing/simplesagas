@@ -1,5 +1,5 @@
 package shared
-import shared.topics.TopicConfigBuilder
+import shared.topics.{TopicConfigBuilder, TopicNamer}
 object TopicUtils {
 
   def buildSteps(prefix: String, baseName: String): TopicConfigBuilder.BuildSteps =

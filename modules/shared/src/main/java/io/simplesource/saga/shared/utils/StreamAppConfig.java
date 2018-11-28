@@ -33,28 +33,7 @@ public class StreamAppConfig {
         config.put(StreamsConfig.PROCESSING_GUARANTEE_CONFIG, StreamsConfig.EXACTLY_ONCE);
         return config;
     }
-
-    CreateTopicsResult addMissingTopics(AdminClient adminClient, List<TopicCreation> topics){
-        try {
-            Set<String> existingTopics = adminClient.listTopics().names().get();
-            Stream<NewTopic> newTopics = topics.stream()
-                    .filter(t -> !existingTopics.contains(t.topicName))
-                    .map(t -> {
-                        TopicSpec spec = t.topicSpec;
-                        return new NewTopic(t.topicName, spec.partitionCount(), spec.replicaCount()).configs(spec.config());
-                    });
-            return adminClient.createTopics(newTopics.collect(Collectors.toList()));
-        } catch (Exception e) {
-            throw new RuntimeException("Unable to add missing topics");
-        }
-    }
-
-    void runStreamApp(Properties config, Topology topology) {
-        KafkaStreams streams = new KafkaStreams(topology, new StreamsConfig(config));
-
-        streams.cleanUp();
-        streams.start();
-
-        Runtime.getRuntime().addShutdownHook(new Thread(streams::close));
-    }
 }
+
+
+

@@ -12,8 +12,8 @@ import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.KStream;
 
 
-class ActionConsumer {
-    static <A> KStream<UUID, ActionRequest<A>> actionRequestStream(
+public class ActionConsumer {
+    public static <A> KStream<UUID, ActionRequest<A>> actionRequestStream(
             ActionProcessorSpec<A> spec,
             TopicNamer actionTopicNamer,
             StreamsBuilder builder) {
@@ -24,7 +24,7 @@ class ActionConsumer {
         return a;
     }
 
-    static <A> KStream<UUID, ActionResponse> actionResponseStream(ActionProcessorSpec<A> spec,
+    public static <A> KStream<UUID, ActionResponse> actionResponseStream(ActionProcessorSpec<A> spec,
                                                                   TopicNamer actionTopicNamer,
                                                                   StreamsBuilder builder) {
         return builder.stream(

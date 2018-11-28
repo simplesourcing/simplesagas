@@ -29,7 +29,7 @@ final case class SourcingApp[A](actionSerdes: ActionSerdes[A], topicBuildFn: Top
 
   private var commands: List[Command] = List.empty
   private var topics
-    : List[TopicCreation] = TopicCreation.allTopics(actionTopicConfig) //   topicNames.ActionTopic.all.map(TopicCreation(actionTopicConfig))
+    : List[TopicCreation] = TopicCreation.allTopics(actionTopicConfig)
 
   def addCommand[I, K, C](cSpec: CommandSpec[A, I, K, C],
                           topicBuildFn: TopicConfigBuilder.BuildSteps): SourcingApp[A] = {

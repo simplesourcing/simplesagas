@@ -19,6 +19,10 @@ public class TopicConfigBuilder {
     private Function<String, TopicSpec> defaultSpec = topicType -> defaultMap(1, 1, 7, topicType);
     private TopicNamer topicNamer = name -> name;
 
+    public interface BuildSteps {
+        public TopicConfigBuilder applyStep(TopicConfigBuilder builder);
+    }
+
     public TopicConfigBuilder(
             List<String> topicTypes,
             Map<String, String> defaultConfigs,
@@ -67,9 +71,9 @@ public class TopicConfigBuilder {
     public static TopicConfig buildTopics(List<String> topicTypes,
                                    Map<String, String> defaultConfigs,
                                    Map<String, Map<String, String>> defaultOverrides,
-                                   Function<TopicConfigBuilder, TopicConfigBuilder> topicBuildFn) {
+                                          BuildSteps buildSteps) {
         TopicConfigBuilder topicBuilder = new TopicConfigBuilder(topicTypes, defaultConfigs, defaultOverrides);
-        topicBuildFn.apply(topicBuilder);
+        buildSteps.applyStep(topicBuilder);
         return topicBuilder.build();
     }
 
