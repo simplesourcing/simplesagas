@@ -5,11 +5,11 @@ import lombok.Value;
 
 
 /**
-  * @tparam A - common representation form for all action commands (typically Json / or GenericRecord for Avro)
-  * @tparam I - input to async function
-  * @tparam K - key for the output topic
-  * @tparam O - output returned by async function
-  * @tparam R - final result type that ends up in output topic
+  * @param <A> - common representation form for all action commands (typically Json / or GenericRecord for Avro)
+  * @param <I> - input to async function
+  * @param <K> - key for the output topic
+  * @param <O> - output returned by async function
+  * @param <R> - final result type that ends up in output topic
   */
 
 

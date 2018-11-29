@@ -1,32 +1,38 @@
-package io.simplesource.saga.action.async
+package io.simplesource.saga.action.async;
 
-import java.util.UUID
+import java.util.UUID;
 
-import action.common.{ActionProducer, IdempotentStream, Utils}
-import model.messages.{ActionRequest, ActionResponse}
-import org.apache.kafka.streams.kstream.{ForeachAction, KStream}
-import org.slf4j.LoggerFactory
+import io.simplesource.saga.action.common.ActionProducer;
+import io.simplesource.saga.action.common.IdempotentStream;
+import io.simplesource.saga.action.common.Utils;
+import io.simplesource.saga.model.messages.ActionRequest;
+import io.simplesource.saga.model.messages.ActionResponse;
+import org.apache.kafka.streams.kstream.ForeachAction;
+import org.apache.kafka.streams.kstream.KStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-object AsyncStream {
-  private val logger = LoggerFactory.getLogger("AsyncStream")
+final public class AsyncStream {
+  static Logger logger = LoggerFactory.getLogger(AsyncStream.class);
 
-  def logValues[K, V](prefix: String): ForeachAction[K, V] = Utils.logValues[K, V](logger, prefix)
+  static <K, V> ForeachAction<K, V> logValues(String prefix) {
+    return Utils.logValues(logger, prefix);
+  }
 
-  def addSubTopology[A, I, K, O, R](ctx: AsyncContext[A, I, K, O, R],
-                                    actionRequest: KStream[UUID, ActionRequest[A]],
-                                    actionResponse: KStream[UUID, ActionResponse]): Unit = {
+  static public <A, I, K, O, R> void addSubTopology(AsyncContext<A, I, K, O, R> ctx,
+                                    KStream<UUID, ActionRequest<A>> actionRequest,
+                                    KStream<UUID, ActionResponse> actionResponse) {
     // join the action request with corresponding prior command responses
-    val idempotentAction =
-      IdempotentStream.getActionRequestsWithResponse(ctx.actionSpec,
-                                                     actionRequest,
-                                                     actionResponse,
-                                                     ctx.asyncSpec.actionType)
+    IdempotentStream.IdempotentAction<A> idempotentAction = IdempotentStream.getActionRequestsWithResponse(ctx.actionSpec,
+            actionRequest,
+            actionResponse,
+            ctx.asyncSpec.actionType);
 
     // publish to output topics
-    ActionProducer.actionResponse(ctx.actionSpec, ctx.actionTopicNamer, idempotentAction.priorResponses)
+    ActionProducer.actionResponse(ctx.actionSpec, ctx.actionTopicNamer, idempotentAction.priorResponses);
     ActionProducer.actionRequest(ctx.actionSpec,
                                  ctx.actionTopicNamer,
                                  idempotentAction.unprocessedRequests,
-                                 unprocessed = true)
+                                 true);
   }
 }

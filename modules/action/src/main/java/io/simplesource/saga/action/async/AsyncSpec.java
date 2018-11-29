@@ -16,10 +16,10 @@ import java.util.function.Function;
   */
 @Value
 final public class AsyncSpec<A, I, K, O, R> {
-    String actionType;
-    Function<A, Result<Throwable, I>> inputDecoder;
-    Function<K, I> keyMapper;
-    BiConsumer<I, CallBackProvider> asyncFunction;
-    String groupId;
-    Optional<AsyncOutput<I, K, O, R>> outputSpec;
+    public final String actionType;
+    public final Function<A, Result<Throwable, I>> inputDecoder;
+    public final Function<K, I> keyMapper;
+    public final BiConsumer<I, CallBackProvider> asyncFunction;
+    public final String groupId;
+    public final Optional<AsyncOutput<I, K, O, R>> outputSpec;
 }
