@@ -1,18 +1,29 @@
 package io.simplesource.saga.action.async;
 
+import com.google.common.collect.Lists;
+import io.simplesource.data.Result;
+import io.simplesource.kafka.internal.util.Tuple2;
 import io.simplesource.saga.model.messages.ActionRequest;
 import io.simplesource.saga.model.specs.ActionProcessorSpec;
+import io.simplesource.saga.shared.topics.TopicTypes;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.common.errors.WakeupException;
 import org.apache.kafka.common.serialization.Serdes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
+import java.util.Collections;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 import static io.simplesource.saga.action.async.AsyncTransform.*;
 
@@ -21,11 +32,12 @@ class ConsumerRunner<A, I, K, O, R> implements Runnable {
 
     private final AsyncSpec<A, I, K, O, R> asyncSpec;
     private final ActionProcessorSpec<A> actionSpec;
-    AtomicBoolean closed;
-    Optional<KafkaConsumer<UUID, ActionRequest<A>>> consumer = Optional.empty();
-    Logger logger = LoggerFactory.getLogger(ConsumerRunner.class);
-    Properties consumerConfig;
-    Properties producerProps;
+    private final AtomicBoolean closed;
+    private final Optional<KafkaConsumer<UUID, ActionRequest<A>>> consumer = Optional.empty();
+    private final Logger logger = LoggerFactory.getLogger(ConsumerRunner.class);
+    private final Properties consumerConfig;
+    private final Properties producerProps;
+    private final AsyncContext<A, I, K, O, R> asyncContext;
 
     ConsumerRunner(
             AsyncContext<A, I, K, O, R> asyncContext,
@@ -34,6 +46,7 @@ class ConsumerRunner<A, I, K, O, R> implements Runnable {
         asyncSpec = asyncContext.asyncSpec;
         actionSpec = asyncContext.actionSpec;
         closed = new AtomicBoolean(false);
+        this.asyncContext = asyncContext;
         this.consumerConfig = consumerConfig;
         this.producerProps = producerProps;
 
@@ -43,43 +56,84 @@ class ConsumerRunner<A, I, K, O, R> implements Runnable {
     public void run() {
 
         KafkaProducer<byte[], byte[]> producer =
-        new KafkaProducer<>(producerProps,
-                Serdes.ByteArray().serializer(),
-                Serdes.ByteArray().serializer());
-    if (useTransactions)
-      producer.initTransactions();
-    
-    
+                new KafkaProducer<>(producerProps,
+                        Serdes.ByteArray().serializer(),
+                        Serdes.ByteArray().serializer());
+        if (useTransactions)
+            producer.initTransactions();
+
+
 //
 
-        KafkaConsumer<UUID, ActionRequest<A>> cons = new KafkaConsumer<UUID, ActionRequest<A>>(consumerConfig,
+        KafkaConsumer<UUID, ActionRequest<A>> consumer = new KafkaConsumer<>(consumerConfig,
                 actionSpec.serdes.uuid().deserializer(),
                 actionSpec.serdes.request().deserializer());
-//    consumer.subscribe(List(asyncContext.actionTopicNamer(TopicTypes.ActionTopic.requestUnprocessed)).asJava)
-//    this.consumer = Some(consumer)
-//
-//    try {
-//      while (!closed.get()) {
-//        val records: ConsumerRecords<UUID, ActionRequest<A>> = consumer.poll(Duration.ofMillis(100L))
-//
-//        records.iterator().forEachRemaining { x =>
-//          val sagaId                    = x.key()
-//          val request: ActionRequest<A> = x.value()
-//          if (request.actionType == asyncSpec.actionType) {
-//            processRecord(sagaId, request, producer)
-//          }
-//        }
-//      }
-//    } catch {
-//      case e: WakeupException => if (!closed.get) throw e
-//    } finally {
-//      logger.info("Closing consumer and producer")
-//      consumer.commitSync()
-//      consumer.close()
-//      producer.flush()
-//      producer.close()
-//    }
-//  }
+        consumer.subscribe(Collections.singletonList(asyncContext.actionTopicNamer.apply(TopicTypes.ActionTopic.requestUnprocessed)))
+
+        this.consumer = Optional.of(consumer);
+
+        try {
+            while (!closed.get()) {
+                ConsumerRecords<UUID, ActionRequest<A>> records = consumer.poll(Duration.ofMillis(100L));
+                for (ConsumerRecord<UUID, ActionRequest<A>> x : records) {
+                    UUID sagaId = x.key();
+                    ActionRequest<A> request = x.value();
+                    if (request.actionType.equals(asyncSpec.actionType)) {
+                        processRecord(sagaId, request, producer)
+                    }
+                }
+            }
+        } catch (WakeupException e) {
+            if (!closed.get()) throw e;
+        } finally {
+            logger.info("Closing consumer and producer")
+            consumer.commitSync();
+            consumer.close();
+            producer.flush();
+            producer.close();
+        }
+    }
+
+    static <X> Result<Throwable, X> tryPure(Supplier<X> xSupplier) {
+        try {
+            return Result.success(xSupplier.get());
+        } catch (Throwable e) {
+            return Result.failure(e);
+        }
+    }
+
+    static <X> Result<Throwable, X> tryWrap(Supplier<Result<Throwable, X>> xSupplier) {
+        try {
+            return xSupplier.get();
+        } catch (Throwable e) {
+            return Result.failure(e);
+        }
+    }
+
+    void processRecord(UUID sagaId, ActionRequest<A> request,
+                       KafkaProducer<byte[], byte[]> producer) {
+
+        Result<Throwable, Tuple2<I, K>> decodedWithKey = tryWrap(() ->
+                asyncSpec.inputDecoder.apply(request.actionCommand.command))
+                .flatMap(decoded ->
+                        tryPure(() ->
+                                asyncSpec.keyMapper.apply(decoded)).map(k -> Tuple2.of(decoded, k)));
+
+        CallBackProvider<O> cpb = () -> new Consumer<Result<Throwable, O>>() {
+            @Override
+            public void accept(Result<Throwable, O> throwableOResult) {
+
+            }
+
+            @Override
+            public Consumer<Result<Throwable, O>> andThen(Consumer<? super Result<Throwable, O>> after) {
+                return null;
+            }
+        };
+
+        asyncSpec.asyncFunction.accept();
+    }
+
 //
 //  def processRecord(sagaId: UUID,
 //                    request: ActionRequest<A>,
@@ -151,10 +205,11 @@ class ConsumerRunner<A, I, K, O, R> implements Runnable {
 //              producer.abortTransaction()
 //        }
 //      }
+}
+
+    //
+    void close() {
+        closed.set(true);
+        consumer.ifPresent(KafkaConsumer::wakeup);
     }
-//
-//  def close(): Unit = {
-//    closed.set(true)
-//    consumer.foreach(_.wakeup())
-//  }
 }
