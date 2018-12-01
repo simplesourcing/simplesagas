@@ -4,6 +4,6 @@ import io.simplesource.data.Result;
 
 import java.util.function.Consumer;
 
-public interface CallBackProvider<O> {
-    Consumer<Result<Throwable, O>> resultConsumer();
+public interface CallBack<O> {
+    void complete(Result<Throwable, O> result);
 }

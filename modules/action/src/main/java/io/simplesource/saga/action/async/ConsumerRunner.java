@@ -33,7 +33,7 @@ class ConsumerRunner<A, I, K, O, R> implements Runnable {
     private final AsyncSpec<A, I, K, O, R> asyncSpec;
     private final ActionProcessorSpec<A> actionSpec;
     private final AtomicBoolean closed;
-    private final Optional<KafkaConsumer<UUID, ActionRequest<A>>> consumer = Optional.empty();
+    private Optional<KafkaConsumer<UUID, ActionRequest<A>>> consumer = Optional.empty();
     private final Logger logger = LoggerFactory.getLogger(ConsumerRunner.class);
     private final Properties consumerConfig;
     private final Properties producerProps;
@@ -61,9 +61,6 @@ class ConsumerRunner<A, I, K, O, R> implements Runnable {
                         Serdes.ByteArray().serializer());
         if (useTransactions)
             producer.initTransactions();
-
-
-//
 
         KafkaConsumer<UUID, ActionRequest<A>> consumer = new KafkaConsumer<>(consumerConfig,
                 actionSpec.serdes.uuid().deserializer(),
@@ -119,19 +116,22 @@ class ConsumerRunner<A, I, K, O, R> implements Runnable {
                         tryPure(() ->
                                 asyncSpec.keyMapper.apply(decoded)).map(k -> Tuple2.of(decoded, k)));
 
-        CallBackProvider<O> cpb = () -> new Consumer<Result<Throwable, O>>() {
-            @Override
-            public void accept(Result<Throwable, O> throwableOResult) {
 
-            }
-
-            @Override
-            public Consumer<Result<Throwable, O>> andThen(Consumer<? super Result<Throwable, O>> after) {
-                return null;
-            }
+        Function< Tuple2<I, K>, CallBack<O>> cpb = tuple -> result -> {
+            Result<Throwable, Optional<R>> resultWithOutput = result.flatMap(output -> {
+                Optional<Result<Throwable, Tuple2<R, K>>> x = asyncSpec.outputSpec.flatMap((AsyncOutput<I, K, O, R> oSpec) -> {
+                    Optional<String> topicNameOpt = oSpec.getTopicName().apply(tuple.v1());
+                    return topicNameOpt.flatMap(tName -> oSpec.getOutputDecoder().apply(output)).map(t -> t.map());
+                });
+                Optional<Result<Throwable, Optional<R>>> y = x.map(r -> r.fold(Result::failure, r0 -> Result.success(Optional.of(r0))));
+                return y.orElseGet(() -> Result.success(Optional.empty()));
+            });
         };
 
-        asyncSpec.asyncFunction.accept();
+        decodedWithKey.ifSuccessful(tuple -> {
+            asyncSpec.asyncFunction.accept(tuple.v1(), cpb.apply(tuple));
+        });
+
     }
 
 //
