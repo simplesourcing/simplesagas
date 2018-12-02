@@ -4,12 +4,16 @@ import com.google.common.collect.Lists;
 import io.simplesource.data.Result;
 import io.simplesource.kafka.internal.util.Tuple2;
 import io.simplesource.saga.model.messages.ActionRequest;
+import io.simplesource.saga.model.messages.ActionResponse;
+import io.simplesource.saga.model.saga.SagaError;
 import io.simplesource.saga.model.specs.ActionProcessorSpec;
 import io.simplesource.saga.shared.topics.TopicTypes;
+import lombok.Value;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.errors.WakeupException;
 import org.apache.kafka.common.serialization.Serdes;
 import org.slf4j.Logger;
@@ -21,7 +25,6 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -65,7 +68,7 @@ class ConsumerRunner<A, I, K, O, R> implements Runnable {
         KafkaConsumer<UUID, ActionRequest<A>> consumer = new KafkaConsumer<>(consumerConfig,
                 actionSpec.serdes.uuid().deserializer(),
                 actionSpec.serdes.request().deserializer());
-        consumer.subscribe(Collections.singletonList(asyncContext.actionTopicNamer.apply(TopicTypes.ActionTopic.requestUnprocessed)))
+        consumer.subscribe(Collections.singletonList(asyncContext.actionTopicNamer.apply(TopicTypes.ActionTopic.requestUnprocessed)));
 
         this.consumer = Optional.of(consumer);
 
@@ -76,14 +79,14 @@ class ConsumerRunner<A, I, K, O, R> implements Runnable {
                     UUID sagaId = x.key();
                     ActionRequest<A> request = x.value();
                     if (request.actionType.equals(asyncSpec.actionType)) {
-                        processRecord(sagaId, request, producer)
+                        processRecord(sagaId, request, producer);
                     }
                 }
             }
         } catch (WakeupException e) {
             if (!closed.get()) throw e;
         } finally {
-            logger.info("Closing consumer and producer")
+            logger.info("Closing consumer and producer");
             consumer.commitSync();
             consumer.close();
             producer.flush();
@@ -91,6 +94,7 @@ class ConsumerRunner<A, I, K, O, R> implements Runnable {
         }
     }
 
+    // execute lazy code and wraps exceptions in a result
     static <X> Result<Throwable, X> tryPure(Supplier<X> xSupplier) {
         try {
             return Result.success(xSupplier.get());
@@ -99,12 +103,47 @@ class ConsumerRunner<A, I, K, O, R> implements Runnable {
         }
     }
 
+    // evaluates code returning a Result that may throw an exception,
+    // and turns it into a Result that is guaranteed not to throw 
+    // (i.e. absorbs exceptions into the failure mode)
     static <X> Result<Throwable, X> tryWrap(Supplier<Result<Throwable, X>> xSupplier) {
         try {
             return xSupplier.get();
         } catch (Throwable e) {
             return Result.failure(e);
         }
+    }
+
+    @Value
+    private static class ResultGeneration<K, R> {
+        final String topicName;
+        final AsyncOutput<?, K, ?, R> outputSpec;
+        final R result;
+    }
+
+    private void publishActionResult(
+            UUID sagaId, 
+            ActionRequest<A> request, 
+            KafkaProducer<byte[], byte[]> producer,
+            Result<Throwable, ?> result) {
+        
+        Result<SagaError, Boolean> booleanResult = result.fold(es -> Result.failure(
+                new SagaError(es.map(Throwable::getMessage))),
+                r -> Result.success(true));
+        
+        ActionResponse actionResponse = new ActionResponse(request.sagaId,
+                request.actionId,
+                request.actionCommand.commandId,
+                booleanResult);
+
+        ProducerRecord<UUID, ActionResponse> responseRecord = new ProducerRecord<>(
+                asyncContext.actionTopicNamer.apply(TopicTypes.ActionTopic.response),
+                sagaId,
+                actionResponse);
+
+        ProducerRecord<byte[], byte[]> byteRecord =
+                AsyncTransform.toBytes(responseRecord, actionSpec.serdes.uuid(), actionSpec.serdes.response());
+        producer.send(byteRecord);
     }
 
     void processRecord(UUID sagaId, ActionRequest<A> request,
@@ -117,97 +156,40 @@ class ConsumerRunner<A, I, K, O, R> implements Runnable {
                                 asyncSpec.keyMapper.apply(decoded)).map(k -> Tuple2.of(decoded, k)));
 
 
-        Function< Tuple2<I, K>, CallBack<O>> cpb = tuple -> result -> {
-            Result<Throwable, Optional<R>> resultWithOutput = result.flatMap(output -> {
-                Optional<Result<Throwable, Tuple2<R, K>>> x = asyncSpec.outputSpec.flatMap((AsyncOutput<I, K, O, R> oSpec) -> {
-                    Optional<String> topicNameOpt = oSpec.getTopicName().apply(tuple.v1());
-                    return topicNameOpt.flatMap(tName -> oSpec.getOutputDecoder().apply(output)).map(t -> t.map());
-                });
-                Optional<Result<Throwable, Optional<R>>> y = x.map(r -> r.fold(Result::failure, r0 -> Result.success(Optional.of(r0))));
-                return y.orElseGet(() -> Result.success(Optional.empty()));
-            });
-        };
+        Function<Tuple2<I, K>, CallBack<O>> cpb = tuple -> result -> {
+            Result<Throwable, Optional<ResultGeneration<K, R>>> resultWithOutput =
+                    tryWrap(() ->
+                            result.flatMap(output -> {
+                                Optional<Result<Throwable, ResultGeneration<K, R>>> x = asyncSpec.outputSpec.flatMap((AsyncOutput<I, K, O, R> oSpec) -> {
+                                    Optional<String> topicNameOpt = oSpec.getTopicName().apply(tuple.v1());
+                                    return topicNameOpt.flatMap(tName -> oSpec.getOutputDecoder().apply(output)).map(t ->
+                                            t.map(r -> new ResultGeneration<>(topicNameOpt.get(), oSpec, r)));
+                                });
+                                Optional<Result<Throwable, Optional<ResultGeneration<K, R>>>> y = x.map(r -> r.fold(Result::failure, r0 -> Result.success(Optional.of(r0))));
+                                return y.orElseGet(() -> Result.success(Optional.empty()));
+                            }));
 
-        decodedWithKey.ifSuccessful(tuple -> {
-            asyncSpec.asyncFunction.accept(tuple.v1(), cpb.apply(tuple));
-        });
+            resultWithOutput.ifSuccessful(resultGenOpt ->
+                    resultGenOpt.ifPresent(rg -> {
+                        AsyncSerdes<K, R> serdes = rg.outputSpec.getSerdes();
+                        ProducerRecord<K, R> outputRecord = new ProducerRecord<>(rg.topicName, tuple.v2(), rg.result);
+                        ProducerRecord<byte[], byte[]> byteRecord = AsyncTransform.toBytes(outputRecord, serdes.getKey(), serdes.getOutput());
+                        producer.send(byteRecord);
+                    }));
+            
+            publishActionResult(sagaId, request, producer, resultWithOutput);
+        };
+         
+        if (decodedWithKey.isFailure()) {
+            publishActionResult(sagaId, request, producer, decodedWithKey);
+        } else {
+            Tuple2<I, K> inputWithKey = decodedWithKey.getOrElse(null);
+            CallBack<O> callback = cpb.apply(inputWithKey);
+            asyncSpec.asyncFunction.accept(inputWithKey.v1(), callback);
+        }
 
     }
 
-//
-//  def processRecord(sagaId: UUID,
-//                    request: ActionRequest<A>,
-//                    producer: KafkaProducer<Array<Byte>, Array<Byte>>): Unit = {
-//    import AsyncTransform._
-//    val tryDecode = Try {
-//      val decoded = asyncSpec.inputDecoder(request.actionCommand.command)
-//      decoded
-//        .leftMap(error => {
-//          logger.debug(s"Error decoding ${request.actionType} command:")
-//          error
-//        })
-//        .toTry
-//    }.flatten
-//    val tryDecKey = tryDecode.flatMap(d => Try { asyncSpec.keyMapper(d) }.map(k => (d, k)))
-//
-//    val invoke =
-//      tryDecKey.fold<Future<(I, K, O)>>(error => Future.failed(error), {
-//        case (d, k) =>
-//          asyncSpec.asyncFunction(d).map(eto => (d, k, eto))
-//      })
-//
-//    invoke
-//      .onComplete { tryDKO: Try<(I, K, O)> =>
-//        try {
-//          if (useTransactions)
-//            producer.beginTransaction()
-//
-//          type RTO = (R, String, AsyncOutput<I, K, O, R>)
-//          val eko: Either<Throwable, (K, Option<RTO>)> = tryDKO.toEither
-//            .flatMap {
-//              case (i, k, o) =>
-//                asyncSpec.outputSpec
-//                  .flatMap(output => output.topicName(i).map((output, _)))
-//                  .fold<Either<Throwable, Option<RTO>>>(Right(None))(outputTn => {
-//                    val (output, tn) = outputTn
-//                    output
-//                      .outputDecoder(o)
-//                      .fold<Either<Throwable, Option<RTO>>>(Right(None))(_.map(r =>
-//                        Option.apply((r, tn, output))))
-//                  })
-//                  .map((k, _))
-//            }
-//
-//          eko.foreach {
-//            case (k, Some((r, topic, output))) =>
-//              val outputRecord = new ProducerRecord<K, R>(topic, k, r)
-//              producer.send(outputRecord.toByteArray(output.serdes.key, output.serdes.output))
-//            case _ => ()
-//          }
-//
-//          val response =
-//            eko.leftMap(error => SagaError.of(error.getMessage)).map(_ => ())
-//
-//          val actionResponse = ActionResponse(sagaId = request.sagaId,
-//                                              actionId = request.actionId,
-//                                              commandId = request.actionCommand.commandId,
-//                                              response)
-//          val responseRecord =
-//            new ProducerRecord<UUID, ActionResponse>(
-//              asyncContext.actionTopicNamer(TopicTypes.ActionTopic.response),
-//              sagaId,
-//              actionResponse)
-//          producer.send(responseRecord.toByteArray(actionSpec.serdes.uuid, actionSpec.serdes.response))
-//        } catch {
-//          case error: Throwable =>
-//            logger.error(error.getMessage)
-//            if (useTransactions)
-//              producer.abortTransaction()
-//        }
-//      }
-}
-
-    //
     void close() {
         closed.set(true);
         consumer.ifPresent(KafkaConsumer::wakeup);

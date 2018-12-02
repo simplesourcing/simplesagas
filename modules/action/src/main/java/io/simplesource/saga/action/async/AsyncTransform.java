@@ -14,11 +14,9 @@ final public class AsyncTransform {
     static final boolean useTransactions = false;
 
 
-    public static interface AsyncPipe {
+    public interface AsyncPipe {
         void close();
     }
-
-
 
     final static public <K, V> ProducerRecord<byte[], byte[]> toBytes(
             ProducerRecord<K, V> record,
@@ -53,20 +51,14 @@ final public class AsyncTransform {
 
                     Properties producerProps = copyProperties.apply(config);
                     if (useTransactions)
-                        producerProps.setProperty(ProducerConfig.TRANSACTIONAL_ID_CONFIG, asyncSpec.groupId + "_async_producer")
+                        producerProps.setProperty(ProducerConfig.TRANSACTIONAL_ID_CONFIG, asyncSpec.groupId + "_async_producer");
                     producerProps.setProperty(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, "true");
 
-                    new AsyncPipe() {
-                        private final ConsumerRunner runner = null;
-                        runner = new ConsumerRunner(asyncContext, consumerConfig, producerProps);
-                        new Thread(runner).start();
+                    final ConsumerRunner runner = new ConsumerRunner<>(asyncContext, consumerConfig, producerProps);
+                    new Thread(runner).start();
 
-                        @Override
-                        public void close() {
-
-                        }
-                    }
-                }
+                    return (AsyncPipe) runner::close;
+                };
     }
 
 };
