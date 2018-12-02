@@ -153,7 +153,7 @@ class ConsumerRunner<A, I, K, O, R> implements Runnable {
                 .flatMap(decoded ->
                         tryPure(() ->
                                 asyncSpec.keyMapper.apply(decoded)).map(k -> Tuple2.of(decoded, k)));
-        
+
         Function<Tuple2<I, K>, CallBack<O>> cpb = tuple -> result -> {
             Result<Throwable, Optional<ResultGeneration<K, R>>> resultWithOutput = tryWrap(() ->
                     result.flatMap(output -> {
