@@ -22,12 +22,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.function.Function;
 
-final class SourcingApp<A> {
+public final class SourcingApp<A> {
     private final TopicConfig actionTopicConfig;
     private final ActionProcessorSpec<A> actionSpec;
     private final Logger logger;

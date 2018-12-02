@@ -165,7 +165,7 @@ class ConsumerRunner<A, I, K, O, R> implements Runnable {
                                             t.map(r -> new ResultGeneration<>(topicNameOpt.get(), oSpec.getSerdes(), r)));
                                 });
 
-                        // this is just the `sequence` (in Cats etc) - swapping Result and Option
+                        // this is just `sequence` in FP - swapping Result and Option
                         Optional<Result<Throwable, Optional<ResultGeneration<K, R>>>> y = x.map(r -> r.fold(Result::failure, r0 -> Result.success(Optional.of(r0))));
                         return y.orElseGet(() -> Result.success(Optional.empty()));
                     }));

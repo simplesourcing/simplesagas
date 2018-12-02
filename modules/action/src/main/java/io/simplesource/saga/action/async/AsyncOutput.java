@@ -1,8 +1,8 @@
 package io.simplesource.saga.action.async;
 
 import io.simplesource.data.Result;
+import io.simplesource.saga.shared.topics.TopicCreation;
 import lombok.Value;
-import shared.topics.TopicCreation;
 
 import java.util.List;
 import java.util.Optional;
