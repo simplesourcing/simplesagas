@@ -1,6 +1,5 @@
 package io.simplesource.saga.action.async;
 
-import com.google.common.collect.Lists;
 import io.simplesource.data.Result;
 import io.simplesource.kafka.internal.util.Tuple2;
 import io.simplesource.saga.model.messages.ActionRequest;
@@ -95,7 +94,7 @@ class ConsumerRunner<A, I, K, O, R> implements Runnable {
     }
 
     // execute lazy code and wraps exceptions in a result
-    static <X> Result<Throwable, X> tryPure(Supplier<X> xSupplier) {
+    private static <X> Result<Throwable, X> tryPure(Supplier<X> xSupplier) {
         try {
             return Result.success(xSupplier.get());
         } catch (Throwable e) {
@@ -106,7 +105,7 @@ class ConsumerRunner<A, I, K, O, R> implements Runnable {
     // evaluates code returning a Result that may throw an exception,
     // and turns it into a Result that is guaranteed not to throw 
     // (i.e. absorbs exceptions into the failure mode)
-    static <X> Result<Throwable, X> tryWrap(Supplier<Result<Throwable, X>> xSupplier) {
+    private static <X> Result<Throwable, X> tryWrap(Supplier<Result<Throwable, X>> xSupplier) {
         try {
             return xSupplier.get();
         } catch (Throwable e) {
@@ -117,20 +116,20 @@ class ConsumerRunner<A, I, K, O, R> implements Runnable {
     @Value
     private static class ResultGeneration<K, R> {
         final String topicName;
-        final AsyncOutput<?, K, ?, R> outputSpec;
+        final AsyncSerdes<K, R> outputSerdes;
         final R result;
     }
 
     private void publishActionResult(
-            UUID sagaId, 
-            ActionRequest<A> request, 
+            UUID sagaId,
+            ActionRequest<A> request,
             KafkaProducer<byte[], byte[]> producer,
             Result<Throwable, ?> result) {
-        
+
         Result<SagaError, Boolean> booleanResult = result.fold(es -> Result.failure(
                 new SagaError(es.map(Throwable::getMessage))),
                 r -> Result.success(true));
-        
+
         ActionResponse actionResponse = new ActionResponse(request.sagaId,
                 request.actionId,
                 request.actionCommand.commandId,
@@ -146,40 +145,42 @@ class ConsumerRunner<A, I, K, O, R> implements Runnable {
         producer.send(byteRecord);
     }
 
-    void processRecord(UUID sagaId, ActionRequest<A> request,
-                       KafkaProducer<byte[], byte[]> producer) {
+    private void processRecord(UUID sagaId, ActionRequest<A> request,
+                               KafkaProducer<byte[], byte[]> producer) {
 
         Result<Throwable, Tuple2<I, K>> decodedWithKey = tryWrap(() ->
                 asyncSpec.inputDecoder.apply(request.actionCommand.command))
                 .flatMap(decoded ->
                         tryPure(() ->
                                 asyncSpec.keyMapper.apply(decoded)).map(k -> Tuple2.of(decoded, k)));
-
-
+        
         Function<Tuple2<I, K>, CallBack<O>> cpb = tuple -> result -> {
-            Result<Throwable, Optional<ResultGeneration<K, R>>> resultWithOutput =
-                    tryWrap(() ->
-                            result.flatMap(output -> {
-                                Optional<Result<Throwable, ResultGeneration<K, R>>> x = asyncSpec.outputSpec.flatMap((AsyncOutput<I, K, O, R> oSpec) -> {
+            Result<Throwable, Optional<ResultGeneration<K, R>>> resultWithOutput = tryWrap(() ->
+                    result.flatMap(output -> {
+                        Optional<Result<Throwable, ResultGeneration<K, R>>> x =
+                                asyncSpec.outputSpec.flatMap(oSpec -> {
                                     Optional<String> topicNameOpt = oSpec.getTopicName().apply(tuple.v1());
-                                    return topicNameOpt.flatMap(tName -> oSpec.getOutputDecoder().apply(output)).map(t ->
-                                            t.map(r -> new ResultGeneration<>(topicNameOpt.get(), oSpec, r)));
+                                    return topicNameOpt.flatMap(tName ->
+                                            oSpec.getOutputDecoder().apply(output)).map(t ->
+                                            t.map(r -> new ResultGeneration<>(topicNameOpt.get(), oSpec.getSerdes(), r)));
                                 });
-                                Optional<Result<Throwable, Optional<ResultGeneration<K, R>>>> y = x.map(r -> r.fold(Result::failure, r0 -> Result.success(Optional.of(r0))));
-                                return y.orElseGet(() -> Result.success(Optional.empty()));
-                            }));
+
+                        // this is just the `sequence` (in Cats etc) - swapping Result and Option
+                        Optional<Result<Throwable, Optional<ResultGeneration<K, R>>>> y = x.map(r -> r.fold(Result::failure, r0 -> Result.success(Optional.of(r0))));
+                        return y.orElseGet(() -> Result.success(Optional.empty()));
+                    }));
 
             resultWithOutput.ifSuccessful(resultGenOpt ->
                     resultGenOpt.ifPresent(rg -> {
-                        AsyncSerdes<K, R> serdes = rg.outputSpec.getSerdes();
+                        AsyncSerdes<K, R> serdes = rg.outputSerdes;
                         ProducerRecord<K, R> outputRecord = new ProducerRecord<>(rg.topicName, tuple.v2(), rg.result);
                         ProducerRecord<byte[], byte[]> byteRecord = AsyncTransform.toBytes(outputRecord, serdes.getKey(), serdes.getOutput());
                         producer.send(byteRecord);
                     }));
-            
+
             publishActionResult(sagaId, request, producer, resultWithOutput);
         };
-         
+
         if (decodedWithKey.isFailure()) {
             publishActionResult(sagaId, request, producer, decodedWithKey);
         } else {
