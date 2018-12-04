@@ -28,7 +28,6 @@ import org.slf4j.LoggerFactory;
 public final class AsyncApp<A> {
 
     private final Logger logger = LoggerFactory.getLogger(AsyncApp.class);
-    private final List<String> expectedTopicList = new ArrayList<>();
     private final List<AsyncTransformer<A>> transformers = new ArrayList<>();
     private final List<Supplier<Integer>> closeHandlers = new ArrayList<>();
 
@@ -48,6 +47,7 @@ public final class AsyncApp<A> {
     }
 
     public AsyncApp(ActionSerdes<A> actionSerdes, TopicConfigBuilder.BuildSteps topicBuildFn) {
+        List<String> expectedTopicList = new ArrayList<>();
         expectedTopicList.addAll(TopicTypes.ActionTopic.all);
         expectedTopicList.add(TopicTypes.ActionTopic.requestUnprocessed);
 
