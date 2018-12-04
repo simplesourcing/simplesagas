@@ -8,7 +8,8 @@ import java.util.UUID;
 
 @Value
 public class Saga<A> {
-    public final Map<UUID, SagaAction<A>> actionId;
+    public final UUID sagaId;
+    public final Map<UUID, SagaAction<A>> actions;
     public final SagaStatus status;
     public final Sequence sequence;
 }
