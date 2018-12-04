@@ -1,4 +1,4 @@
-package io.simplesource.saga.saga.app
+package io.simplesource.saga.saga.app;
 //
 //import java.util.UUID
 //
