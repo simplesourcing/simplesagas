@@ -10,12 +10,12 @@ import lombok.Value;
 
 @Value
 public final class SagaContext<A> {
-    private final SagaSerdes<A> sSerdes;
-    private final ActionSerdes<A> aSerdes;
-    SagaSpec<A> sSpec;
-    ActionProcessorSpec<A> aSpec;
-    TopicNamer sagaTopicNamer;
-    TopicNamer actionTopicNamer;
+    public final SagaSerdes<A> sSerdes;
+    public final ActionSerdes<A> aSerdes;
+    public final SagaSpec<A> sSpec;
+    public final ActionProcessorSpec<A> aSpec;
+    public final TopicNamer sagaTopicNamer;
+    public final TopicNamer actionTopicNamer;
 
     public SagaContext(SagaSpec<A> sSpec,
             ActionProcessorSpec<A> aSpec,

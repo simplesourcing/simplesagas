@@ -8,7 +8,7 @@ import org.apache.kafka.common.serialization.Serde;
 import java.util.UUID;
 
 public interface SagaClientSerdes<A> {
-    Serde<Saga<UUID>> uuid();
+    Serde<UUID> uuid();
     Serde<SagaRequest<A>> request();
     Serde<SagaResponse> response();
 }
