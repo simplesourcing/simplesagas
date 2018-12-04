@@ -57,7 +57,7 @@ public final class AsyncApp<A> {
 
     }
 
-    <I, K, O, R> AsyncApp<A> addAsync(AsyncSpec<A, I, K, O, R> spec) {
+    public <I, K, O, R> AsyncApp<A> addAsync(AsyncSpec<A, I, K, O, R> spec) {
         AsyncContext<A, I, K, O, R> ctx = new AsyncContext<>(actionSpec, actionTopicConfig.namer, spec);
         AsyncTransformer<A> transformer = input -> {
             // join the action request with corresponding prior command responses
