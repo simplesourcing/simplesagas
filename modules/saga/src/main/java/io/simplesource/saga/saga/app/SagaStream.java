@@ -1,6 +1,9 @@
 package io.simplesource.saga.saga.app;
 
 import io.simplesource.data.Sequence;
+import io.simplesource.kafka.internal.util.Tuple2;
+import io.simplesource.saga.model.messages.SagaRequest;
+import io.simplesource.saga.model.messages.SagaResponse;
 import io.simplesource.saga.model.messages.SagaStateTransition;
 import io.simplesource.saga.model.saga.Saga;
 import io.simplesource.saga.model.saga.SagaStatus;
@@ -57,67 +60,48 @@ final public class SagaStream {
                                                            KStream<UUID, SagaStateTransition<A>> stateTransitionStream,
                                                            KStream<UUID, Saga<A>> stateStream) {
         SagaSerdes<A> sSerdes = ctx.sSerdes;
-//
-//    val aggregator: Aggregator<UUID, SagaStateTransition<A>, Saga<A>> = (_, t, s) =>
-//      SagaUtils.applyTransition(t, s)
-//
+
         Materialized<UUID, Saga<A>, KeyValueStore<Bytes, byte[]>> materialized = Materialized
                 .<UUID, Saga<A>, KeyValueStore<Bytes, byte[]>>as("saga_state_aggregation")
                 .withKeySerde(sSerdes.uuid())
                 .withValueSerde(sSerdes.state());
 
+    // TODO: remove the random UUIDs
     return stateTransitionStream
       .groupByKey(Serialized.with(sSerdes.uuid(), sSerdes.transition()))
-      .aggregate(() -> new Saga<>(new HashMap<>(), SagaStatus.NotStarted, Sequence.first()),
-              (k, t, s) -> s, //SagaUtils.applyTransition(t, s),
+      .aggregate(() -> new Saga<>(UUID.randomUUID(), new HashMap<>(), SagaStatus.NotStarted, Sequence.first()),
+              (k, t, s) -> SagaUtils.applyTransition(t, s),
                           materialized)
             .toStream();
  }
 
+ static <A>  KStream<UUID, SagaStateTransition<A>> addInitialState(SagaContext<A> ctx,
+                                 KStream<UUID, SagaRequest<A>> sagaRequestStream,
+                                 KTable<UUID, Saga<A>> stateTable) {
+     SagaSerdes<A> sSerdes = ctx.sSerdes;
+     KStream<UUID, Tuple2<SagaRequest<A>, Boolean>> newRequestStream = sagaRequestStream.leftJoin(
+             stateTable,
+             (v1, v2) -> Tuple2.of(v1, v2 == null),
+             Joined.with(sSerdes.uuid(), sSerdes.request(), sSerdes.state()))
+             .filter((k, tuple) -> tuple.v2());
 
-//
-//  private def applyStateTransitions<A>(ctx: SagaContext<A>,
-//                                       stateTransitionStream: KStream<UUID, SagaStateTransition<A>>,
-//                                       stateTable: KTable<UUID, Saga<A>>): KStream<UUID, Saga<A>> = {
-//    val sSerdes = ctx.sSerdes
-//
-//    val aggregator: Aggregator<UUID, SagaStateTransition<A>, Saga<A>> = (_, t, s) =>
-//      SagaUtils.applyTransition(t, s)
-//
-//    val materialized: Materialized<UUID, Saga<A>, KeyValueStore<Bytes, Array<Byte>>> = Materialized
-//      .as<UUID, Saga<A>, KeyValueStore<Bytes, Array<Byte>>>("saga_state_aggregation")
-//      .withKeySerde(ctx.sSerdes.uuid)
-//      .withValueSerde(sSerdes.state)
-//
-//    stateTransitionStream
-//      .groupByKey(Serialized.`with`(sSerdes.uuid, sSerdes.transition))
-//      .aggregate<Saga<A>>(() => Saga<A>(Map.empty, SagaStatus.NotStarted, sequence = -1),
-//                          aggregator,
-//                          materialized)
-//      .toStream
-//  }
-//
-//  private def addInitialState<A>(ctx: SagaContext<A>,
-//                                 sagaRequestStream: KStream<UUID, SagaRequest<A>>,
-//                                 stateTable: KTable<UUID, Saga<A>>): KStream<UUID, SagaStateTransition<A>> = {
-//    val sSerdes = ctx.sSerdes
-//    val newRequestStream = {
-//      val joiner: ValueJoiner<SagaRequest<A>, Saga<A>, (SagaRequest<A>, Boolean)> =
-//        (v1: SagaRequest<A>, v2: Saga<A>) => (v1, v2 == null)
-//
-//      sagaRequestStream
-//        .leftJoin<Saga<A>, (SagaRequest<A>, Boolean)>(
-//          stateTable,
-//          joiner,
-//          Joined.`with`(sSerdes.uuid, sSerdes.request, sSerdes.state)
-//        )
-//        ._collect { case (request, true) => request }
-//    }
-//
-//    newRequestStream._mapValues<SagaStateTransition<A>> { request =>
-//      SetInitialState<A>(request.initialState)
-//    }
-//  }
+     return newRequestStream.mapValues((k, v) -> new SagaStateTransition.SetInitialState<>(v.v1().initialState));
+}
+
+static <A> Tuple2<KStream<UUID, SagaStateTransition<A>>, KStream<UUID, SagaResponse>> addSagaResponse(SagaContext<A> ctx,
+                                                                                                      KStream<UUID, Saga<A>> sagaState) {
+    KStream<UUID, Saga<A>> w = sagaState.mapValues((k, state) -> {
+
+        if (state.status == SagaStatus.InProgress && SagaUtils.sagaCompleted(state)){
+
+        }
+        return state;
+    });
+
+     return null;
+}
+
+
 //
 //  private def addSagaResponse<A>(ctx: SagaContext<A>, sagaState: KStream<UUID, Saga<A>>)
 //    : (KStream<UUID, SagaStateTransition<A>>, KStream<UUID, SagaResponse>) = {
