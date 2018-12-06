@@ -1,21 +1,27 @@
 package io.simplesource.saga.saga.app;
 
+import io.simplesource.data.NonEmptyList;
+import io.simplesource.data.Result;
 import io.simplesource.data.Sequence;
 import io.simplesource.kafka.internal.util.Tuple2;
 import io.simplesource.saga.model.messages.SagaRequest;
 import io.simplesource.saga.model.messages.SagaResponse;
 import io.simplesource.saga.model.messages.SagaStateTransition;
+import io.simplesource.saga.model.saga.ActionStatus;
 import io.simplesource.saga.model.saga.Saga;
+import io.simplesource.saga.model.saga.SagaError;
 import io.simplesource.saga.model.saga.SagaStatus;
 import io.simplesource.saga.model.serdes.SagaSerdes;
+import lombok.Value;
 import org.apache.kafka.common.utils.Bytes;
 import org.apache.kafka.streams.kstream.*;
 import org.apache.kafka.streams.state.KeyValueStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 final public class SagaStream {
     static Logger logger = LoggerFactory.getLogger(SagaStream.class);
@@ -88,17 +94,73 @@ final public class SagaStream {
      return newRequestStream.mapValues((k, v) -> new SagaStateTransition.SetInitialState<>(v.v1().initialState));
 }
 
+@Value
+static class StatusWithError {
+    Sequence sequence;
+        SagaStatus status;
+        Optional<SagaError> error;
+
+    static Optional<StatusWithError> of(Sequence sequence, SagaStatus status) {
+        return Optional.of(new StatusWithError(sequence, status, Optional.empty()));
+    }
+
+    static Optional<StatusWithError> of(Sequence sequence, SagaStatus status, SagaError error) {
+        return Optional.of(new StatusWithError(sequence, status, Optional.of(error)));
+    }
+}
+
 static <A> Tuple2<KStream<UUID, SagaStateTransition<A>>, KStream<UUID, SagaResponse>> addSagaResponse(SagaContext<A> ctx,
                                                                                                       KStream<UUID, Saga<A>> sagaState) {
-    KStream<UUID, Saga<A>> w = sagaState.mapValues((k, state) -> {
+   KStream<UUID, StatusWithError> statusWithError =
+            sagaState.mapValues((k, state) -> {
 
-        if (state.status == SagaStatus.InProgress && SagaUtils.sagaCompleted(state)){
+        if (state.status == SagaStatus.InProgress && SagaUtils.sagaCompleted(state))
+            return StatusWithError.of(state.sequence, SagaStatus.Completed);
+        if (state.status == SagaStatus.InProgress && SagaUtils.sagaInFailure(state))
+            return StatusWithError.of(state.sequence, SagaStatus.InFailure);
+        if ((state.status == SagaStatus.InFailure || state.status == SagaStatus.InProgress) &&
+                   SagaUtils.sagaFailed(state)) {
+            Set<String> errors = state.actions.values().stream()
+                    .filter(action -> action.status == ActionStatus.Failed)
+                    .map(action -> action.error.map(e -> e.messages.stream()).orElse(Stream.empty()))
+                    .flatMap(x -> x).collect(Collectors.toSet());
 
+            NonEmptyList<String> errorList = NonEmptyList.fromList(new ArrayList<>(errors));
+            return StatusWithError.of(state.sequence, SagaStatus.Failed, new SagaError(errorList));
         }
-        return state;
-    });
+        return Optional.<StatusWithError>empty();
+    }).filter((k, sWithE) -> sWithE.isPresent())
+           .mapValues((k, v) -> v.get());
 
-     return null;
+    KStream<UUID, SagaStateTransition<A>> stateTransition = statusWithError.mapValues((sagaId, someStatus) ->
+            new SagaStateTransition.SagaStatusChanged<>(sagaId, someStatus.status, someStatus.error));
+
+    KStream<UUID, SagaResponse>  sagaResponse =
+            statusWithError
+        .mapValues((sagaId, sWithE) -> {
+            Optional<Result<SagaError, Sequence>> result;
+            SagaStatus status = sWithE.status;
+            if (status == SagaStatus.Completed)
+                return Optional.of(Result.success(sWithE.sequence));
+            if (status == SagaStatus.Failed)
+                return Optional.of(Result.failure(sWithE.error));
+            return Optional.empty();
+
+
+
+
+            {
+            case SagaStatus.Completed => Some(Right(()))
+            case SagaStatus.Failed(error) =>
+              Some(Left(error))
+            case _ => None
+          }
+          result.map(r => SagaResponse(sagaId, r))
+        })
+        ._collect { case Some(x) => x }
+
+
+    return Tuple2.of(stateTransition, null);
 }
 
 
@@ -106,30 +168,7 @@ static <A> Tuple2<KStream<UUID, SagaStateTransition<A>>, KStream<UUID, SagaRespo
 //  private def addSagaResponse<A>(ctx: SagaContext<A>, sagaState: KStream<UUID, Saga<A>>)
 //    : (KStream<UUID, SagaStateTransition<A>>, KStream<UUID, SagaResponse>) = {
 //    // get the next actions from the state updates
-//    val sagaStateChanges =
-//      sagaState
-//        ._mapValues(state => {
-//          // TODO: improve this logic
-//          if (state.status == SagaStatus.InProgress && SagaUtils.sagaCompleted(state))
-//            Some(SagaStatus.Completed)
-//          else if (state.status == SagaStatus.InProgress && SagaUtils.sagaInFailure(state))
-//            Some(SagaStatus.InFailure)
-//          else if ((state.status == SagaStatus.InFailure || state.status == SagaStatus.InProgress) &&
-//                   SagaUtils.sagaFailed(state)) {
-//            val errors = state.actions.values
-//              .collect {
-//                case SagaAction(_, _, _, _, _, ActionStatus.Failed(error)) => error.messages.toList
-//              }
-//              .flatten
-//              .toList
-//              .distinct
-//            val errorList =
-//              NonEmptyList.fromList(errors).getOrElse(NonEmptyList.one("Unexpected Saga Error."))
-//            Some(SagaStatus.Failed(SagaError(errorList)))
-//          } else
-//            None
-//        })
-//        ._filter(_.isDefined)
+
 //
 //    val stateTransition =
 //      sagaStateChanges._mapValuesWithKey<SagaStateTransition<A>>((sagaId, someStatus) =>

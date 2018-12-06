@@ -21,7 +21,7 @@ object saga {
     final case class UndoFailed(error: SagaError) extends ActionStatus
   }
 
-  sealed trait SagaStatus
+  sealed trait SagaStatus extends Product with Serializable
   object SagaStatus {
     case object NotStarted                    extends SagaStatus
     case object InProgress                    extends SagaStatus

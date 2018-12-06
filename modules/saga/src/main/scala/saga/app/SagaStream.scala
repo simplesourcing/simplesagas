@@ -96,7 +96,7 @@ object SagaStream {
   private def addSagaResponse[A](ctx: SagaContext[A], sagaState: KStream[UUID, Saga[A]])
     : (KStream[UUID, SagaStateTransition[A]], KStream[UUID, SagaResponse]) = {
     // get the next actions from the state updates
-    val sagaStateChanges =
+    val sagaStateChanges: KStream[UUID, Option[SagaStatus]] =
       sagaState
         ._mapValues(state => {
           // TODO: improve this logic
