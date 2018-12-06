@@ -43,7 +43,7 @@ public final class SagaUtils {
         return true;
     }
 
-    private static <A> List<SagaActionExecution<A>> getNextActions(Saga<A> sagaState) {
+    public static <A> List<SagaActionExecution<A>> getNextActions(Saga<A> sagaState) {
         if (sagaState.status == SagaStatus.InProgress) {
             Set<SagaAction<A>> doneKeys = sagaState.actions
                     .entrySet()

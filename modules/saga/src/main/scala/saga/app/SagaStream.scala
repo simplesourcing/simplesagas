@@ -9,7 +9,6 @@ import org.apache.kafka.streams.kstream._
 import org.apache.kafka.streams.state.KeyValueStore
 import org.slf4j.LoggerFactory
 import shared.streams.syntax._
-import shared.topics.TopicTypes
 
 object SagaStream {
   private val logger = LoggerFactory.getLogger("SagaStream")
@@ -31,7 +30,7 @@ object SagaStream {
     val (requestTransitions, actionRequests) = addNextActions(ctx, stateStream)
     val responseTransitions                  = addActionResponses(ctx, actionResponseStream)
     val (sagaTransitions, sagaResponses)     = addSagaResponse(ctx, stateStream)
-    val sagaState                            = applyStateTransitions(ctx, stateTransitionStream, stateTable)
+    val sagaState                            = applyStateTransitions(ctx, stateTransitionStream)
 
     // publish to all the output topics
     SagaProducer.actionRequests(ctx, actionRequests)
@@ -51,8 +50,7 @@ object SagaStream {
   }
 
   private def applyStateTransitions[A](ctx: SagaContext[A],
-                                       stateTransitionStream: KStream[UUID, SagaStateTransition[A]],
-                                       stateTable: KTable[UUID, Saga[A]]): KStream[UUID, Saga[A]] = {
+                                       stateTransitionStream: KStream[UUID, SagaStateTransition[A]]): KStream[UUID, Saga[A]] = {
     val sSerdes = ctx.sSerdes
 
     val aggregator: Aggregator[UUID, SagaStateTransition[A], Saga[A]] = (_, t, s) =>
