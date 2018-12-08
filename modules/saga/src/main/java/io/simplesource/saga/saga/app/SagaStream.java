@@ -93,14 +93,14 @@ final public class SagaStream {
     static class StatusWithError {
         Sequence sequence;
         SagaStatus status;
-        Optional<SagaError> error;
+        Optional<NonEmptyList<SagaError>> errors;
 
         static Optional<StatusWithError> of(Sequence sequence, SagaStatus status) {
             return Optional.of(new StatusWithError(sequence, status, Optional.empty()));
         }
 
-        static Optional<StatusWithError> of(Sequence sequence, SagaStatus status, SagaError error) {
-            return Optional.of(new StatusWithError(sequence, status, Optional.of(error)));
+        static Optional<StatusWithError> of(Sequence sequence, SagaStatus status, List<SagaError> error) {
+            return Optional.of(new StatusWithError(sequence, status, NonEmptyList.fromList(error)));
         }
     }
 
@@ -114,13 +114,17 @@ final public class SagaStream {
                         return StatusWithError.of(state.sequence, SagaStatus.InFailure);
                     if ((state.status == SagaStatus.InFailure || state.status == SagaStatus.InProgress) &&
                             SagaUtils.sagaFailed(state)) {
-                        Set<String> errors = state.actions.values().stream()
-                                .filter(action -> action.status == ActionStatus.Failed)
-                                .map(action -> action.error.map(e -> e.messages.stream()).orElse(Stream.empty()))
-                                .flatMap(x -> x).collect(Collectors.toSet());
-
-                        NonEmptyList<String> errorList = NonEmptyList.fromList(new ArrayList<>(errors));
-                        return StatusWithError.of(state.sequence, SagaStatus.Failed, new SagaError(errorList));
+//                        Set<SagaError> errors = state.actions.values().stream()
+//                                .filter(action -> action.status == ActionStatus.Failed)
+//                                .map(action -> action.error).orElse(Stream.empty())
+//                                .flatMap(x -> x).collect(Collectors.toSet());
+                        List<SagaError> errors = state.actions.values().stream()
+                                .filter(action -> action.status == ActionStatus.Failed && action.error.isPresent())
+                                .map(action -> action.error.get())
+                                .collect(Collectors.toList());
+//
+//                        NonEmptyList<String> errorList = NonEmptyList.fromList(new ArrayList<>(errors));
+                        return StatusWithError.of(state.sequence, SagaStatus.Failed, errors);
                     }
                     return Optional.<StatusWithError>empty();
                 })
@@ -128,7 +132,7 @@ final public class SagaStream {
                 .mapValues((k, v) -> v.get());
 
         KStream<UUID, SagaStateTransition<A>> stateTransition = statusWithError.mapValues((sagaId, someStatus) ->
-                new SagaStateTransition.SagaStatusChanged<>(sagaId, someStatus.status, someStatus.error));
+                new SagaStateTransition.SagaStatusChanged<>(sagaId, someStatus.status, someStatus.errors));
 
         KStream<UUID, SagaResponse> sagaResponses = statusWithError
                 .mapValues((sagaId, sWithE) -> {
@@ -136,7 +140,7 @@ final public class SagaStream {
                     if (status == SagaStatus.Completed)
                         return Optional.of(Result.<SagaError, Sequence>success(sWithE.sequence));
                     if (status == SagaStatus.Failed)
-                        return Optional.of(Result.<SagaError, Sequence>failure(sWithE.error.get()));
+                        return Optional.of(Result.<SagaError, Sequence>failure(sWithE.errors.get()));
                     return Optional.<Result<SagaError, Sequence>>empty();
                 })
                 .filter((sagaId, v) -> v.isPresent())

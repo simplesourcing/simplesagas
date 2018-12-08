@@ -94,7 +94,7 @@ object JsonSerdes {
     implicit val neld: Decoder[NonEmptyList[CommandError]] =
       io.circe.generic.semiauto
         .deriveDecoder[LWrapper]
-        .map(l => NonEmptyList.fromList(l.errors.asJava))
+        .map(l => NonEmptyList.fromList(l.errors.asJava).get())
 
     def au[A: Encoder: Decoder] =
       productCodecs2[A, Long, AggregateUpdate[A]]("aggregate", "sequence")(

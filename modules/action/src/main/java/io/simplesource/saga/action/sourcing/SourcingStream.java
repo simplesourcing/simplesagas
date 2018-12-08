@@ -6,16 +6,15 @@ import io.simplesource.data.Result;
 import io.simplesource.data.Sequence;
 import io.simplesource.kafka.internal.util.Tuple2;
 import io.simplesource.kafka.model.CommandRequest;
+import io.simplesource.kafka.model.CommandResponse;
 import io.simplesource.saga.action.common.ActionProducer;
 import io.simplesource.saga.action.common.IdempotentStream;
-import io.simplesource.kafka.model.CommandResponse;
 import io.simplesource.saga.action.common.Utils;
 import io.simplesource.saga.model.messages.ActionRequest;
 import io.simplesource.saga.model.messages.ActionResponse;
 import io.simplesource.saga.model.saga.SagaError;
 import org.apache.kafka.common.utils.Bytes;
 import org.apache.kafka.streams.KeyValue;
-import org.apache.kafka.streams.kstream.ForeachAction;
 import org.apache.kafka.streams.kstream.*;
 import org.apache.kafka.streams.state.KeyValueStore;
 import org.slf4j.Logger;
@@ -78,7 +77,7 @@ public class SourcingStream {
             ActionRequest<A> request = v.v1();
             NonEmptyList<Throwable> reasons = v.v2().failureReasons().get();
             return new ActionResponse(request.sagaId, request.actionId, request.actionCommand.commandId, Result.failure(
-                    new SagaError(reasons.map(Throwable::getMessage))));
+                    SagaError.of(SagaError.Reason.InternalError, reasons.head())));
         });
 
         KStream<UUID, Tuple2<ActionRequest<A>, I>> allGood = reqsWithDecoded.mapValues((k, v) -> Tuple2.of(v.v1(), v.v2().getOrElse(null)));
@@ -169,7 +168,10 @@ public class SourcingStream {
                                                     "Timed out waiting for response from Command Processor")) :
                                             cResp.sequenceResult();
                             Result<SagaError, Boolean> result =
-                                    sequenceResult.fold(errors -> Result.failure(new SagaError(errors.map(e -> e.getMessage()))),
+                                    sequenceResult.fold(errors -> {
+                                        String message = String.join(",", errors.map(CommandError::getMessage));
+                                                return Result.failure(SagaError.of(SagaError.Reason.CommandError, message));
+                                            },
                                             seq -> Result.success(true));
 
                             return new ActionResponse(aReq.sagaId,

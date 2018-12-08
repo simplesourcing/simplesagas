@@ -1,5 +1,6 @@
 package io.simplesource.saga.model.messages;
 
+import io.simplesource.data.NonEmptyList;
 import io.simplesource.saga.model.saga.ActionStatus;
 import io.simplesource.saga.model.saga.Saga;
 import io.simplesource.saga.model.saga.SagaError;
@@ -28,7 +29,7 @@ public interface SagaStateTransition<A> {
     class SagaStatusChanged<A> implements SagaStateTransition<A> {
         public final UUID sagaId;
         public final SagaStatus sagaStatus;
-        public final Optional<SagaError> actionError;
+        public final Optional<NonEmptyList<SagaError>> actionErrors;
     }
 
     @Value

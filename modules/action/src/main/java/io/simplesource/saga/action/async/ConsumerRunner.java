@@ -127,7 +127,7 @@ class ConsumerRunner<A, I, K, O, R> implements Runnable {
             Result<Throwable, ?> result) {
 
         Result<SagaError, Boolean> booleanResult = result.fold(es -> Result.failure(
-                new SagaError(es.map(Throwable::getMessage))),
+                SagaError.of(SagaError.Reason.InternalError, es.head())),
                 r -> Result.success(true));
 
         ActionResponse actionResponse = new ActionResponse(request.sagaId,
