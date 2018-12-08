@@ -13,7 +13,7 @@ class JsonActionTests extends WordSpec with Matchers {
   import io.circe.syntax._
   "action shared.serdes" must {
     val serdes =
-      JsonSerdes.actionSerdes[Json]
+      JsonSerdes.actionSerdesScala[Json]
     val topic = "topic"
 
     "serialise and deserialise key UUIDs" in {

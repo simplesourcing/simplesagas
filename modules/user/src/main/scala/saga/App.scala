@@ -13,7 +13,7 @@ object App {
   }
 
   def startSagaCoordinator(): Unit = {
-    val sagaSpec = SagaSpec(JsonSerdes.sagaSerdes[Json], new WindowSpec(3600L))
+    val sagaSpec = SagaSpec(JsonSerdes.sagaSerdesScala[Json], new WindowSpec(3600L))
     SagaApp[Json](sagaSpec, TopicUtils.buildSteps(constants.sagaTopicPrefix, constants.sagaBaseName))
       .addActionProcessor(actionProcessorSpec,
                           TopicUtils.buildSteps(constants.actionTopicPrefix, constants.sagaActionBaseName))
@@ -21,5 +21,5 @@ object App {
   }
 
   lazy val actionProcessorSpec: ActionProcessorSpec[Json] =
-    ActionProcessorSpec[Json](JsonSerdes.actionSerdes[Json])
+    ActionProcessorSpec[Json](JsonSerdes.actionSerdesScala[Json])
 }

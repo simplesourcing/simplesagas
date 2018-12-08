@@ -9,7 +9,7 @@ import io.circe.Json
 import io.circe.generic.auto._
 import org.apache.kafka.common.serialization.Serdes
 import shared.utils.StreamAppConfig
-import shared.serdes.JsonSerdes
+import shared.serdes.{JsonSerdeUtils, JsonSerdes}
 import http._
 import http.implicits._
 import io.simplesource.kafka.spec.TopicSpec
@@ -32,7 +32,7 @@ object App {
 
   def startSourcingActionProcessor(): Unit = {
     SourcingApp[Json](
-      JsonSerdes.actionSerdes[Json],
+      JsonSerdes.actionSerdesScala[Json],
       TopicUtils.buildSteps(constants.actionTopicPrefix, constants.sagaActionBaseName)
     ).addCommand(accountSpec,
                   TopicUtils.buildSteps(constants.commandTopicPrefix, constants.accountAggregateName))
@@ -41,7 +41,7 @@ object App {
   }
 
   def startAsyncActionProcessor(): Unit = {
-    AsyncApp[Json](JsonSerdes.actionSerdes[Json],
+    AsyncApp[Json](JsonSerdes.actionSerdesScala[Json],
                    TopicUtils.buildSteps(constants.actionTopicPrefix, constants.sagaActionBaseName))
       .addAsync(asyncSpec)
       .addHttpProcessor(httpSpec)
@@ -102,7 +102,7 @@ object App {
     Some(
       HttpOutput(
         o => Some(o.as[FXRates]),
-        AsyncSerdes(JsonSerdes.serdeFromCodecs[Key], JsonSerdes.serdeFromCodecs[FXRates]),
+        AsyncSerdes(JsonSerdeUtils.serdeFromCodecs[Key], JsonSerdeUtils.serdeFromCodecs[FXRates]),
         topicCreation = List(TopicCreation("fx_rates", new TopicSpec(6, 1, Map.empty[String, String].asJava)))
       ))
   )

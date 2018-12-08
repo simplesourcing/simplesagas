@@ -17,7 +17,7 @@ import shared.topics.TopicNamer
 class SourcingStreamTests extends WordSpec with Matchers {
   import TestUtils._
 
-  private val actionSpec        = ActionProcessorSpec[Json](serdes = JsonSerdes.actionSerdes[Json])
+  private val actionSpec        = ActionProcessorSpec[Json](serdes = JsonSerdes.actionSerdesScala[Json])
   private val actionTopicNamer  = TopicNamer.forPrefix("", "action")
   private val commandTopicNamer = TopicNamer.forPrefix("", "user")
 

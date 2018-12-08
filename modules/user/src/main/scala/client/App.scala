@@ -33,7 +33,7 @@ object App {
 
     val api: SagaAPI[Json] = sagaClient.createSagaApi[Json] { builder =>
       builder
-        .withSerdes(JsonSerdes.sagaSerdes[Json])
+        .withSerdes(JsonSerdes.sagaSerdesScala[Json])
         .withTopicConfig(TopicUtils.buildSteps(constants.sagaTopicPrefix, constants.sagaBaseName))
         .withClientId("saga-client-1")
     }
