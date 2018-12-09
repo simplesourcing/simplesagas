@@ -193,9 +193,6 @@ object JsonSerdes {
         (cid, c) => new ActionCommand[A](cid, c))
       import JsonSerdeUtils._
 
-      val enc1 = implicitly[Decoder[UUID]]
-      val enc2 = implicitly[Decoder[java.util.Set[UUID]]]
-
       implicit val (saEnc, saDec) = productCodecs7[UUID,
                                                    String,
                                                    ActionCommand[A],
