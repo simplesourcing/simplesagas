@@ -27,9 +27,8 @@ final case class SourcingApp[A](actionSerdes: ActionSerdes[A], topicBuildFn: Top
 
   type Command = CommandInput => Unit
 
-  private var commands: List[Command] = List.empty
-  private var topics
-    : List[TopicCreation] = TopicCreation.allTopics(actionTopicConfig)
+  private var commands: List[Command]     = List.empty
+  private var topics: List[TopicCreation] = TopicCreation.allTopics(actionTopicConfig)
 
   def addCommand[I, K, C](cSpec: CommandSpec[A, I, K, C],
                           topicBuildFn: TopicConfigBuilder.BuildSteps): SourcingApp[A] = {

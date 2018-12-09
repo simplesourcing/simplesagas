@@ -49,8 +49,9 @@ object SagaStream {
     stateStream.groupByKey().reduce(reducer, Materialized.`with`(ctx.sSerdes.uuid, ctx.sSerdes.state))
   }
 
-  private def applyStateTransitions[A](ctx: SagaContext[A],
-                                       stateTransitionStream: KStream[UUID, SagaStateTransition[A]]): KStream[UUID, Saga[A]] = {
+  private def applyStateTransitions[A](
+      ctx: SagaContext[A],
+      stateTransitionStream: KStream[UUID, SagaStateTransition[A]]): KStream[UUID, Saga[A]] = {
     val sSerdes = ctx.sSerdes
 
     val aggregator: Aggregator[UUID, SagaStateTransition[A], Saga[A]] = (_, t, s) =>
