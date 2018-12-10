@@ -38,9 +38,8 @@ object JsonSerdeUtils {
     GenericSerde.of[B, String](KafkaSerdes.String(), fromB, toB)
   }
 
-  def mappedCodec[A, B](
-  b2p: B => A,
-  p2b: A => B)(implicit aEnc: Encoder[A], aDec: Decoder[A]): (Encoder[B], Decoder[B]) =
+  def mappedCodec[A, B](b2p: B => A, p2b: A => B)(implicit aEnc: Encoder[A],
+                                                  aDec: Decoder[A]): (Encoder[B], Decoder[B]) =
     (aEnc.contramap(b2p), aDec.map(p2b))
 
   def productCodecs2[A0: Encoder: Decoder, A1: Encoder: Decoder, B](n0: String, n1: String)(

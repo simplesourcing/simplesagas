@@ -149,7 +149,7 @@ final public class SagaStream {
         return Tuple2.of(stateTransition, sagaResponses);
     }
 
-    static public <A> Tuple2<KStream<UUID, SagaStateTransition>, KStream<UUID, ActionRequest<A>>> addNextActions(
+    static private <A> Tuple2<KStream<UUID, SagaStateTransition>, KStream<UUID, ActionRequest<A>>> addNextActions(
             KStream<UUID, Saga<A>> sagaState) {
 
         // get the next actions from the state updates
@@ -162,7 +162,7 @@ final public class SagaStream {
         KStream<UUID, SagaStateTransition> stateUpdateNewActions = nextActionsListStream
                 .filter((k, actions) -> !actions.isEmpty())
                 .<SagaStateTransition>mapValues((sagaId, actions) -> {
-                    List<SagaStateTransition.SingleTransition> transitions = actions.stream().map(action ->
+                    List<SagaStateTransition.SagaActionStatusChanged> transitions = actions.stream().map(action ->
                             new SagaStateTransition.SagaActionStatusChanged(sagaId, action.actionId, action.status, Optional.empty())
                     ).collect(Collectors.toList());
                     return new SagaStateTransition.TransitionList(transitions);
@@ -182,7 +182,7 @@ final public class SagaStream {
         return Tuple2.of(stateUpdateNewActions, actionRequests);
     }
 
-    static public <A> KStream<UUID, SagaStateTransition> addActionResponses(KStream<UUID, ActionResponse> actionResponses) {
+    static private KStream<UUID, SagaStateTransition> addActionResponses(KStream<UUID, ActionResponse> actionResponses) {
 
         // TODO: fix and simplify the error handling
         return actionResponses.<SagaStateTransition>mapValues((sagaId, response) -> {

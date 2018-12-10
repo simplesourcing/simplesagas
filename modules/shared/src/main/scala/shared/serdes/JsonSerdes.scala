@@ -148,9 +148,7 @@ object JsonSerdes {
       override lazy val response: Serde[ActionResponse]  = serdeFromCodecs[ActionResponse]
     }
 
-  object ActionParts {
-
-  }
+  object ActionParts {}
 
   def actionSerdes[A: Encoder: Decoder]: ActionSerdes[A] = new ActionSerdes[A] {
     import io.simplesource.saga.model.messages._
@@ -197,19 +195,19 @@ object JsonSerdes {
       (cid, c) => new ActionCommand[A](cid, c))
 
     implicit val (saEnc, saDec) = productCodecs7[UUID,
-      String,
-      ActionCommand[A],
-      Optional[ActionCommand[A]],
-      java.util.Set[UUID],
-      String,
-      Optional[SagaError],
-      SagaAction[A]]("actionId",
-      "actionType",
-      "command",
-      "undoCommand",
-      "dependencies",
-      "status",
-      "error")(
+                                                 String,
+                                                 ActionCommand[A],
+                                                 Optional[ActionCommand[A]],
+                                                 java.util.Set[UUID],
+                                                 String,
+                                                 Optional[SagaError],
+                                                 SagaAction[A]]("actionId",
+                                                                "actionType",
+                                                                "command",
+                                                                "undoCommand",
+                                                                "dependencies",
+                                                                "status",
+                                                                "error")(
       x => (x.actionId, x.actionType, x.command, x.undoCommand, x.dependencies, x.status.toString, x.error),
       (aid, at, c, uc, d, s, e) => new SagaAction[A](aid, at, c, uc, d, ActionStatus.valueOf(s), e)
     )
@@ -226,16 +224,20 @@ object JsonSerdes {
     private val sagaSerde = (sagaEnc, sagaDec).asSerde
 
     private val sagaRequestSerde = productCodecs2[UUID, Saga[A], SagaRequest[A]]("sagaId", "initialState")(
-      x => (x.sagaId, x.initialState), (id, init) => new SagaRequest[A](id, init)
+      x => (x.sagaId, x.initialState),
+      (id, init) => new SagaRequest[A](id, init)
     ).asSerde
 
     import ResultParts._
-    private val sagaResponseSerde = productCodecs2[UUID, Result[SagaError, Sequence], SagaResponse]("sagaId", "initialState")(
-      x => (x.sagaId, x.result), (id, init) => new SagaResponse(id, init)
-    ).asSerde
+    private val sagaResponseSerde =
+      productCodecs2[UUID, Result[SagaError, Sequence], SagaResponse]("sagaId", "initialState")(
+        x => (x.sagaId, x.result),
+        (id, init) => new SagaResponse(id, init)
+      ).asSerde
 
     implicit val (initialEnc, initialDec) =
-      mappedCodec[Saga[A], SagaStateTransition.SetInitialState[A]](_.sagaState,
+      mappedCodec[Saga[A], SagaStateTransition.SetInitialState[A]](
+        _.sagaState,
         new SagaStateTransition.SetInitialState[A](_))
 
     implicit val (ascEnc, ascDec) =
@@ -244,47 +246,53 @@ object JsonSerdes {
         "actionId",
         "actionStatus",
         "error"
-      )(x => (x.sagaId, x.actionId, x.actionStatus.toString, x.actionError),
-        (sid, aid, st, e) => new SagaStateTransition.SagaActionStatusChanged(sid, aid, ActionStatus.valueOf(st), e))
+      )(
+        x => (x.sagaId, x.actionId, x.actionStatus.toString, x.actionError),
+        (sid, aid, st, e) =>
+          new SagaStateTransition.SagaActionStatusChanged(sid, aid, ActionStatus.valueOf(st), e)
+      )
 
     implicit val (sscEnc, sscDec) =
       productCodecs3[UUID, String, Optional[NonEmptyList[SagaError]], SagaStateTransition.SagaStatusChanged](
         "sagaId",
         "sagaStatus",
         "errors"
-      )(x => (x.sagaId, x.sagaStatus.toString, x.actionErrors), (sid, ss, es) => new SagaStateTransition.SagaStatusChanged(sid, SagaStatus.valueOf(ss), es))
+      )(x => (x.sagaId, x.sagaStatus.toString, x.actionErrors),
+        (sid, ss, es) => new SagaStateTransition.SagaStatusChanged(sid, SagaStatus.valueOf(ss), es))
 
     implicit val (tlEnc, tlDec) =
-      mappedCodec[
-        java.util.List[SagaStateTransition.SagaActionStatusChanged],
-        SagaStateTransition.TransitionList](_.actionError, x => new SagaStateTransition.TransitionList(x))
+      mappedCodec[java.util.List[SagaStateTransition.SagaActionStatusChanged],
+                  SagaStateTransition.TransitionList](_.actionError,
+                                                      x => new SagaStateTransition.TransitionList(x))
 
-    implicit val (stEnc, stDec) = {
+    implicit val stateTransitionSerde =
       productCodecs4[
         Option[SagaStateTransition.SetInitialState[A]],
         Option[SagaStateTransition.SagaActionStatusChanged],
         Option[SagaStateTransition.SagaStatusChanged],
         Option[SagaStateTransition.TransitionList],
-        SagaStateTransition[A]
-      ]("initial", "actionStatus", "sagaStatus", "transitionList")(x =>
-        x match {
-        case x: SagaStateTransition.SagaActionStatusChanged => (None, Some(x), None, None)
-        case _ => throw new Exception()
-      }, (is, as, ss, tl) => (is, as, ss, tl) match {
-        case (Some(x), _, _, _) => x
-      })
-    }
+        SagaStateTransition
+      ]("initial", "actionStatus", "sagaStatus", "transitionList")(
+        {
+          case x: SagaStateTransition.SetInitialState[A]      => (Some(x), None, None, None)
+          case x: SagaStateTransition.SagaActionStatusChanged => (None, Some(x), None, None)
+          case x: SagaStateTransition.SagaStatusChanged       => (None, None, Some(x), None)
+          case x: SagaStateTransition.TransitionList          => (None, None, None, Some(x))
+        },
+        (is, as, ss, tl) =>
+          (is, as, ss, tl) match {
+            case (Some(x), _, _, _) => x
+            case (_, Some(x), _, _) => x
+            case (_, _, Some(x), _) => x
+            case (_, _, _, Some(x)) => x
+            case _                  => throw new Exception("Error in SagaStateTransition deserialization")
+        }
+      ).asSerde
 
-    //    override lazy val uuid: Serde[UUID]                         = serdeFromCodecs[UUID]
-//    override lazy val request: Serde[SagaRequest[A]]            = serdeFromCodecs[SagaRequest[A]]
-//    override lazy val response: Serde[SagaResponse]             = serdeFromCodecs[SagaResponse]
-//    override lazy val state: Serde[Saga[A]]                     = serdeFromCodecs[Saga[A]]
-//    override lazy val transition: Serde[SagaStateTransition[A]] = serdeFromCodecs[SagaStateTransition[A]]
-
-    override def uuid(): Serde[UUID]                         = serdeFromCodecs[UUID]
-    override def request(): Serde[SagaRequest[A]]            = sagaRequestSerde
-    override def response(): Serde[SagaResponse]             = sagaResponseSerde
-    override def state(): Serde[saga.Saga[A]]                = sagaSerde
-    override def transition(): Serde[SagaStateTransition] = ???
+    override def uuid(): Serde[UUID]                      = serdeFromCodecs[UUID]
+    override def request(): Serde[SagaRequest[A]]         = sagaRequestSerde
+    override def response(): Serde[SagaResponse]          = sagaResponseSerde
+    override def state(): Serde[saga.Saga[A]]             = sagaSerde
+    override def transition(): Serde[SagaStateTransition] = stateTransitionSerde
   }
 }
