@@ -24,8 +24,8 @@ public final class SagaProducer {
                 Produced.with(ctx.sSerdes.uuid(), ctx.sSerdes.state()));
     }
 
-    public static <A> void sagaStateTransitions(SagaContext<A> ctx, KStream<UUID, SagaStateTransition<A>>... transitions) {
-        for (KStream<UUID, SagaStateTransition<A>> t : transitions) {
+    public static <A> void sagaStateTransitions(SagaContext<A> ctx, KStream<UUID, SagaStateTransition>... transitions) {
+        for (KStream<UUID, SagaStateTransition> t : transitions) {
             t.to(ctx.sagaTopicNamer.apply(TopicTypes.SagaTopic.stateTransition),
                     Produced.with(ctx.sSerdes.uuid(), ctx.sSerdes.transition()));
         }

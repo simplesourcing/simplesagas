@@ -11,14 +11,14 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-public interface SagaStateTransition<A> {
+public interface SagaStateTransition {
     @Value
-    class SetInitialState<A> implements SagaStateTransition<A> {
+    class SetInitialState<A> implements SagaStateTransition {
         public final Saga<A> sagaState;
     }
 
     @Value
-    class SagaActionStatusChanged<A> implements SagaStateTransition<A> {
+    class SagaActionStatusChanged implements SagaStateTransition {
         public final UUID sagaId;
         public final UUID actionId;
         public final ActionStatus actionStatus;
@@ -26,14 +26,14 @@ public interface SagaStateTransition<A> {
     }
 
     @Value
-    class SagaStatusChanged<A> implements SagaStateTransition<A> {
+    class SagaStatusChanged implements SagaStateTransition {
         public final UUID sagaId;
         public final SagaStatus sagaStatus;
         public final Optional<NonEmptyList<SagaError>> actionErrors;
     }
 
     @Value
-    class TransitionList<A> implements SagaStateTransition<A> {
-        public final List<SagaStateTransition<A>> actionError;
+    class TransitionList implements SagaStateTransition {
+        public final List<SagaActionStatusChanged> actionError;
     }
 }

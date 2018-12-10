@@ -7,7 +7,6 @@ import java.util.function.BiFunction;
 
 @Value
 public class SagaError {
-
     /**
      * Construct a {@link SagaError} from a {@link Throwable}.
      *
@@ -46,18 +45,6 @@ public class SagaError {
      */
     public String getMessage() {
         return error.getMessage();
-    }
-
-    /**
-     * Access the reason value and either the string or the throwable context and return whatever you like.
-     *
-     * @param <A> the result type
-     * @param str the function that receives the reason and string, returning a value of the specified type
-     * @param ex the function that receives the reason and throwable, returning a value of the specified type
-     * @return the result
-     */
-    public <A> A fold(BiFunction<Reason, String, A> str, BiFunction<Reason, Throwable, A> ex){
-        return error.fold(str, ex);
     }
 
     private final Error<Reason> error;

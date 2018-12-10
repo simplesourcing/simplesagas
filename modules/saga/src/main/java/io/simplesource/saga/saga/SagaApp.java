@@ -31,7 +31,7 @@ final public class SagaApp<A> {
         public final StreamsBuilder builder;
         public final KStream<UUID, SagaRequest<A>> sagaRequest;
         public final KStream<UUID, Saga<A>> sagaState;
-        public final KStream<UUID, SagaStateTransition<A>> sagaStateTransition;
+        public final KStream<UUID, SagaStateTransition> sagaStateTransition;
     }
 
     interface ActionProcessor<A> {
@@ -93,7 +93,7 @@ final public class SagaApp<A> {
         TopicNamer topicNamer = sagaTopicConfig.namer;
         KStream<UUID, SagaRequest<A>> sagaRequest = SagaConsumer.sagaRequest(sagaSpec, topicNamer, builder);
         KStream<UUID, Saga<A>> sagaState = SagaConsumer.state(sagaSpec, topicNamer, builder);
-        KStream<UUID, SagaStateTransition<A>> sagaStateTransition = SagaConsumer.stateTransition(sagaSpec, topicNamer, builder);
+        KStream<UUID, SagaStateTransition> sagaStateTransition = SagaConsumer.stateTransition(sagaSpec, topicNamer, builder);
         ActionProcessorInput<A> actionProcessorInput = new ActionProcessorInput<>(builder, sagaRequest, sagaState, sagaStateTransition);
         actionProcessors.forEach(p -> p.apply(actionProcessorInput));
 

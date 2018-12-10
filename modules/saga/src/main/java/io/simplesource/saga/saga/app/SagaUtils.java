@@ -101,13 +101,13 @@ public final class SagaUtils {
         return new ArrayList<>();
     }
 
-    static public <A> Saga<A> applyTransition(SagaStateTransition<A> t, Saga<A> s) {
+    static public <A> Saga<A> applyTransition(SagaStateTransition t, Saga<A> s) {
         if (t instanceof SagaStateTransition.SetInitialState) {
             Saga<A> i = ((SagaStateTransition.SetInitialState<A>) t).sagaState;
             return new Saga<>(i.sagaId, i.actions, SagaStatus.InProgress, Sequence.first());
         }
         if (t instanceof SagaStateTransition.SagaActionStatusChanged) {
-            SagaStateTransition.SagaActionStatusChanged<A> st = ((SagaStateTransition.SagaActionStatusChanged<A>) t);
+            SagaStateTransition.SagaActionStatusChanged st = ((SagaStateTransition.SagaActionStatusChanged) t);
             SagaAction<A> oa = s.actions.getOrDefault(st.actionId, null);
             if (oa == null) {
                 logger.error("SagaAction with ID {} could not be found", st.actionId);
@@ -131,7 +131,7 @@ public final class SagaUtils {
 
 
 //
-//  def applyTransition<A>(t: SagaStateTransition<A>, s: Saga<A>): Saga<A> = {
+//  def applyTransition<A>(t: SagaStateTransition, s: Saga<A>): Saga<A> = {
 //    val newState = t match {
 //      case SetInitialState(initialState) => initialState.copy(status = SagaStatus.InProgress)
 //      case SagaActionStatusChanged(_, actionId, transitionStatus) =>
@@ -233,7 +233,7 @@ public final class SagaUtils {
 //    case _ => List.empty
 //  }
 //
-//  def applyTransition<A>(t: SagaStateTransition<A>, s: Saga<A>): Saga<A> = {
+//  def applyTransition<A>(t: SagaStateTransition, s: Saga<A>): Saga<A> = {
 //    val newState = t match {
 //      case SetInitialState(initialState) => initialState.copy(status = SagaStatus.InProgress)
 //      case SagaActionStatusChanged(_, actionId, transitionStatus) =>
