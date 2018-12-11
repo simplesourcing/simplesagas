@@ -32,6 +32,11 @@ public class TopicConfigBuilder {
         this.defaultOverrides = defaultOverrides;
     }
 
+    public TopicConfigBuilder  withTopicNamer(TopicNamer topicNamer) {
+        this.topicNamer = topicNamer;
+        return this;
+    }
+
     public  TopicConfigBuilder withConfig(String topicType, TopicSpec tSpec) {
         configMap.put(topicType, tSpec);
         return this;

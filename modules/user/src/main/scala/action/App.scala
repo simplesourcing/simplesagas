@@ -1,20 +1,20 @@
 package action
-import java.util.UUID
+import java.util.{Optional, UUID}
 
-import action.async.{AsyncApp, AsyncOutput, AsyncSerdes, AsyncSpec}
-import action.sourcing._
+import io.simplesource.saga.action.async.{AsyncApp, AsyncOutput, AsyncSerdes, AsyncSpec}
+import io.simplesource.saga.action.sourcing._
 import command.model.auction.AccountCommand
 import command.model.user.UserCommand
 import io.circe.Json
 import io.circe.generic.auto._
+import io.simplesource.data.Result
 import org.apache.kafka.common.serialization.Serdes
-import shared.utils.StreamAppConfig
+import io.simplesource.saga.shared.utils.StreamAppConfig
 import shared.serdes.{JsonSerdeUtils, JsonSerdes}
-import http._
-import http.implicits._
 import io.simplesource.kafka.spec.TopicSpec
+import io.simplesource.saga.action.http.HttpApp
+import io.simplesource.saga.shared.topics.TopicCreation
 import shared.TopicUtils
-import shared.topics.TopicCreation
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -22,8 +22,8 @@ import scala.collection.JavaConverters._
 
 object App {
   val sourcingConfig =
-    StreamAppConfig(appId = "sourcing-action-processor-1", bootstrapServers = "127.0.0.1:9092")
-  val asyncConfig = StreamAppConfig(appId = "async-action-processor-1", bootstrapServers = "127.0.0.1:9092")
+    new StreamAppConfig("sourcing-action-processor-1", "127.0.0.1:9092")
+  val asyncConfig = new StreamAppConfig("async-action-processor-1",  "127.0.0.1:9092")
 
   def main(args: Array[String]): Unit = {
     startSourcingActionProcessor()
@@ -31,59 +31,62 @@ object App {
   }
 
   def startSourcingActionProcessor(): Unit = {
-    SourcingApp[Json](
-      JsonSerdes.actionSerdesScala[Json],
-      TopicUtils.buildSteps(constants.actionTopicPrefix, constants.sagaActionBaseName)
+    new SourcingApp[Json](
+      JsonSerdes.actionSerdes[Json],
+      TopicUtils.buildStepsJ(constants.actionTopicPrefix, constants.sagaActionBaseName)
     ).addCommand(accountSpec,
-                  TopicUtils.buildSteps(constants.commandTopicPrefix, constants.accountAggregateName))
-      .addCommand(userSpec, TopicUtils.buildSteps(constants.commandTopicPrefix, constants.userAggregateName))
+                  TopicUtils.buildStepsJ(constants.commandTopicPrefix, constants.accountAggregateName))
+      .addCommand(userSpec, TopicUtils.buildStepsJ(constants.commandTopicPrefix, constants.userAggregateName))
       .run(sourcingConfig)
   }
 
   def startAsyncActionProcessor(): Unit = {
-    AsyncApp[Json](JsonSerdes.actionSerdesScala[Json],
-                   TopicUtils.buildSteps(constants.actionTopicPrefix, constants.sagaActionBaseName))
+    new HttpApp[Json](JsonSerdes.actionSerdes[Json],
+                   TopicUtils.buildStepsJ(constants.actionTopicPrefix, constants.sagaActionBaseName))
       .addAsync(asyncSpec)
       .addHttpProcessor(httpSpec)
       .run(asyncConfig)
   }
 
-  lazy val userSpec = CommandSpec[Json, UserCommand, UUID, UserCommand](
-    actionType = constants.userActionType,
-    decode = json => json.as[UserCommand],
-    commandMapper = identity,
-    keyMapper = _.userId,
-    serdes = JsonSerdes.commandSerdes[UUID, UserCommand],
-    aggregateName = constants.userAggregateName,
-    timeOutMillis = 30000L
+  implicit class EOps[E, A](eea: Either[E, A]) {
+    def toResult(): Result[E, A] = eea.fold(e => Result.failure(e), a => Result.success(a))
+  }
+
+  lazy val userSpec = new CommandSpec[Json, UserCommand, UUID, UserCommand](
+    constants.userActionType,
+    json => json.as[UserCommand].toResult().errorMap(e => e),
+    (a: UserCommand) => a,
+    _.userId,
+    JsonSerdes.commandSerdes[UUID, UserCommand],
+    constants.userAggregateName,
+    30000L
   )
 
-  lazy val accountSpec = CommandSpec[Json, AccountCommand, UUID, AccountCommand](
-    actionType = constants.accountActionType,
-    decode = json => json.as[AccountCommand],
-    commandMapper = identity,
-    keyMapper = _.accountId,
-    serdes = JsonSerdes.commandSerdes[UUID, AccountCommand],
-    aggregateName = constants.accountAggregateName,
-    timeOutMillis = 30000L
+  lazy val accountSpec = new CommandSpec[Json, AccountCommand, UUID, AccountCommand](
+    constants.accountActionType,
+    json => json.as[AccountCommand].toResult().errorMap(e => e),
+    (a: AccountCommand) => a,
+    _.accountId,
+    JsonSerdes.commandSerdes[UUID, AccountCommand],
+    constants.accountAggregateName,
+    30000L
   )
 
-  lazy val asyncSpec = AsyncSpec[Json, String, String, String, String](
-    inputDecoder = a => {
+  lazy val asyncSpec = new AsyncSpec[Json, String, String, String, String](
+    "async_test_action_type",
+    (a: Json) => {
       val decoded = a.as[String]
-      decoded
+      decoded.toResult().errorMap(e => e)
     },
-    keyMapper = i => i.toLowerCase.take(3),
-    asyncFunction = i => Future.successful(s"${i.length.toString}: $i"),
-    actionType = "async_test_action_type",
-    groupId = asyncConfig.appId,
-    outputSpec = Some(
-      AsyncOutput(
-        o => Some(Right(o)),
-        AsyncSerdes(Serdes.String(), Serdes.String()),
-        _ => Some("async_test_topic"),
-        topicCreation =
-          List(TopicCreation("async_test_topic", new TopicSpec(6, 1, Map.empty[String, String].asJava)))
+    i => i.toLowerCase.take(3),
+    i => Future.successful(s"${i.length.toString}: $i"),
+    asyncConfig.appId,
+    Optional.of(
+      new AsyncOutput(
+        o => Optional.of(Result.success(o)),
+        new AsyncSerdes(Serdes.String(), Serdes.String()),
+        _ => Optional.of("async_test_topic"),
+          List(new TopicCreation("async_test_topic", new TopicSpec(6, 1, Map.empty[String, String].asJava))).asJava
       )),
   )
 

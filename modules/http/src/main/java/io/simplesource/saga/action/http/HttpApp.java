@@ -10,26 +10,32 @@ import io.simplesource.saga.shared.utils.StreamAppConfig;
 
 import java.util.function.Supplier;
 
-public final class HttpApp<A>  {
-  private final AsyncApp<A> asyncApp;
+public final class HttpApp<A> {
+    private final AsyncApp<A> asyncApp;
 
-  public HttpApp(ActionSerdes<A> actionSerdes, TopicConfigBuilder.BuildSteps topicBuildFn) {
-    asyncApp = new AsyncApp<>(actionSerdes, topicBuildFn);
-  }
-
-  <K, B, O, R> HttpApp<A> addHttpProcessor(HttpSpec<A, K, B, O, R> httpSpec) {
-      AsyncSpec<A, HttpRequest<K, B>, K, O, R> asyncSpec = new AsyncSpec<>(
-              httpSpec.actionType,
-              httpSpec.decoder::decode,
-              request -> request.key,
-              httpSpec.asyncHttpClient,
-              httpSpec.groupId,
-              httpSpec.outputSpec.map(o ->
-                      new AsyncOutput<>(o.decoder::decode, o.serdes, r -> r.topicName, o.topicCreations))
-      );
-      asyncApp.addAsync(asyncSpec);
-      return this;
+    public HttpApp(ActionSerdes<A> actionSerdes, TopicConfigBuilder.BuildSteps topicBuildFn) {
+        asyncApp = new AsyncApp<>(actionSerdes, topicBuildFn);
     }
+
+    public <K, B, O, R> HttpApp<A> addHttpProcessor(HttpSpec<A, K, B, O, R> httpSpec) {
+        AsyncSpec<A, HttpRequest<K, B>, K, O, R> asyncSpec = new AsyncSpec<>(
+                httpSpec.actionType,
+                httpSpec.decoder::decode,
+                request -> request.key,
+                httpSpec.asyncHttpClient,
+                httpSpec.groupId,
+                httpSpec.outputSpec.map(o ->
+                        new AsyncOutput<>(o.decoder::decode, o.serdes, r -> r.topicName, o.topicCreations))
+        );
+        asyncApp.addAsync(asyncSpec);
+        return this;
+    }
+
+    public <I, K, O, R> HttpApp<A> addAsync(AsyncSpec<A, I, K, O, R> spec) {
+        asyncApp.addAsync(spec);
+        return this;
+    }
+
 
     public void addCloseHandler(Supplier<Integer> handler) {
         asyncApp.addCloseHandler(handler);

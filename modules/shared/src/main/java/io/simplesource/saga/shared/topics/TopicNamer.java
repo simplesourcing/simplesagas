@@ -9,8 +9,7 @@ public interface TopicNamer {
     String apply(String topicType);
 
     static TopicNamer forStrategy(ResourceNamingStrategy strategy,
-                    String topicBaseName,
-                    List<String> allTopics) {
+                    String topicBaseName) {
         return topicType -> strategy.topicName(topicBaseName, topicType);
     }
 

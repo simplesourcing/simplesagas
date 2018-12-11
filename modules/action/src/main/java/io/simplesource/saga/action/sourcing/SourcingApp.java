@@ -74,7 +74,7 @@ public final class SourcingApp<A> {
     }
 
 
-    void run(StreamAppConfig appConfig) {
+    public void run(StreamAppConfig appConfig) {
         Properties config = StreamAppConfig.getConfig(appConfig);
 
         try {
