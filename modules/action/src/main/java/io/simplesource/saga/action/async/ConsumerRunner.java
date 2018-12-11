@@ -154,7 +154,7 @@ class ConsumerRunner<A, I, K, O, R> implements Runnable {
                         tryPure(() ->
                                 asyncSpec.keyMapper.apply(decoded)).map(k -> Tuple2.of(decoded, k)));
 
-        Function<Tuple2<I, K>, CallBack<O>> cpb = tuple -> result -> {
+        Function<Tuple2<I, K>, Callback<O>> cpb = tuple -> result -> {
             Result<Throwable, Optional<ResultGeneration<K, R>>> resultWithOutput = tryWrap(() ->
                     result.flatMap(output -> {
                         Optional<Result<Throwable, ResultGeneration<K, R>>> x =
@@ -185,10 +185,10 @@ class ConsumerRunner<A, I, K, O, R> implements Runnable {
             publishActionResult(sagaId, request, producer, decodedWithKey);
         } else {
             Tuple2<I, K> inputWithKey = decodedWithKey.getOrElse(null);
-            CallBack<O> callback = cpb.apply(inputWithKey);
-            asyncSpec.asyncFunction.accept(inputWithKey.v1(), callback);
+            Callback<O> callback = cpb.apply(inputWithKey);
+            // TODO: check that this needs to be in a new thread (or use an executor)
+            new Thread(() -> asyncSpec.asyncFunction.accept(inputWithKey.v1(), callback)).start();
         }
-
     }
 
     void close() {

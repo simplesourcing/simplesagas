@@ -19,7 +19,7 @@ final public class AsyncSpec<A, I, K, O, R> {
     public final String actionType;
     public final Function<A, Result<Throwable, I>> inputDecoder;
     public final Function<I, K> keyMapper;
-    public final BiConsumer<I, CallBack<O>> asyncFunction;
+    public final BiConsumer<I, Callback<O>> asyncFunction;
     public final String groupId;
     public final Optional<AsyncOutput<I, K, O, R>> outputSpec;
 }

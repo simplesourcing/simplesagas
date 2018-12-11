@@ -1,11 +1,11 @@
 package action
 import java.util.{Optional, UUID}
 
-import io.simplesource.saga.action.async.{AsyncApp, AsyncOutput, AsyncSerdes, AsyncSpec}
+import io.simplesource.saga.action.async._
 import io.simplesource.saga.action.sourcing._
 import command.model.auction.AccountCommand
 import command.model.user.UserCommand
-import http.HttpSpec
+import io.simplesource.saga.action.http.HttpSpec
 import io.circe.Json
 import io.circe.generic.auto._
 import io.simplesource.data.Result
@@ -80,14 +80,15 @@ object App {
       decoded.toResult().errorMap(e => e)
     },
     i => i.toLowerCase.take(3),
-    i => Future.successful(s"${i.length.toString}: $i"),
+    (i: String, callBack: Callback[String]) => { callBack.complete(Result.success(s"${i.length.toString}: $i"))},   //i => Future.successful(s"${i.length.toString}: $i"),
     asyncConfig.appId,
     Optional.of(
       new AsyncOutput(
         o => Optional.of(Result.success(o)),
         new AsyncSerdes(Serdes.String(), Serdes.String()),
         _ => Optional.of("async_test_topic"),
-          List(new TopicCreation("async_test_topic", new TopicSpec(6, 1, Map.empty[String, String].asJava))).asJava
+          List(new TopicCreation("async_test_topic",
+            new TopicSpec(6, 1, Map.empty[String, String].asJava))).asJava
       )),
   )
 
@@ -98,7 +99,7 @@ object App {
   type Output = Json
   final case class FXRates(date: String, base: String, rates: Map[String, BigDecimal])
 
-  lazy val httpSpec = HttpSpec[Input, Key, Body, Output, FXRates](
+  lazy val httpSpec = new HttpSpec[Input, Key, Body, Output, FXRates](
     "http_action_type",
     _.as[HttpRequest[Key, Body]],
     HttpClient.requester[Key, Body, Output],
@@ -107,7 +108,7 @@ object App {
       new HttpOutput(
         (o: Input) => Optional.of(o.as[FXRates].toResult().errorMap(e => e)),
         new AsyncSerdes(JsonSerdeUtils.serdeFromCodecs[Key], JsonSerdeUtils.serdeFromCodecs[FXRates]),
-        new List(new TopicCreation("fx_rates",
+        List(new TopicCreation("fx_rates",
           new TopicSpec(6, 1, Map.empty[String, String].asJava))).asJava
       ))
   )
