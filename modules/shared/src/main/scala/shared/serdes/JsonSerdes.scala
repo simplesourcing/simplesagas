@@ -33,10 +33,7 @@ object JsonSerdes {
       io.circe.generic.semiauto
         .deriveEncoder[EitherNel[E, A]]
         .contramapObject(r => {
-          if (r.isSuccess)
-            Right[NonEmptyList[E], A](r.getOrElse(throw new Exception("Error. TODO"))) //TODO
-          else
-            Left[NonEmptyList[E], A](r.failureReasons().get())
+          r.fold[EitherNel[E, A]](e => Left[NonEmptyList[E], A](e), a => Right[NonEmptyList[E], A](a))
         })
 
     implicit def resd[E: Decoder, A: Decoder]: Decoder[Result[E, A]] =
@@ -193,6 +190,8 @@ object JsonSerdes {
     implicit val (acEnc, acDec) = productCodecs2[UUID, A, ActionCommand[A]]("commandId", "command")(
       x => (x.commandId, x.command),
       (cid, c) => new ActionCommand[A](cid, c))
+
+    Set(1).map(identity)
 
     implicit val (saEnc, saDec) = productCodecs7[UUID,
                                                  String,
