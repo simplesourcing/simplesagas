@@ -20,7 +20,7 @@ public class TopicConfigBuilder {
     private TopicNamer topicNamer = name -> name;
 
     public interface BuildSteps {
-        public TopicConfigBuilder applyStep(TopicConfigBuilder builder);
+        TopicConfigBuilder applyStep(TopicConfigBuilder builder);
     }
 
     public TopicConfigBuilder(

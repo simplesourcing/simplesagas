@@ -1,7 +1,6 @@
 package io.simplesource.saga.saga.api;
 
 import io.simplesource.data.FutureResult;
-import io.simplesource.data.NonEmptyList;
 import io.simplesource.data.Result;
 import io.simplesource.kafka.dsl.KafkaConfig;
 import io.simplesource.kafka.internal.client.KafkaRequestAPI;

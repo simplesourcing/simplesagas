@@ -12,7 +12,6 @@ import java.util.Optional;
   */
 @Value
 public final class HttpRequest<K, B> {
-
     interface HttpRequestDecoder<A, K, B> {
         Result<Throwable,  HttpRequest<K, B>> decode(A input);
     }

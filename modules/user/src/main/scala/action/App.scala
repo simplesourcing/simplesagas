@@ -5,6 +5,7 @@ import io.simplesource.saga.action.async.{AsyncApp, AsyncOutput, AsyncSerdes, As
 import io.simplesource.saga.action.sourcing._
 import command.model.auction.AccountCommand
 import command.model.user.UserCommand
+import http.HttpSpec
 import io.circe.Json
 import io.circe.generic.auto._
 import io.simplesource.data.Result
@@ -12,7 +13,7 @@ import org.apache.kafka.common.serialization.Serdes
 import io.simplesource.saga.shared.utils.StreamAppConfig
 import shared.serdes.{JsonSerdeUtils, JsonSerdes}
 import io.simplesource.kafka.spec.TopicSpec
-import io.simplesource.saga.action.http.HttpApp
+import io.simplesource.saga.action.http.{HttpApp, HttpOutput, HttpRequest}
 import io.simplesource.saga.shared.topics.TopicCreation
 import shared.TopicUtils
 
@@ -102,11 +103,12 @@ object App {
     _.as[HttpRequest[Key, Body]],
     HttpClient.requester[Key, Body, Output],
     asyncConfig.appId,
-    Some(
-      HttpOutput(
-        o => Some(o.as[FXRates]),
-        AsyncSerdes(JsonSerdeUtils.serdeFromCodecs[Key], JsonSerdeUtils.serdeFromCodecs[FXRates]),
-        topicCreation = List(TopicCreation("fx_rates", new TopicSpec(6, 1, Map.empty[String, String].asJava)))
+    Optional.of(
+      new HttpOutput(
+        (o: Input) => Optional.of(o.as[FXRates].toResult().errorMap(e => e)),
+        new AsyncSerdes(JsonSerdeUtils.serdeFromCodecs[Key], JsonSerdeUtils.serdeFromCodecs[FXRates]),
+        new List(new TopicCreation("fx_rates",
+          new TopicSpec(6, 1, Map.empty[String, String].asJava))).asJava
       ))
   )
 }
