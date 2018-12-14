@@ -11,14 +11,13 @@ import io.circe.generic.auto._
 import io.simplesource.data.Result
 import org.apache.kafka.common.serialization.Serdes
 import io.simplesource.saga.shared.utils.StreamAppConfig
-import shared.serdes.{JsonSerdeUtils, JsonSerdes}
+import shared.serdes.{JsonSerdes, ProductCodecs}
 import io.simplesource.kafka.spec.TopicSpec
 import io.simplesource.saga.action.http.{HttpApp, HttpOutput, HttpRequest}
 import io.simplesource.saga.shared.topics.TopicCreation
 import shared.TopicUtils
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
 import scala.collection.JavaConverters._
 
 object App {
@@ -99,15 +98,18 @@ object App {
   type Output = Json
   final case class FXRates(date: String, base: String, rates: Map[String, BigDecimal])
 
+  import io.circe.generic.auto._
+  import HttpClient._
+
   lazy val httpSpec = new HttpSpec[Input, Key, Body, Output, FXRates](
     "http_action_type",
-    _.as[HttpRequest[Key, Body]],
+    _.as[HttpRequest[Key, Body]].toResult().map(x => x).errorMap(e => e),
     HttpClient.requester[Key, Body, Output],
     asyncConfig.appId,
     Optional.of(
       new HttpOutput(
         (o: Input) => Optional.of(o.as[FXRates].toResult().errorMap(e => e)),
-        new AsyncSerdes(JsonSerdeUtils.serdeFromCodecs[Key], JsonSerdeUtils.serdeFromCodecs[FXRates]),
+        new AsyncSerdes(ProductCodecs.serdeFromCodecs[Key], ProductCodecs.serdeFromCodecs[FXRates]),
         List(new TopicCreation("fx_rates",
           new TopicSpec(6, 1, Map.empty[String, String].asJava))).asJava
       ))

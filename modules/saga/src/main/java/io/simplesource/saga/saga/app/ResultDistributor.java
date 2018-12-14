@@ -20,7 +20,7 @@ public class ResultDistributor {
   public static <K, V> void distribute(DistributorContext<V> ctx,
                        KStream<K, V> resultStream,
                        KStream<UUID, String> topicNameStream) {
-      DistributorContext.DistributorSerdes<V> serdes          = ctx.serdes;
+      DistributorSerdes<V> serdes          = ctx.serdes;
     long retentionMillis = ctx.responseWindowSpec.retentionInSeconds() * 1000L;
 
       TopicNameExtractor<String, V> topicNameExtractor = (key, v, c) ->

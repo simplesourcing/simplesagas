@@ -98,8 +98,8 @@ final public class SagaApp<A> {
         actionProcessors.forEach(p -> p.apply(actionProcessorInput));
 
         DistributorContext<SagaResponse> distCtx = new DistributorContext<>(
+                new DistributorSerdes<>(serdes.uuid(), serdes.response()),
                 sagaTopicConfig.namer.apply(TopicTypes.SagaTopic.responseTopicMap),
-                new DistributorContext.DistributorSerdes<>(serdes.uuid(), serdes.response()),
                 sagaSpec.responseWindow,
                 response -> response.sagaId);
 

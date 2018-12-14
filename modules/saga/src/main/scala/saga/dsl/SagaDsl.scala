@@ -17,7 +17,7 @@ trait SagaDsl {
           for {
             thisId <- this.output
             nextId <- next.input
-          } sb.dependencies.get(nextId).foreach(nd => sb.dependencies.update(nextId, nd + thisId))
+          } sb.dependencies.get(nextId).foreach((nd: Set[UUID]) => sb.dependencies.update(nextId, nd + thisId))
           Fragment(this.input, next.output, this.sagaBuilder)
         case (Some(_), None) => this
         case _               => next

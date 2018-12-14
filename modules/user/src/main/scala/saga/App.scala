@@ -2,10 +2,11 @@ package saga
 
 import io.circe.Json
 import io.simplesource.kafka.spec.WindowSpec
-import model.specs.{ActionProcessorSpec, SagaSpec}
+import io.simplesource.saga.model.specs.{ActionProcessorSpec, SagaSpec}
+import io.simplesource.saga.shared.utils.StreamAppConfig
 import shared.TopicUtils
 import shared.serdes.JsonSerdes
-import shared.utils.StreamAppConfig
+
 
 object App {
   def main(args: Array[String]): Unit = {
@@ -13,13 +14,13 @@ object App {
   }
 
   def startSagaCoordinator(): Unit = {
-    val sagaSpec = SagaSpec(JsonSerdes.sagaSerdesScala[Json], new WindowSpec(3600L))
-    SagaApp[Json](sagaSpec, TopicUtils.buildSteps(constants.sagaTopicPrefix, constants.sagaBaseName))
+    val sagaSpec = new SagaSpec(JsonSerdes.sagaSerdes[Json], new WindowSpec(3600L))
+    new SagaApp[Json](sagaSpec, TopicUtils.buildStepsJ(constants.sagaTopicPrefix, constants.sagaBaseName))
       .addActionProcessor(actionProcessorSpec,
-                          TopicUtils.buildSteps(constants.actionTopicPrefix, constants.sagaActionBaseName))
-      .run(StreamAppConfig(appId = "saga-coordinator-1", bootstrapServers = constants.kafkaBootstrap))
+                          TopicUtils.buildStepsJ(constants.actionTopicPrefix, constants.sagaActionBaseName))
+      .run(new StreamAppConfig("saga-coordinator-1", constants.kafkaBootstrap))
   }
 
   lazy val actionProcessorSpec: ActionProcessorSpec[Json] =
-    ActionProcessorSpec[Json](JsonSerdes.actionSerdesScala[Json])
+    new ActionProcessorSpec[Json](JsonSerdes.actionSerdes[Json])
 }

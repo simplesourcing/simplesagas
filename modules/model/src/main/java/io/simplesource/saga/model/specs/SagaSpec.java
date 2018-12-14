@@ -1,7 +1,6 @@
 package io.simplesource.saga.model.specs;
 
 import io.simplesource.kafka.spec.WindowSpec;
-import io.simplesource.saga.model.serdes.ActionSerdes;
 import io.simplesource.saga.model.serdes.SagaSerdes;
 import lombok.Value;
 

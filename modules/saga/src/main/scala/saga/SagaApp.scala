@@ -1,18 +1,20 @@
 package saga
+import java.util
 import java.util.concurrent.TimeUnit
-import java.util.{Properties, UUID}
+import java.util.{Collections, Properties, UUID}
 
-import model.messages.SagaResponse
-import model.specs.{ActionProcessorSpec, SagaSpec}
+import io.simplesource.saga.model.messages.{ActionResponse, SagaRequest, SagaResponse, SagaStateTransition}
+import io.simplesource.saga.model.saga.Saga
+import io.simplesource.saga.model.serdes.{SagaClientSerdes, SagaSerdes}
+import io.simplesource.saga.model.specs.{ActionProcessorSpec, SagaSpec}
+import io.simplesource.saga.saga.app._
+import io.simplesource.saga.shared.topics.{TopicConfigBuilder, TopicCreation, TopicTypes}
+import io.simplesource.saga.shared.utils.{StreamAppConfig, StreamAppUtils}
 import org.apache.kafka.common.config.{TopicConfig => KafkaTopicConfig}
 import org.apache.kafka.clients.admin.AdminClient
 import org.apache.kafka.streams.StreamsBuilder
 import org.apache.kafka.streams.kstream.KStream
 import org.slf4j.LoggerFactory
-import saga.app._
-import model.{messages, saga}
-import shared.topics.{TopicConfigBuilder, TopicCreation, TopicTypes}
-import shared.utils._
 
 final case class SagaApp[A](sagaSpec: SagaSpec[A], topicBuildFn: TopicConfigBuilder.BuildSteps) {
   private val logger = LoggerFactory.getLogger(classOf[SagaApp[A]])
@@ -20,32 +22,36 @@ final case class SagaApp[A](sagaSpec: SagaSpec[A], topicBuildFn: TopicConfigBuil
   private val sagaTopicConfig =
     TopicConfigBuilder.buildTopics(
       TopicTypes.SagaTopic.all,
-      Map.empty,
-      Map(
-        TopicTypes.SagaTopic.state -> Map(
-          KafkaTopicConfig.CLEANUP_POLICY_CONFIG -> KafkaTopicConfig.CLEANUP_POLICY_COMPACT,
+      new util.HashMap(),
+      Collections.singletonMap(
+        TopicTypes.SagaTopic.state, Collections.singletonMap(
+          KafkaTopicConfig.CLEANUP_POLICY_CONFIG, KafkaTopicConfig.CLEANUP_POLICY_COMPACT,
         )
       )
-    )(topicBuildFn)
-  private val serdes = sagaSpec.serdes
+    , topicBuildFn)
+  private val serdes: SagaClientSerdes[A] = sagaSpec.serdes
 
   final case class ActionProcessorInput(builder: StreamsBuilder,
-                                        sagaRequest: KStream[UUID, messages.SagaRequest[A]],
-                                        sagaState: KStream[UUID, saga.Saga[A]],
-                                        sagaStateTransition: KStream[UUID, messages.SagaStateTransition[A]])
+                                        sagaRequest: KStream[UUID, SagaRequest[A]],
+                                        sagaState: KStream[UUID, Saga[A]],
+                                        sagaStateTransition: KStream[UUID, SagaStateTransition])
 
   type ActionProcessor = ActionProcessorInput => Unit
 
-  private var actionProcessors: List[ActionProcessor] = List.empty
-  private var topics: List[TopicCreation]             = TopicCreation.allTopics(sagaTopicConfig)
+  private val actionProcessors: util.List[ActionProcessor] = new util.ArrayList[ActionProcessor]()
+  private val topics: util.List[TopicCreation]             = {
+    val list = new util.ArrayList[TopicCreation]()
+    list.addAll(TopicCreation.allTopics(sagaTopicConfig))
+    list
+  }
 
   def addActionProcessor(actionSpec: ActionProcessorSpec[A],
                          buildFn: TopicConfigBuilder.BuildSteps): SagaApp[A] = {
-    val topicConfig = TopicConfigBuilder.buildTopics(TopicTypes.ActionTopic.all, Map.empty)(buildFn)
+    val topicConfig = TopicConfigBuilder.buildTopics(TopicTypes.ActionTopic.all, Collections.emptyMap(), Collections.emptyMap(), buildFn)
     val actionProcessor: ActionProcessor = input => {
-      val ctx = SagaContext(sagaSpec, actionSpec, sagaTopicConfig.namer, topicConfig.namer)
+      val ctx = new SagaContext(sagaSpec, actionSpec, sagaTopicConfig.namer, topicConfig.namer)
 
-      val actionResponse: KStream[UUID, messages.ActionResponse] =
+      val actionResponse: KStream[UUID, ActionResponse] =
         SagaConsumer.actionResponse(actionSpec, topicConfig.namer, input.builder)
 
       // add in stream transformations
@@ -56,15 +62,15 @@ final case class SagaApp[A](sagaSpec: SagaSpec[A], topicBuildFn: TopicConfigBuil
                                 actionResponse)
     }
 
-    actionProcessors = actionProcessor :: actionProcessors
-    topics = topics ++ TopicCreation.allTopics(topicConfig)
+    actionProcessors.add(actionProcessor)
+    topics.addAll(TopicCreation.allTopics(topicConfig))
     this
   }
 
   def run(appConfig: StreamAppConfig): Unit = {
-    val config: Properties = StreamAppUtils.getConfig(appConfig)
+    val config: Properties = StreamAppConfig.getConfig(appConfig)
     StreamAppUtils
-      .addMissingTopics(AdminClient.create(config))(topics.distinct)
+      .addMissingTopics(AdminClient.create(config), topics)
       .all()
       .get(30L, TimeUnit.SECONDS)
 
@@ -77,16 +83,18 @@ final case class SagaApp[A](sagaSpec: SagaSpec[A], topicBuildFn: TopicConfigBuil
     val actionProcessorInput = ActionProcessorInput(builder, sagaRequest, sagaState, sagaStateTransition)
 
     // add each of the action processors
-    actionProcessors.foreach(_(actionProcessorInput))
+    actionProcessors.forEach(_.apply(actionProcessorInput))
 
     // add the result distributor
 
     // add result distributor
-    val distCtx = DistributorContext[SagaResponse](
-      sagaTopicConfig.namer(TopicTypes.SagaTopic.responseTopicMap),
-      DistributorSerdes(serdes.uuid, serdes.response),
+    val disSerdes = new DistributorSerdes[SagaResponse](serdes.uuid, serdes.response)
+    val topicName = sagaTopicConfig.namer.apply(TopicTypes.SagaTopic.responseTopicMap)
+    val distCtx: DistributorContext[SagaResponse] = new DistributorContext[SagaResponse](
+      disSerdes,
+      topicName,
       sagaSpec.responseWindow,
-      _.sagaId
+      (resp: SagaResponse) => resp.sagaId
     )
 
     val topicNames: KStream[UUID, String] = ResultDistributor.resultTopicMapStream(distCtx, builder)
