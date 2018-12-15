@@ -29,10 +29,11 @@ trait SagaDsl {
 
   def inParallel[A](fragments: List[Fragment[A]]): Fragment[A] = inParallelImpl(fragments)
 
-  private def inParallelImpl[A](fragments: List[Fragment[A]]): Fragment[A] =
+  private def inParallelImpl[A](fragments: List[Fragment[A]]): Fragment[A] = {
     Fragment(fragments.flatMap(_.input),
-             fragments.flatMap(_.output),
-             fragments.map(_.sagaBuilder).find(_.isDefined).flatten)
+      fragments.flatMap(_.output),
+      fragments.map(_.sagaBuilder).find(_.isDefined).flatten)
+  }
 
   def inSeries[A](fragments: Fragment[A]*): Fragment[A] = inSeriesImpl(List(fragments: _*))
 

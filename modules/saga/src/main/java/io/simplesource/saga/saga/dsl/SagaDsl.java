@@ -1,14 +1,9 @@
 package io.simplesource.saga.saga.dsl;
-//
-//import java.util.UUID
-//
-//import cats.data.NonEmptyList
-//import model.saga._
-//
-//import scala.collection.mutable
-//
 
-import io.simplesource.saga.model.saga.SagaAction;
+import io.simplesource.data.NonEmptyList;
+import io.simplesource.data.Result;
+import io.simplesource.data.Sequence;
+import io.simplesource.saga.model.saga.*;
 import lombok.Value;
 
 import java.util.*;
@@ -20,17 +15,19 @@ public final class SagaDsl {
     static final class Fragment<A> {
         List<UUID> input;
         List<UUID> output;
-        SagaBuilder<A> sagaBuilder;
+        Optional<SagaBuilder<A>> sagaBuilder;
 
         Fragment<A> then(Fragment<A> next) {
-            SagaBuilder<A> sb = this.sagaBuilder;
-            SagaBuilder<A> sbNext = next.sagaBuilder;
+            Optional<SagaBuilder<A>> sbO = this.sagaBuilder;
+            Optional<SagaBuilder<A>> sbNextO = next.sagaBuilder;
 
-            if (sb != null && sbNext != null) {
+            if (sbO.isPresent() && sbNextO.isPresent()) {
+                SagaBuilder<A> sb = sbO.get();
+                SagaBuilder<A> sbNext = sbNextO.get();
                 if (sb != sbNext)
                     sb.errors.add("Actions created by different builders");
-                for (UUID thisId: this.output) {
-                    for (UUID nextId: next.input) {
+                for (UUID thisId : this.output) {
+                    for (UUID nextId : next.input) {
                         Set<UUID> e = sb.dependencies.get(nextId);
                         if (e != null) {
                             // TODO: need decent immutable collections
@@ -41,11 +38,31 @@ public final class SagaDsl {
                     }
                 }
                 return new Fragment<>(this.input, next.output, this.sagaBuilder);
-            } else if (sb != null) {
+            } else if (sbO.isPresent()) {
                 return this;
             }
             return next;
         }
+    }
+
+    static <A> Fragment<A> inParallel(Fragment<A>... fragments) {
+        Stream<Fragment<A>> fragSteam = Arrays.stream(fragments);
+        Stream<Optional<SagaBuilder<A>>> a = fragSteam.map(x -> x.sagaBuilder);
+        Optional<SagaBuilder<A>> c = a.filter(Optional::isPresent).findFirst().flatMap(x -> x);
+
+        return new Fragment<>(
+                fragSteam.flatMap(f -> f.input.stream()).collect(Collectors.toList()),
+                fragSteam.flatMap(f -> f.output.stream()).collect(Collectors.toList()),
+                c);
+    }
+
+    static <A> Fragment<A> inSeries(Fragment<A>... fragments) {
+        Fragment<A> cumulative = new Fragment<>(Collections.emptyList(), Collections.emptyList(), Optional.empty());
+        for (Fragment<A> next : fragments) {
+            cumulative = cumulative.then(next);
+        }
+
+        return cumulative;
     }
 
     @Value
@@ -53,17 +70,50 @@ public final class SagaDsl {
         Map<UUID, SagaAction<A>> actions = new HashMap<>();
         Map<UUID, Set<UUID>> dependencies = new HashMap<>();
         List<String> errors = new ArrayList<>();
-    }
 
-    static <A> Fragment<A> inParallel(Fragment<A>... fragments) {
-        Stream<Fragment<A>> fragSteam = Arrays.stream(fragments);
-        return new Fragment(
-                fragSteam.flatMap(f -> f.input.stream()).collect(Collectors.toList()),
-                fragSteam.flatMap(f -> f.output.stream()).collect(Collectors.toList()),
-                fragSteam.flatMap(a -> a.sagaBuilder).(a -> a != null).flatten)
+        Fragment<A> addAction(UUID actionId,
+                              String actionType,
+                              ActionCommand<A> actionCommand,
+                              Optional<ActionCommand<A>> undoAction) {
+            SagaAction<A> action = new SagaAction<A>(actionId,
+                    actionType,
+                    actionCommand,
+                    undoAction,
+                    Collections.emptySet(),
+                    ActionStatus.Pending,
+                    Optional.empty());
+
+            if (actions.containsKey(actionId))
+                errors.add(String.format("Action Id already used %s", actionId));
+            actions.put(action.actionId, action);
+            dependencies.put(actionId, Collections.emptySet());
+            List<UUID> actionIdList = Collections.singletonList(action.actionId);
+            return new Fragment<>(actionIdList, actionIdList, Optional.of(this));
+        }
+
+        public Result<SagaError, Saga<A>> build() {
+            if (errors.isEmpty()) {
+                Map<UUID, SagaAction<A>> newActions = actions.entrySet().stream().map(entry -> {
+                    SagaAction<A> eAct = entry.getValue();
+                    return new SagaAction<>(eAct.actionId,
+                            eAct.actionType,
+                            eAct.command,
+                            eAct.undoCommand,
+                            dependencies.get(entry.getKey()),
+                            eAct.status,
+                            Optional.empty());
+                }).collect(Collectors.toMap(sa -> sa.actionId, sa -> sa));
+                return Result.success(new Saga<>(UUID.randomUUID(), newActions, SagaStatus.NotStarted, Sequence.first()));
+            } else {
+                NonEmptyList<SagaError> nelError = NonEmptyList.fromList(
+                        errors.stream().map(e -> SagaError.of(SagaError.Reason.InternalError, e))
+                                .collect(Collectors.toList()))
+                        .get();
+                return Result.failure(nelError);
+            }
+        }
     }
 }
-
 
 
 //trait SagaDsl {
