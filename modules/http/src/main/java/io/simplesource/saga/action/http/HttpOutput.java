@@ -15,7 +15,7 @@ import java.util.Optional;
   */
 @Value
 public final class HttpOutput<K, O, R> {
-    interface HttpResultDecoder<O, R> {
+    public interface HttpResultDecoder<O, R> {
         Optional<Result<Throwable, R>> decode(O output);
     }
 

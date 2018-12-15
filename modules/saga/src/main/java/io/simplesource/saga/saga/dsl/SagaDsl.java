@@ -1,14 +1,19 @@
 package io.simplesource.saga.saga.dsl;
 
+import com.google.common.collect.Lists;
 import io.simplesource.data.NonEmptyList;
 import io.simplesource.data.Result;
 import io.simplesource.data.Sequence;
 import io.simplesource.saga.model.saga.*;
 import lombok.Value;
+import lombok.experimental.ExtensionMethod;
 
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static io.simplesource.saga.saga.dsl.SagaDsl.*;
+
 
 public final class SagaDsl {
     @Value
@@ -46,7 +51,15 @@ public final class SagaDsl {
     }
 
     static <A> Fragment<A> inParallel(Fragment<A>... fragments) {
-        Stream<Fragment<A>> fragSteam = Arrays.stream(fragments);
+        return inParallel(Lists.newArrayList(fragments));
+    }
+
+    static <A> Fragment<A> inSeries(Fragment<A>... fragments) {
+        return inSeries(Lists.newArrayList(fragments));
+    }
+
+    static <A> Fragment<A> inParallel(List<Fragment<A>> fragments) {
+        Stream<Fragment<A>> fragSteam = fragments.stream();
         Stream<Optional<SagaBuilder<A>>> a = fragSteam.map(x -> x.sagaBuilder);
         Optional<SagaBuilder<A>> c = a.filter(Optional::isPresent).findFirst().flatMap(x -> x);
 
@@ -56,7 +69,7 @@ public final class SagaDsl {
                 c);
     }
 
-    static <A> Fragment<A> inSeries(Fragment<A>... fragments) {
+    static <A> Fragment<A> inSeries(List<Fragment<A>> fragments) {
         Fragment<A> cumulative = new Fragment<>(Collections.emptyList(), Collections.emptyList(), Optional.empty());
         for (Fragment<A> next : fragments) {
             cumulative = cumulative.then(next);
@@ -112,6 +125,16 @@ public final class SagaDsl {
                 return Result.failure(nelError);
             }
         }
+    }
+}
+
+
+class X {
+    void v() {
+        inParallel(Collections.<Fragment<String>>emptyList())
+                .then(inParallel(Collections.emptyList()))
+                .then(inParallel(Collections.emptyList()));
+
     }
 }
 
