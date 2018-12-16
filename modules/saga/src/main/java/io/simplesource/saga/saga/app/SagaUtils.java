@@ -1,6 +1,7 @@
 package io.simplesource.saga.saga.app;
 
 
+import io.simplesource.data.NonEmptyList;
 import io.simplesource.data.Sequence;
 import io.simplesource.kafka.internal.util.Tuple2;
 import io.simplesource.saga.model.messages.SagaStateTransition;
@@ -45,11 +46,12 @@ public final class SagaUtils {
 
     public static <A> List<SagaActionExecution<A>> getNextActions(Saga<A> sagaState) {
         if (sagaState.status == SagaStatus.InProgress) {
-            Set<SagaAction<A>> doneKeys = sagaState.actions
+            Set<UUID> doneKeys = sagaState.actions
                     .entrySet()
                     .stream()
                     .filter(entry -> entry.getValue().status == ActionStatus.Completed)
                     .map(Map.Entry::getValue)
+                    .map(x -> x.actionId)
                     .collect(Collectors.toSet());
             List<SagaActionExecution<A>> pendingActions = sagaState.actions
                     .values()
@@ -104,7 +106,7 @@ public final class SagaUtils {
     static public <A> Saga<A> applyTransition(SagaStateTransition t, Saga<A> s) {
         if (t instanceof SagaStateTransition.SetInitialState) {
             Saga<A> i = ((SagaStateTransition.SetInitialState<A>) t).sagaState;
-            return new Saga<>(i.sagaId, i.actions, SagaStatus.InProgress, Sequence.first());
+            return Saga.of(i.sagaId, i.actions, SagaStatus.InProgress, Sequence.first());
         }
         if (t instanceof SagaStateTransition.SagaActionStatusChanged) {
             SagaStateTransition.SagaActionStatusChanged st = ((SagaStateTransition.SagaActionStatusChanged) t);
@@ -123,8 +125,21 @@ public final class SagaUtils {
 
             // TODO: add a MapUtils updated
             Map<UUID, SagaAction<A>> actionMap = new HashMap<>();
-            s.actions.forEach((k, v) -> actionMap.put(k, (k == st.actionId) ? action : v));
-            return new Saga<>(s.sagaId, actionMap, s.status, s.sequence.next());
+            s.actions.forEach((k, v) -> actionMap.put(k, k.equals(st.actionId) ? action : v));
+            return s.updated(actionMap, s.status, s.sagaError);
+        }
+        if (t instanceof SagaStateTransition.SagaStatusChanged) {
+            // TODO: add saga errors
+            SagaStateTransition.SagaStatusChanged st = ((SagaStateTransition.SagaStatusChanged) t);
+            return s.updated(st.sagaStatus, st.actionErrors.map(NonEmptyList::head));
+        }
+        if (t instanceof SagaStateTransition.TransitionList) {
+            Saga<A> sNew = s;
+            SagaStateTransition.TransitionList tl = ((SagaStateTransition.TransitionList) t);
+            for (SagaStateTransition change: tl.actions) {
+                sNew = applyTransition(change, sNew);
+            }
+            return sNew;
         }
         return s;
     }

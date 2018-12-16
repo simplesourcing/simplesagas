@@ -34,6 +34,6 @@ public interface SagaStateTransition {
 
     @Value
     class TransitionList implements SagaStateTransition {
-        public final List<SagaActionStatusChanged> actionError;
+        public final List<SagaActionStatusChanged> actions;
     }
 }

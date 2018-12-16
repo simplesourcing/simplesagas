@@ -46,7 +46,7 @@ object ClientApp {
       .withClientId("saga-client-1")
       .build()
 
-    for (_ <- 1 to 3) {
+    for (_ <- 1 to 1) {
       val shouldSucceed = actionSequence("Harry", "Hughley", 1000.0, List(500, 100), 0)
       submitSagaRequest(api, shouldSucceed)
 

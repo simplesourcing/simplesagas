@@ -129,7 +129,7 @@ public final class SagaDsl {
                             eAct.status,
                             Optional.empty());
                 }).collect(Collectors.toMap(sa -> sa.actionId, sa -> sa));
-                return Result.success(new Saga<>(UUID.randomUUID(), newActions, SagaStatus.NotStarted, Sequence.first()));
+                return Result.success(Saga.of(UUID.randomUUID(), newActions, SagaStatus.NotStarted, Sequence.first()));
             } else {
                 NonEmptyList<SagaError> nelError = NonEmptyList.fromList(
                         errors.stream().map(e -> SagaError.of(SagaError.Reason.InternalError, e))

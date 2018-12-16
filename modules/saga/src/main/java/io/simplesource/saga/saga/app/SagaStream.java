@@ -70,7 +70,7 @@ final public class SagaStream {
         // TODO: remove the random UUIDs
         return stateTransitionStream
                 .groupByKey(Serialized.with(sSerdes.uuid(), sSerdes.transition()))
-                .aggregate(() -> new Saga<>(UUID.randomUUID(), new HashMap<>(), SagaStatus.NotStarted, Sequence.first()),
+                .aggregate(() -> Saga.of(UUID.randomUUID(), new HashMap<>(), SagaStatus.NotStarted, Sequence.first()),
                         (k, t, s) -> SagaUtils.applyTransition(t, s),
                         materialized)
                 .toStream();

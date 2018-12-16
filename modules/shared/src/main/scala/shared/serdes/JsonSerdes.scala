@@ -158,7 +158,7 @@ object JsonSerdes {
         "status",
         "sequence"
       )(x => (x.sagaId, x.actions, x.status.toString, x.sequence),
-        (sid, acts, st, seq) => new Saga[A](sid, acts, SagaStatus.valueOf(st), seq))
+        (sid, acts, st, seq) => Saga.of[A](sid, acts, SagaStatus.valueOf(st), seq))
 
     private val sagaSerde = (sagaEnc, sagaDec).asSerde
 
@@ -201,7 +201,7 @@ object JsonSerdes {
 
     implicit val (tlEnc, tlDec) =
       mappedCodec[java.util.List[SagaStateTransition.SagaActionStatusChanged],
-                  SagaStateTransition.TransitionList](_.actionError,
+                  SagaStateTransition.TransitionList](_.actions,
                                                       x => new SagaStateTransition.TransitionList(x))
 
     implicit val stateTransitionSerde =

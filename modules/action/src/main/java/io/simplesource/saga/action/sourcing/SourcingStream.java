@@ -27,8 +27,8 @@ import java.util.function.Function;
 public class SourcingStream {
     static Logger logger = LoggerFactory.getLogger(SourcingStream.class);
 
-    public static <K, V> ForeachAction<K, V> logValues(String prefix) {
-        return (k, v) -> Utils.logValues(logger, prefix);
+    static <K, V> ForeachAction<K, V> logValues(String prefix) {
+        return (k, v) -> logger.info("{}: {}={}", prefix, k.toString().substring(0, 6), v.toString());
     }
 
     public static <A, I, K, C> void addSubTopology(SourcingContext<A, I, K, C> ctx,
@@ -69,7 +69,9 @@ public class SourcingStream {
                 cResp.sequenceResult().getOrElse(cResp.readSequence());
 
         KStream<UUID, Tuple2<ActionRequest<A>, Result<Throwable, I>>> reqsWithDecoded =
-                actionRequests.mapValues((k, ar) -> Tuple2.of(ar, ctx.commandSpec.decode.apply(ar.actionCommand.command)));
+                actionRequests
+                        .mapValues((k, ar) -> Tuple2.of(ar, ctx.commandSpec.decode.apply(ar.actionCommand.command)))
+                        .peek(logValues("reqsWithDecoded"));
 
         KStream<UUID, Tuple2<ActionRequest<A>, Result<Throwable, I>>>[] branchSuccessFailure = reqsWithDecoded.branch((k, v) -> v.v2().isSuccess(), (k, v) -> v.v2().isFailure());
 

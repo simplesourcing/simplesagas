@@ -37,7 +37,7 @@ public class IdempotentStream {
                         .reduce((cr1, cr2) -> cr2, materializer);
 
         KStream<UUID, Tuple2<ActionRequest<A>, ActionResponse>> actionRequestWithResponse = actionRequests
-                .filter((k, aReq) -> aReq.actionType == actionType)
+                .filter((k, aReq) -> aReq.actionType.equals(actionType))
                 .leftJoin(actionByCommandId,
                         Tuple2::of,
                         Joined.with(aSpec.serdes.uuid(), aSpec.serdes.request(), aSpec.serdes.response()));
