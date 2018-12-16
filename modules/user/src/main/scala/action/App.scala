@@ -49,12 +49,12 @@ object App {
   }
 
   implicit class EOps[E, A](eea: Either[E, A]) {
-    def toResult(): Result[E, A] = eea.fold(e => Result.failure(e), a => Result.success(a))
+    def toResult: Result[E, A] = eea.fold(e => Result.failure(e), a => Result.success(a))
   }
 
   lazy val userSpec = new CommandSpec[Json, UserCommand, UUID, UserCommand](
     constants.userActionType,
-    json => json.as[UserCommand].toResult().errorMap(e => e),
+    json => json.as[UserCommand].toResult.errorMap(e => e),
     (a: UserCommand) => a,
     _.userId,
     JsonSerdes.commandSerdes[UUID, UserCommand],
@@ -64,7 +64,7 @@ object App {
 
   lazy val accountSpec = new CommandSpec[Json, AccountCommand, UUID, AccountCommand](
     constants.accountActionType,
-    json => json.as[AccountCommand].toResult().errorMap(e => e),
+    json => json.as[AccountCommand].toResult.errorMap(e => e),
     (a: AccountCommand) => a,
     _.accountId,
     JsonSerdes.commandSerdes[UUID, AccountCommand],
@@ -76,7 +76,7 @@ object App {
     "async_test_action_type",
     (a: Json) => {
       val decoded = a.as[String]
-      decoded.toResult().errorMap(e => e)
+      decoded.toResult.errorMap(e => e)
     },
     i => i.toLowerCase.take(3),
     (i: String, callBack: Callback[String]) => { callBack.complete(Result.success(s"${i.length.toString}: $i"))},   //i => Future.successful(s"${i.length.toString}: $i"),
@@ -99,16 +99,16 @@ object App {
   final case class FXRates(date: String, base: String, rates: Map[String, BigDecimal])
 
   import io.circe.generic.auto._
-  import HttpClient._
+  implicit val decoder = HttpClient.httpRequest[Key, Body]._2
 
   lazy val httpSpec = new HttpSpec[Input, Key, Body, Output, FXRates](
     "http_action_type",
-    _.as[HttpRequest[Key, Body]].toResult().map(x => x).errorMap(e => e),
+    _.as[HttpRequest[Key, Body]].toResult.map(x => x).errorMap(e => e),
     HttpClient.requester[Key, Body, Output],
     asyncConfig.appId,
     Optional.of(
       new HttpOutput(
-        (o: Input) => Optional.of(o.as[FXRates].toResult().errorMap(e => e)),
+        (o: Input) => Optional.of(o.as[FXRates].toResult.errorMap(e => e)),
         new AsyncSerdes(ProductCodecs.serdeFromCodecs[Key], ProductCodecs.serdeFromCodecs[FXRates]),
         List(new TopicCreation("fx_rates",
           new TopicSpec(6, 1, Map.empty[String, String].asJava))).asJava

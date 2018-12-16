@@ -18,8 +18,8 @@ object HttpClient {
   import shared.serdes.JavaCodecs._
   import shared.serdes.ProductCodecs._
 
-  implicit def httpRequest[K: Encoder: Decoder, B: Encoder: Decoder]: Decoder[HttpRequest[K, B]] = {
-    val v = productCodecs6[
+  implicit def httpRequest[K: Encoder: Decoder, B: Encoder: Decoder]: (Encoder[HttpRequest[K, B]], Decoder[HttpRequest[K, B]]) = {
+    productCodecs6[
       K,
       String,
       String,
@@ -35,7 +35,6 @@ object HttpClient {
       "topicName"
     )(r => (r.key, r.verb.toString, r.url, r.headers, r.body, r.topicName),
       (k, v, u, h, b, t) => new HttpRequest[K, B](k, HttpVerb.valueOf(v), u, h, b, t))
-    v._2
   }
 
 

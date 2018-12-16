@@ -3,6 +3,7 @@ package io.simplesource.saga.action.http;
 import io.simplesource.data.Result;
 import lombok.Value;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 
@@ -29,4 +30,16 @@ public final class HttpRequest<K, B> {
     public final Map<String, String> headers;
     public final Optional<B> body;
     public final Optional<String> topicName;
+
+    public static <K> HttpRequest<K, ?> of(K key, HttpVerb verb, String url) {
+        return new HttpRequest<>(key, verb, url, Collections.emptyMap(), Optional.empty(), Optional.empty());
+    }
+
+    public static <K> HttpRequest<K, ?> of(K key, HttpVerb verb, String url, String topicName) {
+        return new HttpRequest<>(key, verb, url, Collections.emptyMap(), Optional.empty(), Optional.ofNullable(topicName));
+    }
+
+    public static <K, B> HttpRequest<K, B> ofWithBody(K key, HttpVerb verb, String url, String topicName, B body) {
+        return new HttpRequest<>(key, verb, url, Collections.emptyMap(), Optional.ofNullable(body), Optional.ofNullable(topicName));
+    }
 }

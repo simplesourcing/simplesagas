@@ -17,12 +17,12 @@ import static io.simplesource.saga.saga.dsl.SagaDsl.*;
 
 public final class SagaDsl {
     @Value
-    static final class Fragment<A> {
+    public static final class Fragment<A> {
         List<UUID> input;
         List<UUID> output;
         Optional<SagaBuilder<A>> sagaBuilder;
 
-        Fragment<A> then(Fragment<A> next) {
+        public Fragment<A> then(Fragment<A> next) {
             Optional<SagaBuilder<A>> sbO = this.sagaBuilder;
             Optional<SagaBuilder<A>> sbNextO = next.sagaBuilder;
 
@@ -50,15 +50,15 @@ public final class SagaDsl {
         }
     }
 
-    static <A> Fragment<A> inParallel(Fragment<A>... fragments) {
+    public static <A> Fragment<A> inParallel(Fragment<A>... fragments) {
         return inParallel(Lists.newArrayList(fragments));
     }
 
-    static <A> Fragment<A> inSeries(Fragment<A>... fragments) {
+    public static <A> Fragment<A> inSeries(Fragment<A>... fragments) {
         return inSeries(Lists.newArrayList(fragments));
     }
 
-    static <A> Fragment<A> inParallel(List<Fragment<A>> fragments) {
+    public static <A> Fragment<A> inParallel(Collection<Fragment<A>> fragments) {
         Stream<Fragment<A>> fragSteam = fragments.stream();
         Stream<Optional<SagaBuilder<A>>> a = fragSteam.map(x -> x.sagaBuilder);
         Optional<SagaBuilder<A>> c = a.filter(Optional::isPresent).findFirst().flatMap(x -> x);
@@ -69,7 +69,7 @@ public final class SagaDsl {
                 c);
     }
 
-    static <A> Fragment<A> inSeries(List<Fragment<A>> fragments) {
+    public static <A> Fragment<A> inSeries(Iterable<Fragment<A>> fragments) {
         Fragment<A> cumulative = new Fragment<>(Collections.emptyList(), Collections.emptyList(), Optional.empty());
         for (Fragment<A> next : fragments) {
             cumulative = cumulative.then(next);
@@ -79,15 +79,15 @@ public final class SagaDsl {
     }
 
     @Value
-    static final class SagaBuilder<A> {
+    public static final class SagaBuilder<A> {
         Map<UUID, SagaAction<A>> actions = new HashMap<>();
         Map<UUID, Set<UUID>> dependencies = new HashMap<>();
         List<String> errors = new ArrayList<>();
 
-        Fragment<A> addAction(UUID actionId,
-                              String actionType,
-                              ActionCommand<A> actionCommand,
-                              Optional<ActionCommand<A>> undoAction) {
+        private Fragment<A> addAction(UUID actionId,
+                                      String actionType,
+                                      ActionCommand<A> actionCommand,
+                                      Optional<ActionCommand<A>> undoAction) {
             SagaAction<A> action = new SagaAction<A>(actionId,
                     actionType,
                     actionCommand,
@@ -102,6 +102,19 @@ public final class SagaDsl {
             dependencies.put(actionId, Collections.emptySet());
             List<UUID> actionIdList = Collections.singletonList(action.actionId);
             return new Fragment<>(actionIdList, actionIdList, Optional.of(this));
+        }
+
+        public Fragment<A> addAction(UUID actionId,
+                                     String actionType,
+                                     ActionCommand<A> actionCommand) {
+            return addAction(actionId, actionType, actionCommand, Optional.empty());
+        }
+
+        public Fragment<A> addAction(UUID actionId,
+                                     String actionType,
+                                     ActionCommand<A> actionCommand,
+                                     ActionCommand<A> undoActionCommand) {
+            return addAction(actionId, actionType, actionCommand, Optional.of(undoActionCommand));
         }
 
         public Result<SagaError, Saga<A>> build() {
