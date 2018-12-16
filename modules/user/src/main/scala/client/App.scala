@@ -27,7 +27,7 @@ import shared.serdes.JsonSerdes
 import scala.collection.JavaConverters._
 import io.simplesource.saga.saga.dsl.SagaDsl._
 
-object ClientApp {
+object App {
   private val logger                       = LoggerFactory.getLogger(classOf[App])
   private val responseCount: AtomicInteger = new AtomicInteger(0)
 
