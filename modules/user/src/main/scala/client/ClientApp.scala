@@ -9,7 +9,7 @@ import action.App.Key
 import action.HttpClient
 import command.model.auction.AccountCommand
 import command.model.user.UserCommand
-import io.circe.Json
+import io.circe.{Encoder, Json}
 import io.circe.generic.auto._
 import io.circe.syntax._
 import io.simplesource.data.Result
@@ -25,8 +25,6 @@ import shared.TopicUtils
 import shared.serdes.JsonSerdes
 
 import scala.collection.JavaConverters._
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration._
 import io.simplesource.saga.saga.dsl.SagaDsl._
 
 object ClientApp {
@@ -46,7 +44,7 @@ object ClientApp {
       .withClientId("saga-client-1")
       .build()
 
-    for (_ <- 1 to 1) {
+    for (_ <- 1 to 3) {
       val shouldSucceed = actionSequence("Harry", "Hughley", 1000.0, List(500, 100), 0)
       submitSagaRequest(api, shouldSucceed)
 
@@ -151,7 +149,7 @@ object ClientApp {
       null)
 
     import action.App.Key
-    implicit val encoder = HttpClient.httpRequest[Key, String]._1
+    implicit val encoder: Encoder[HttpRequest[Key, String]] = HttpClient.httpRequest[Key, String]._1
 
     val testHttpInvoke: Fragment[Json] = builder.addAction(
       UUID.randomUUID(),
