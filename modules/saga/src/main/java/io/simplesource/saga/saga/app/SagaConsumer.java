@@ -1,16 +1,4 @@
 package io.simplesource.saga.saga.app;
-//
-//import java.util.UUID
-//
-//import model.messages.{ActionResponse, SagaRequest, SagaResponse, SagaStateTransition}
-//import model.saga.Saga
-//import model.specs.{ActionProcessorSpec, SagaSpec}
-//import org.apache.kafka.streams.StreamsBuilder
-//import org.apache.kafka.streams.kstream.{Consumed, KStream}
-//import org.slf4j.LoggerFactory
-//import shared.topics.TopicNamer
-//import shared.topics.TopicTypes.{ActionTopic, SagaTopic}
-
 
 import io.simplesource.saga.model.messages.ActionResponse;
 import io.simplesource.saga.model.messages.SagaRequest;

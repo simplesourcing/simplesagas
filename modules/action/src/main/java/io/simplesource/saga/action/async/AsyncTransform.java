@@ -16,7 +16,7 @@ final public class AsyncTransform {
         void close();
     }
 
-    final static public <K, V> ProducerRecord<byte[], byte[]> toBytes(
+    static public <K, V> ProducerRecord<byte[], byte[]> toBytes(
             ProducerRecord<K, V> record,
             Serde<K> kSerde,
             Serde<V> vSerde) {

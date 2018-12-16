@@ -47,8 +47,7 @@ public final class AsyncApp<A> {
     }
 
     public AsyncApp(ActionSerdes<A> actionSerdes, TopicConfigBuilder.BuildSteps topicBuildFn) {
-        List<String> expectedTopicList = new ArrayList<>();
-        expectedTopicList.addAll(TopicTypes.ActionTopic.all);
+        List<String> expectedTopicList = new ArrayList<>(TopicTypes.ActionTopic.all);
         expectedTopicList.add(TopicTypes.ActionTopic.requestUnprocessed);
 
         actionTopicConfig = TopicConfigBuilder.buildTopics(expectedTopicList, new HashMap<>(), new HashMap<>(), topicBuildFn);
@@ -70,8 +69,9 @@ public final class AsyncApp<A> {
         return this;
     }
 
-    public void addCloseHandler(Supplier<Integer> handler) {
+    public AsyncApp<A>  addCloseHandler(Supplier<Integer> handler) {
         closeHandlers.add(handler);
+        return this;
     }
 
     public void run(StreamAppConfig appConfig) {

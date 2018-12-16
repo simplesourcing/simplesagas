@@ -29,29 +29,24 @@ public final class SourcingApp<A> {
     private final ActionProcessorSpec<A> actionSpec;
     private final Logger logger;
 
-    private final List<Command> commands = new ArrayList<>();
+    private final List<Command<A>> commands = new ArrayList<>();
     private final List<TopicCreation> topicCreations;
 
     @Value
-    static final class CommandInput<A> {
+    private static final class CommandInput<A> {
         final StreamsBuilder builder;
         final KStream<UUID, ActionRequest<A>> actionRequests;
         final KStream<UUID, ActionResponse> actionResponses;
     }
 
-    static interface Command<A> {
+    interface Command<A> {
         void applyCommandInput(CommandInput<A> input);
     }
-
-
-//  private var topics
-//    : List<TopicCreation> = TopicCreation.allTopics(actionTopicConfig) //   topicNames.ActionTopic.all.map(TopicCreation(actionTopicConfig))
-
 
     public SourcingApp(ActionSerdes<A> actionSerdes , TopicConfigBuilder.BuildSteps topicBuildFn) {
         actionTopicConfig =
                 TopicConfigBuilder.buildTopics(TopicTypes.ActionTopic.all, new HashMap<>(), new HashMap<>(), topicBuildFn);
-        actionSpec = new ActionProcessorSpec(actionSerdes);
+        actionSpec = new ActionProcessorSpec<>(actionSerdes);
         logger = LoggerFactory.getLogger(SourcingApp.class);
         topicCreations = TopicCreation.allTopics(actionTopicConfig);
     }
@@ -93,7 +88,7 @@ public final class SourcingApp<A> {
         KStream<UUID, ActionResponse> actionResponses  =
       ActionConsumer.actionResponseStream(actionSpec, actionTopicConfig.namer, builder);
 
-    CommandInput<A> commandInput = new CommandInput(builder, actionRequests, actionResponses);
+    CommandInput<A> commandInput = new CommandInput<>(builder, actionRequests, actionResponses);
 
 
     for (Command<A> c: commands) {

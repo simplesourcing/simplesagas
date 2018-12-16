@@ -42,7 +42,7 @@ public class TopicConfigBuilder {
         return this;
     }
 
-    public TopicConfigBuilder withDefaultConfig(int partitions, int replication, long retentionInDays) {
+    public TopicConfigBuilder withDefaultConfig(int partitions, int replication, int retentionInDays) {
       defaultSpec = topicType -> defaultMap(partitions, replication, retentionInDays, topicType);
      return this;
   }

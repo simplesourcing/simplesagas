@@ -1,11 +1,11 @@
 package shared.serdes
 import java.util.UUID
 
-import cats.data.NonEmptyList
 import io.circe.Json
 import io.circe.generic.auto._
-import model.messages.{ActionRequest, ActionResponse}
-import model.saga.ActionCommand
+import io.simplesource.data.Result
+import io.simplesource.saga.model.messages.{ActionRequest, ActionResponse}
+import io.simplesource.saga.model.saga.{ActionCommand, SagaError}
 import org.scalatest.{Matchers, WordSpec}
 
 class JsonActionTests extends WordSpec with Matchers {
@@ -13,14 +13,14 @@ class JsonActionTests extends WordSpec with Matchers {
   import io.circe.syntax._
   "action shared.serdes" must {
     val serdes =
-      JsonSerdes.actionSerdesScala[Json]
+      JsonSerdes.actionSerdes[Json]
     val topic = "topic"
 
     "serialise and deserialise key UUIDs" in {
-      val request = ActionRequest(
+      val request = new ActionRequest(
         UUID.randomUUID(),
         UUID.randomUUID(),
-        ActionCommand(UUID.randomUUID(), (UserCommand.Insert(UUID.randomUUID(), "", ""): UserCommand).asJson),
+        new ActionCommand(UUID.randomUUID(), (UserCommand.Insert(UUID.randomUUID(), "", ""): UserCommand).asJson),
         "action")
       val ser = serdes.request.serializer().serialize(topic, request)
       val de  = serdes.request.deserializer().deserialize(topic, ser)
@@ -28,17 +28,17 @@ class JsonActionTests extends WordSpec with Matchers {
     }
 
     "serialise and deserialise sucess responses" in {
-      val response = ActionResponse(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), Right(()))
+      val response = new ActionResponse(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), Result.success(true))
       val ser      = serdes.response.serializer().serialize(topic, response)
       val de       = serdes.response.deserializer().deserialize(topic, ser)
       de shouldBe response
     }
 
     "serialise and deserialise failure responses" in {
-      val response = ActionResponse(UUID.randomUUID(),
+      val response = new ActionResponse(UUID.randomUUID(),
                                     UUID.randomUUID(),
                                     UUID.randomUUID(),
-                                    Left(model.saga.SagaError(NonEmptyList.of("First", "Second", "Third"))))
+                                    Result.failure(SagaError.of(SagaError.Reason.InternalError, "error")))
       val ser = serdes.response.serializer().serialize(topic, response)
       val de  = serdes.response.deserializer().deserialize(topic, ser)
       de shouldBe response

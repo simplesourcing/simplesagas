@@ -42,7 +42,7 @@ object ClientApp {
           .withKafkaBootstrap("127.0.0.1:9092"))
     val api: SagaAPI[Json] = sagaClientBuilder
       .withSerdes(JsonSerdes.sagaSerdes[Json])
-      .withTopicConfig(TopicUtils.buildStepsJ(constants.sagaTopicPrefix, constants.sagaBaseName))
+      .withTopicConfig(TopicUtils.buildSteps(constants.sagaTopicPrefix, constants.sagaBaseName))
       .withClientId("saga-client-1")
       .build()
 

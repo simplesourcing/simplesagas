@@ -16,14 +16,14 @@ import io.simplesource.saga.model.saga.Saga;
 import org.junit.jupiter.api.Test;
 
 class DslTest {
-    UUID rId() {
+    UUID randomId() {
         return UUID.randomUUID();
     }
 
     SagaDsl.SagaBuilder<String> builder = new SagaDsl.SagaBuilder<>();
 
     SagaDsl.Fragment<String> create(String a) {
-        return builder.addAction(rId(), "actionType-" + a, new ActionCommand<>(rId(), "Command-" + a));
+        return builder.addAction(randomId(), "actionType-" + a, new ActionCommand<>(randomId(), "Command-" + a));
     }
 
     public void dependsOnSet(String action, Set<String> dependsOn, Saga<String> saga) {

@@ -33,16 +33,16 @@ object App {
   def startSourcingActionProcessor(): Unit = {
     new SourcingApp[Json](
       JsonSerdes.actionSerdes[Json],
-      TopicUtils.buildStepsJ(constants.actionTopicPrefix, constants.sagaActionBaseName)
+      TopicUtils.buildSteps(constants.actionTopicPrefix, constants.sagaActionBaseName)
     ).addCommand(accountSpec,
-                  TopicUtils.buildStepsJ(constants.commandTopicPrefix, constants.accountAggregateName))
-      .addCommand(userSpec, TopicUtils.buildStepsJ(constants.commandTopicPrefix, constants.userAggregateName))
+                  TopicUtils.buildSteps(constants.commandTopicPrefix, constants.accountAggregateName))
+      .addCommand(userSpec, TopicUtils.buildSteps(constants.commandTopicPrefix, constants.userAggregateName))
       .run(sourcingConfig)
   }
 
   def startAsyncActionProcessor(): Unit = {
     new HttpApp[Json](JsonSerdes.actionSerdes[Json],
-                      TopicUtils.buildStepsJ(constants.actionTopicPrefix, constants.sagaActionBaseName))
+                      TopicUtils.buildSteps(constants.actionTopicPrefix, constants.sagaActionBaseName))
       .addAsync(asyncSpec)
       .addHttpProcessor(httpSpec)
       .run(asyncConfig)

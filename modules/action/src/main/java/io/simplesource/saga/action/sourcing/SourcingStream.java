@@ -9,7 +9,6 @@ import io.simplesource.kafka.model.CommandRequest;
 import io.simplesource.kafka.model.CommandResponse;
 import io.simplesource.saga.action.common.ActionProducer;
 import io.simplesource.saga.action.common.IdempotentStream;
-import io.simplesource.saga.action.common.Utils;
 import io.simplesource.saga.model.messages.ActionRequest;
 import io.simplesource.saga.model.messages.ActionResponse;
 import io.simplesource.saga.model.saga.SagaError;

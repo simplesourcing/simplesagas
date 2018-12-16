@@ -99,8 +99,8 @@ final public class SagaStream {
             return Optional.of(new StatusWithError(sequence, status, Optional.empty()));
         }
 
-        static Optional<StatusWithError> of(Sequence sequence, SagaStatus status, List<SagaError> error) {
-            return Optional.of(new StatusWithError(sequence, status, NonEmptyList.fromList(error)));
+        static Optional<StatusWithError> of(Sequence sequence, List<SagaError> error) {
+            return Optional.of(new StatusWithError(sequence, SagaStatus.Failed, NonEmptyList.fromList(error)));
         }
     }
 
@@ -114,17 +114,12 @@ final public class SagaStream {
                         return StatusWithError.of(state.sequence, SagaStatus.InFailure);
                     if ((state.status == SagaStatus.InFailure || state.status == SagaStatus.InProgress) &&
                             SagaUtils.sagaFailed(state)) {
-//                        Set<SagaError> errors = state.actions.values().stream()
-//                                .filter(action -> action.status == ActionStatus.Failed)
-//                                .map(action -> action.error).orElse(Stream.empty())
-//                                .flatMap(x -> x).collect(Collectors.toSet());
                         List<SagaError> errors = state.actions.values().stream()
                                 .filter(action -> action.status == ActionStatus.Failed && action.error.isPresent())
                                 .map(action -> action.error.get())
                                 .collect(Collectors.toList());
-//
-//                        NonEmptyList<String> errorList = NonEmptyList.fromList(new ArrayList<>(errors));
-                        return StatusWithError.of(state.sequence, SagaStatus.Failed, errors);
+
+                        return StatusWithError.of(state.sequence, errors);
                     }
                     return Optional.<StatusWithError>empty();
                 })

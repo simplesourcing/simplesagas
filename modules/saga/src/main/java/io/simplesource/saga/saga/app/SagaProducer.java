@@ -11,7 +11,7 @@ import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.Produced;
 
 
-public final class SagaProducer {
+final class SagaProducer {
 
     public static <A> void actionRequests(SagaContext<A> ctx, KStream<UUID, ActionRequest<A>> actionRequests) {
         actionRequests

@@ -60,7 +60,7 @@ final public class SagaApp<A> {
         topics = TopicCreation.allTopics(sagaTopicConfig);
     }
 
-    SagaApp<A> addActionProcessor(ActionProcessorSpec<A> actionSpec, TopicConfigBuilder.BuildSteps buildFn) {
+    public SagaApp<A> addActionProcessor(ActionProcessorSpec<A> actionSpec, TopicConfigBuilder.BuildSteps buildFn) {
         TopicConfig topicConfig = TopicConfigBuilder.buildTopics(TopicTypes.ActionTopic.all, Collections.emptyMap(), Collections.emptyMap(), buildFn);
 
         ActionProcessor<A> actionProcessor = input -> {

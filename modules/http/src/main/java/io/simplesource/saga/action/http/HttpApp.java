@@ -37,8 +37,9 @@ public final class HttpApp<A> {
     }
 
 
-    public void addCloseHandler(Supplier<Integer> handler) {
+    public HttpApp<A>  addCloseHandler(Supplier<Integer> handler) {
         asyncApp.addCloseHandler(handler);
+        return this;
     }
 
     public void run(StreamAppConfig appConfig) {

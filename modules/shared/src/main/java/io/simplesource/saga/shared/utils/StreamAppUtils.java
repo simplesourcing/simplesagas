@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public final class StreamAppUtils {
-    public static final CreateTopicsResult addMissingTopics(AdminClient adminClient, List<TopicCreation> topics){
+    public static CreateTopicsResult addMissingTopics(AdminClient adminClient, List<TopicCreation> topics){
         try {
             Set<String> existingTopics = adminClient.listTopics().names().get();
             Stream<NewTopic> newTopics = topics.stream()

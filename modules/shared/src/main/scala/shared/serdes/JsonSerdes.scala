@@ -69,16 +69,6 @@ object JsonSerdes {
       override def commandResponse(): Serde[CommandResponse]     = cr
     }
 
-  def actionSerdesScala[A: Encoder: Decoder]: model.serdes.ActionSerdes[A] =
-    new model.serdes.ActionSerdes[A] {
-      import io.circe.generic.auto._
-      import model.messages._
-
-      override lazy val uuid: Serde[UUID]                = serdeFromCodecs[UUID]
-      override lazy val request: Serde[ActionRequest[A]] = serdeFromCodecs[ActionRequest[A]]
-      override lazy val response: Serde[ActionResponse]  = serdeFromCodecs[ActionResponse]
-    }
-
   def actionSerdes[A: Encoder: Decoder]: ActionSerdes[A] = new ActionSerdes[A] {
     import io.simplesource.saga.model.messages._
 
@@ -107,17 +97,6 @@ object JsonSerdes {
     override def uuid(): Serde[UUID]                = u
     override def request(): Serde[ActionRequest[A]] = req
     override def response(): Serde[ActionResponse]  = resp
-  }
-
-  def sagaSerdesScala[A: Encoder: Decoder]: model.serdes.SagaSerdes[A] = new model.serdes.SagaSerdes[A] {
-    import io.circe.generic.auto._
-    import model.messages._
-    import model.saga._
-    override lazy val uuid: Serde[UUID]                         = serdeFromCodecs[UUID]
-    override lazy val request: Serde[SagaRequest[A]]            = serdeFromCodecs[SagaRequest[A]]
-    override lazy val response: Serde[SagaResponse]             = serdeFromCodecs[SagaResponse]
-    override lazy val state: Serde[Saga[A]]                     = serdeFromCodecs[Saga[A]]
-    override lazy val transition: Serde[SagaStateTransition[A]] = serdeFromCodecs[SagaStateTransition[A]]
   }
 
   def sagaSerdes[A: Encoder: Decoder]: SagaSerdes[A] = new SagaSerdes[A] {
