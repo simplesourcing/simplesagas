@@ -24,11 +24,14 @@ final case class SagaApp[A](sagaSpec: SagaSpec[A], topicBuildFn: TopicConfigBuil
       TopicTypes.SagaTopic.all,
       new util.HashMap(),
       Collections.singletonMap(
-        TopicTypes.SagaTopic.state, Collections.singletonMap(
-          KafkaTopicConfig.CLEANUP_POLICY_CONFIG, KafkaTopicConfig.CLEANUP_POLICY_COMPACT,
+        TopicTypes.SagaTopic.state,
+        Collections.singletonMap(
+          KafkaTopicConfig.CLEANUP_POLICY_CONFIG,
+          KafkaTopicConfig.CLEANUP_POLICY_COMPACT,
         )
-      )
-    , topicBuildFn)
+      ),
+      topicBuildFn
+    )
   private val serdes: SagaClientSerdes[A] = sagaSpec.serdes
 
   final case class ActionProcessorInput(builder: StreamsBuilder,
@@ -39,7 +42,7 @@ final case class SagaApp[A](sagaSpec: SagaSpec[A], topicBuildFn: TopicConfigBuil
   type ActionProcessor = ActionProcessorInput => Unit
 
   private val actionProcessors: util.List[ActionProcessor] = new util.ArrayList[ActionProcessor]()
-  private val topics: util.List[TopicCreation]             = {
+  private val topics: util.List[TopicCreation] = {
     val list = new util.ArrayList[TopicCreation]()
     list.addAll(TopicCreation.allTopics(sagaTopicConfig))
     list
@@ -47,7 +50,10 @@ final case class SagaApp[A](sagaSpec: SagaSpec[A], topicBuildFn: TopicConfigBuil
 
   def addActionProcessor(actionSpec: ActionProcessorSpec[A],
                          buildFn: TopicConfigBuilder.BuildSteps): SagaApp[A] = {
-    val topicConfig = TopicConfigBuilder.buildTopics(TopicTypes.ActionTopic.all, Collections.emptyMap(), Collections.emptyMap(), buildFn)
+    val topicConfig = TopicConfigBuilder.buildTopics(TopicTypes.ActionTopic.all,
+                                                     Collections.emptyMap(),
+                                                     Collections.emptyMap(),
+                                                     buildFn)
     val actionProcessor: ActionProcessor = input => {
       val ctx = new SagaContext(sagaSpec, actionSpec, sagaTopicConfig.namer, topicConfig.namer)
 

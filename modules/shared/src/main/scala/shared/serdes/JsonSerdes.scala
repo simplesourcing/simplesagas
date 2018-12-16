@@ -95,9 +95,9 @@ object JsonSerdes {
     import ResultEncoders._
     def resp: Serde[ActionResponse] = {
       productCodecs4[UUID, UUID, UUID, Result[SagaError, Boolean], ActionResponse]("sagaId",
-        "actionId",
-        "commandId",
-        "sequenceResult")(
+                                                                                   "actionId",
+                                                                                   "commandId",
+                                                                                   "sequenceResult")(
         x => (x.sagaId, x.actionId, x.commandId, x.result.map(_ => true)),
         (sagaId, actionId, commandId, result) =>
           new ActionResponse(sagaId, actionId, commandId, result.map(_ => true))

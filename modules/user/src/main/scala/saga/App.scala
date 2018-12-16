@@ -7,7 +7,6 @@ import io.simplesource.saga.shared.utils.StreamAppConfig
 import shared.TopicUtils
 import shared.serdes.JsonSerdes
 
-
 object App {
   def main(args: Array[String]): Unit = {
     startSagaCoordinator()

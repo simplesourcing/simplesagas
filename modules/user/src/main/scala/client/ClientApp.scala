@@ -30,7 +30,7 @@ import scala.concurrent.duration._
 import io.simplesource.saga.saga.dsl.SagaDsl._
 
 object ClientApp {
-  private val logger = LoggerFactory.getLogger(classOf[App])
+  private val logger                       = LoggerFactory.getLogger(classOf[App])
   private val responseCount: AtomicInteger = new AtomicInteger(0)
 
   def main(args: Array[String]): Unit = {
@@ -59,10 +59,11 @@ object ClientApp {
   }
 
   private def submitSagaRequest(sagaApi: SagaAPI[Json], request: Result[SagaError, SagaRequest[Json]]): Unit =
-    request.fold[Unit](es => es.map(e => logger.error(e.getMessage)),
+    request.fold[Unit](
+      es => es.map(e => logger.error(e.getMessage)),
       r => {
         for {
-          _ <- sagaApi.submitSaga(r)
+          _        <- sagaApi.submitSaga(r)
           response <- sagaApi.getSagaResponse(r.sagaId, Duration.ofSeconds(60L))
           _ = {
             val count = responseCount.incrementAndGet()
@@ -94,10 +95,10 @@ object ClientApp {
       UUID.randomUUID(),
       constants.accountActionType,
       new ActionCommand(UUID.randomUUID(),
-        (AccountCommand
-          .CreateAccount(accountId = accountId,
-            userName = s"$firstName $lastName",
-            funds = 1000): AccountCommand).asJson)
+                        (AccountCommand
+                          .CreateAccount(accountId = accountId,
+                                         userName = s"$firstName $lastName",
+                                         funds = 1000): AccountCommand).asJson)
     )
 
     val amountsWithIds = amounts.map((_, UUID.randomUUID(), UUID.randomUUID()))
@@ -110,14 +111,15 @@ object ClientApp {
           new ActionCommand(
             UUID.randomUUID(),
             (AccountCommand.ReserveFunds(accountId = accountId,
-              reservationId = resId,
-              description = s"res-${resId.toString.take(4)}",
-              amount = amount): AccountCommand).asJson
+                                         reservationId = resId,
+                                         description = s"res-${resId.toString.take(4)}",
+                                         amount = amount): AccountCommand).asJson
           ),
           new ActionCommand(
             UUID.randomUUID(),
             (AccountCommand
-              .CancelReservation(accountId = accountId, reservationId = resId): AccountCommand).asJson))
+              .CancelReservation(accountId = accountId, reservationId = resId): AccountCommand).asJson)
+        )
     }
 
     val confirmations = amountsWithIds.map {
@@ -128,8 +130,8 @@ object ClientApp {
           new ActionCommand(
             UUID.randomUUID(),
             (AccountCommand.ConfirmReservation(accountId = accountId,
-              reservationId = resId,
-              finalAmount = amount + adjustment): AccountCommand).asJson)
+                                               reservationId = resId,
+                                               finalAmount = amount + adjustment): AccountCommand).asJson)
         )
     }
 
@@ -141,12 +143,12 @@ object ClientApp {
         s"Hello World, time is: ${LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)}".asJson)
     )
 
-    val v: HttpRequest[Key, String] = HttpRequest.ofWithBody[Key, String](Key("fx"),
+    val v: HttpRequest[Key, String] = HttpRequest.ofWithBody[Key, String](
+      Key("fx"),
       HttpVerb.Get,
       "https://api.exchangeratesapi.io/latest",
       "fx_rates",
-      null
-    )
+      null)
 
     import action.App.Key
     implicit val encoder = HttpClient.httpRequest[Key, String]._1
@@ -161,11 +163,11 @@ object ClientApp {
     )
 
     testAsyncInvoke
-      .then(testHttpInvoke)
-      .then(addUser)
-      .then(createAccount)
-      .then(inSeries(reservations.asJava))
-      .then(inSeries(confirmations.asJava))
+      .andThen(testHttpInvoke)
+      .andThen(addUser)
+      .andThen(createAccount)
+      .andThen(inSeries(reservations.asJava))
+      .andThen(inSeries(confirmations.asJava))
 
     builder.build().map(s => new SagaRequest(UUID.randomUUID(), s))
   }

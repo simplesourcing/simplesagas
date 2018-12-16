@@ -47,8 +47,8 @@ object ResultEncoders {
         .map(s => CommandError.of(CommandError.Reason.valueOf(s._1), s._2))
 
     productCodecs3[UUID, Long, Result[CommandError, Sequence], CommandResponse]("commandId",
-      "readSequence",
-      "sequenceResult")(
+                                                                                "readSequence",
+                                                                                "sequenceResult")(
       x => (x.commandId(), x.readSequence().getSeq, x.sequenceResult()),
       (id, seq, ur) => new CommandResponse(id, Sequence.position(seq), ur))
   }.asSerde

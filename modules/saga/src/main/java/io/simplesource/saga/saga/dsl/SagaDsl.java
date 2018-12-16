@@ -6,7 +6,6 @@ import io.simplesource.data.Result;
 import io.simplesource.data.Sequence;
 import io.simplesource.saga.model.saga.*;
 import lombok.Value;
-import lombok.experimental.ExtensionMethod;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -22,7 +21,7 @@ public final class SagaDsl {
         List<UUID> output;
         Optional<SagaBuilder<A>> sagaBuilder;
 
-        public Fragment<A> then(Fragment<A> next) {
+        public Fragment<A> andThen(Fragment<A> next) {
             Optional<SagaBuilder<A>> sbO = this.sagaBuilder;
             Optional<SagaBuilder<A>> sbNextO = next.sagaBuilder;
 
@@ -51,6 +50,7 @@ public final class SagaDsl {
     }
 
     public static <A> Fragment<A> inParallel(Fragment<A>... fragments) {
+
         return inParallel(Lists.newArrayList(fragments));
     }
 
@@ -59,20 +59,19 @@ public final class SagaDsl {
     }
 
     public static <A> Fragment<A> inParallel(Collection<Fragment<A>> fragments) {
-        Stream<Fragment<A>> fragSteam = fragments.stream();
-        Stream<Optional<SagaBuilder<A>>> a = fragSteam.map(x -> x.sagaBuilder);
+        Stream<Optional<SagaBuilder<A>>> a = fragments.stream().map(x -> x.sagaBuilder);
         Optional<SagaBuilder<A>> c = a.filter(Optional::isPresent).findFirst().flatMap(x -> x);
 
         return new Fragment<>(
-                fragSteam.flatMap(f -> f.input.stream()).collect(Collectors.toList()),
-                fragSteam.flatMap(f -> f.output.stream()).collect(Collectors.toList()),
+                fragments.stream().flatMap(f -> f.input.stream()).collect(Collectors.toList()),
+                fragments.stream().flatMap(f -> f.output.stream()).collect(Collectors.toList()),
                 c);
     }
 
     public static <A> Fragment<A> inSeries(Iterable<Fragment<A>> fragments) {
         Fragment<A> cumulative = new Fragment<>(Collections.emptyList(), Collections.emptyList(), Optional.empty());
         for (Fragment<A> next : fragments) {
-            cumulative = cumulative.then(next);
+            cumulative = cumulative.andThen(next);
         }
 
         return cumulative;
@@ -145,8 +144,8 @@ public final class SagaDsl {
 class X {
     void v() {
         inParallel(Collections.<Fragment<String>>emptyList())
-                .then(inParallel(Collections.emptyList()))
-                .then(inParallel(Collections.emptyList()));
+                .andThen(inParallel(Collections.emptyList()))
+                .andThen(inParallel(Collections.emptyList()));
 
     }
 }

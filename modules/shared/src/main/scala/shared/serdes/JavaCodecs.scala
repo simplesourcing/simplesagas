@@ -46,5 +46,3 @@ object JavaCodecs {
   implicit def listEncoder[A: Encoder]: Encoder[java.util.List[A]] =
     implicitly[Encoder[List[A]]].contramap(_.asScala.toList)
 }
-
-

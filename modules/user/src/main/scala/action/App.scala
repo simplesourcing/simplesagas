@@ -23,7 +23,7 @@ import scala.collection.JavaConverters._
 object App {
   val sourcingConfig =
     new StreamAppConfig("sourcing-action-processor-1", "127.0.0.1:9092")
-  val asyncConfig = new StreamAppConfig("async-action-processor-1",  "127.0.0.1:9092")
+  val asyncConfig = new StreamAppConfig("async-action-processor-1", "127.0.0.1:9092")
 
   def main(args: Array[String]): Unit = {
     startSourcingActionProcessor()
@@ -42,7 +42,7 @@ object App {
 
   def startAsyncActionProcessor(): Unit = {
     new HttpApp[Json](JsonSerdes.actionSerdes[Json],
-                   TopicUtils.buildStepsJ(constants.actionTopicPrefix, constants.sagaActionBaseName))
+                      TopicUtils.buildStepsJ(constants.actionTopicPrefix, constants.sagaActionBaseName))
       .addAsync(asyncSpec)
       .addHttpProcessor(httpSpec)
       .run(asyncConfig)
@@ -79,15 +79,16 @@ object App {
       decoded.toResult.errorMap(e => e)
     },
     i => i.toLowerCase.take(3),
-    (i: String, callBack: Callback[String]) => { callBack.complete(Result.success(s"${i.length.toString}: $i"))},   //i => Future.successful(s"${i.length.toString}: $i"),
+    (i: String, callBack: Callback[String]) => {
+      callBack.complete(Result.success(s"${i.length.toString}: $i"))
+    }, //i => Future.successful(s"${i.length.toString}: $i"),
     asyncConfig.appId,
     Optional.of(
       new AsyncOutput(
         o => Optional.of(Result.success(o)),
         new AsyncSerdes(Serdes.String(), Serdes.String()),
         _ => Optional.of("async_test_topic"),
-          List(new TopicCreation("async_test_topic",
-            new TopicSpec(6, 1, Map.empty[String, String].asJava))).asJava
+        List(new TopicCreation("async_test_topic", new TopicSpec(6, 1, Map.empty[String, String].asJava))).asJava
       )),
   )
 
@@ -110,8 +111,7 @@ object App {
       new HttpOutput(
         (o: Input) => Optional.of(o.as[FXRates].toResult.errorMap(e => e)),
         new AsyncSerdes(ProductCodecs.serdeFromCodecs[Key], ProductCodecs.serdeFromCodecs[FXRates]),
-        List(new TopicCreation("fx_rates",
-          new TopicSpec(6, 1, Map.empty[String, String].asJava))).asJava
+        List(new TopicCreation("fx_rates", new TopicSpec(6, 1, Map.empty[String, String].asJava))).asJava
       ))
   )
 }

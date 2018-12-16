@@ -15,6 +15,34 @@ val catsV           = "1.4.0"
 
 val javaxArtifact = Artifact("javax.ws.rs-api", "jar", "jar")
 
+//<dependency>
+//  <groupId>org.junit.jupiter</groupId>
+//  <artifactId>junit-jupiter-api</artifactId>
+//  <version>5.2.0</version>
+//  <scope>test</scope>
+//</dependency>
+//
+//  <dependency>
+//    <groupId>org.junit.jupiter</groupId>
+//    <artifactId>junit-jupiter-engine</artifactId>
+//    <version>5.2.0</version>
+//    <scope>test</scope>
+//  </dependency>
+//
+//  <dependency>
+//    <groupId>org.junit.platform</groupId>
+//    <artifactId>junit-platform-engine</artifactId>
+//    <version>1.2.0</version>
+//    <scope>test</scope>
+//  </dependency>
+//
+//  <dependency>
+//    <groupId>org.assertj</groupId>
+//    <artifactId>assertj-core-java8</artifactId>
+//    <version>1.0.0m1</version>
+//    <scope>test</scope>
+//  </dependency>
+
 lazy val modelDeps = Seq(
   libraryDependencies ++= Seq(
     "org.typelevel"    %% "cats-core"                         % catsV,
@@ -24,23 +52,27 @@ lazy val modelDeps = Seq(
     "org.apache.kafka" % "kafka-streams"                      % kafkaVersion,
     "io.simplesource"  % "simplesource-command-api"           % simpleSourcingV,
     "io.simplesource"  % "simplesource-command-kafka"         % simpleSourcingV,
-    "io.simplesource"  % "simplesource-command-serialization" % simpleSourcingV,
-    "org.apache.kafka" % "kafka-streams-test-utils"           % kafkaVersion % Test
+    "io.simplesource"  % "simplesource-command-serialization" % simpleSourcingV
   )
 )
 
 lazy val dependencies = modelDeps ++ Seq(
   libraryDependencies ++= Seq(
-    "javax.ws.rs"         % "javax.ws.rs-api" % "2.1" artifacts javaxArtifact,
-    "ch.qos.logback"      % "logback-classic" % "1.2.3",
-    "org.typelevel"       %% "cats-core"      % catsV,
-    "com.sksamuel.avro4s" %% "avro4s-core"    % avro4sV,
-    "org.scalatest"       %% "scalatest"      % "3.0.5" % Test,
-    "org.scalacheck"      %% "scalacheck"     % "1.14.0" % Test,
-    "io.circe"            %% "circe-core"     % circeV,
-    "io.circe"            %% "circe-generic"  % circeV,
-    "io.circe"            %% "circe-parser"   % circeV,
-    "io.circe"            %% "circe-java8"    % circeV
+    "javax.ws.rs"         % "javax.ws.rs-api"          % "2.1" artifacts javaxArtifact,
+    "ch.qos.logback"      % "logback-classic"          % "1.2.3",
+    "org.typelevel"       %% "cats-core"               % catsV,
+    "com.sksamuel.avro4s" %% "avro4s-core"             % avro4sV,
+    "org.scalatest"       %% "scalatest"               % "3.0.5" % Test,
+    "org.scalacheck"      %% "scalacheck"              % "1.14.0" % Test,
+    "io.circe"            %% "circe-core"              % circeV,
+    "io.circe"            %% "circe-generic"           % circeV,
+    "io.circe"            %% "circe-parser"            % circeV,
+    "io.circe"            %% "circe-java8"             % circeV,
+    "org.apache.kafka"    % "kafka-streams-test-utils" % kafkaVersion % Test,
+    "org.junit.jupiter"   % "junit-jupiter-api"        % "5.2.0" % Test,
+    "org.junit.jupiter"   % "junit-jupiter-engine"     % "5.2.0" % Test,
+    "org.junit.platform"  % "junit-platform-engine"    % "1.2.0" % Test,
+    "org.assertj"         % "assertj-core-java8"       % "1.0.0m1" % Test
   )
 )
 
