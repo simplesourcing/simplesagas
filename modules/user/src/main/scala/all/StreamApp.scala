@@ -1,7 +1,7 @@
 package all
 import org.rocksdb.RocksDB
 
-object App {
+object StreamApp {
 
   def main(args: Array[String]): Unit = {
 

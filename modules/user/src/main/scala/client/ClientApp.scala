@@ -29,7 +29,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import io.simplesource.saga.saga.dsl.SagaDsl._
 
-object App {
+object ClientApp {
   private val logger = LoggerFactory.getLogger(classOf[App])
   private val responseCount: AtomicInteger = new AtomicInteger(0)
 
@@ -37,7 +37,9 @@ object App {
 
     val sagaClientBuilder: SagaClientBuilder[Json] = new SagaClientBuilder[Json](
       (kafkaConfigBuilder: KafkaConfig.Builder) =>
-        kafkaConfigBuilder.withKafkaBootstrap("127.0.0.1:9092"))
+        kafkaConfigBuilder
+          .withKafkaApplicationId("saga-app-1")
+          .withKafkaBootstrap("127.0.0.1:9092"))
     val api: SagaAPI[Json] = sagaClientBuilder
       .withSerdes(JsonSerdes.sagaSerdes[Json])
       .withTopicConfig(TopicUtils.buildStepsJ(constants.sagaTopicPrefix, constants.sagaBaseName))
