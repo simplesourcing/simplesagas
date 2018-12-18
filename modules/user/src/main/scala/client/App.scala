@@ -79,7 +79,7 @@ object App {
                      adjustment: BigDecimal = 0): Result[SagaError, SagaRequest[Json]] = {
     val accountId = UUID.randomUUID()
 
-    val builder = new SagaBuilder[Json]()
+    val builder = SagaBuilder.create[Json]
 
     val addUser = builder.addAction(
       UUID.randomUUID(),

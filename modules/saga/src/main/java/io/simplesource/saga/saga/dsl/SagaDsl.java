@@ -74,7 +74,7 @@ public final class SagaDsl {
         return cumulative;
     }
 
-    @Value
+    @Value(staticConstructor = "create")
     public static final class SagaBuilder<A> {
         Map<UUID, SagaAction<A>> actions = new HashMap<>();
         Map<UUID, Set<UUID>> dependencies = new HashMap<>();

@@ -20,13 +20,13 @@ class DslTest {
         return UUID.randomUUID();
     }
 
-    SagaDsl.SagaBuilder<String> builder = new SagaDsl.SagaBuilder<>();
+    SagaBuilder<String> builder = SagaBuilder.create();
 
-    SagaDsl.Fragment<String> create(String a) {
+    Fragment<String> create(String a) {
         return builder.addAction(randomId(), "actionType-" + a, new ActionCommand<>(randomId(), "Command-" + a));
     }
 
-    public void dependsOnSet(String action, Set<String> dependsOn, Saga<String> saga) {
+    void dependsOnSet(String action, Set<String> dependsOn, Saga<String> saga) {
         Set<String> z = saga.actions.values().stream().filter(x -> x.actionType.equals("actionType-" + action))
                 .findFirst()
                 .get()
@@ -37,7 +37,7 @@ class DslTest {
         assertThat(z).isEqualTo(dependsOn.stream().map(x -> "actionType-" + x).collect(Collectors.toSet()));
     }
 
-    public void dependsOn(String action, String dependsOn, Saga<String> saga) {
+    void dependsOn(String action, String dependsOn, Saga<String> saga) {
         dependsOnSet(action, Collections.singleton(dependsOn), saga);
     }
 
