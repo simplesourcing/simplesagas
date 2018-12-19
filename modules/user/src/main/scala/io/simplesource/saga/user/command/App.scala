@@ -1,9 +1,9 @@
-package command
+package io.simplesource.saga.user.command
 import java.util.UUID
 
-import command.handlers.{AccountHandlers, UserHandlers}
-import command.model.auction.{Account, AccountCommand, AccountEvent}
-import command.model.user.{User, UserCommand, UserEvent}
+import io.simplesource.saga.user.command.handlers.{AccountHandlers, UserHandlers}
+import io.simplesource.saga.user.command.model.auction.{Account, AccountCommand, AccountEvent}
+import io.simplesource.saga.user.command.model.user.{User, UserCommand, UserEvent}
 import io.simplesource.kafka.dsl.{AggregateBuilder, EventSourcedApp, InvalidSequenceStrategy}
 import io.simplesource.saga.scala.serdes.JsonSerdes
 import io.circe.generic.auto._

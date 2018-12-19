@@ -1,7 +1,7 @@
-package command.handlers
+package io.simplesource.saga.user.command.handlers
 import java.util.UUID
 
-import command.model.auction.{Account, AccountCommand, AccountEvent, Reservation}
+import io.simplesource.saga.user.command.model.auction.{Account, AccountCommand, AccountEvent, Reservation}
 import io.simplesource.api.CommandError
 import io.simplesource.data.{NonEmptyList, Result}
 
@@ -25,7 +25,7 @@ object AccountHandlers {
       case (_, None) => None
     }
 
-  // Crude command handler implementation
+  // Crude io.simplesource.io.simplesource.saga.user.saga.user.command handler implementation
   def commandHandler(k: UUID, aOpt: Option[Account])(
       c: AccountCommand): Result[CommandError, NonEmptyList[AccountEvent]] =
     (c, aOpt) match {

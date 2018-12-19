@@ -1,4 +1,4 @@
-package command.model
+package io.simplesource.saga.user.command.model
 import java.util.UUID
 
 object auction {

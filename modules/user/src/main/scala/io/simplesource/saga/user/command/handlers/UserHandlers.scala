@@ -1,7 +1,7 @@
-package command.handlers
+package io.simplesource.saga.user.command.handlers
 import java.util.UUID
 
-import command.model.user.{User, UserCommand, UserEvent}
+import io.simplesource.saga.user.command.model.user.{User, UserCommand, UserEvent}
 import io.simplesource.api.CommandError
 import io.simplesource.data.{NonEmptyList, Result}
 

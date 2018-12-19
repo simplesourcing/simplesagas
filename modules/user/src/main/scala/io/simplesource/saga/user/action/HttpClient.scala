@@ -1,16 +1,16 @@
-package action
+package io.simplesource.saga.user.action
+
 import java.util.Optional
 import java.util.function.BiConsumer
 
-import requests.RequestBlob
-import io.circe._
-import io.circe.parser._
 import io.circe.syntax._
+import io.circe.parser.parse
+import io.circe.{Decoder, Encoder}
 import io.simplesource.data.Result
 import io.simplesource.saga.action.async.Callback
 import io.simplesource.saga.action.http.HttpRequest
 import io.simplesource.saga.action.http.HttpRequest.HttpVerb
-import io.simplesource.saga.scala.serdes.ProductCodecs.productCodecs6
+import requests.RequestBlob
 
 import scala.concurrent.{ExecutionContext, Future}
 

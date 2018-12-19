@@ -1,14 +1,13 @@
-package client
+package io.simplesource.saga.user.client
 
 import java.time.{Duration, LocalDateTime}
 import java.time.format.DateTimeFormatter
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 
-import action.App.Key
-import action.HttpClient
-import command.model.auction.AccountCommand
-import command.model.user.UserCommand
+import io.simplesource.saga.user.action.App.Key
+import io.simplesource.saga.user.command.model.auction.AccountCommand
+import io.simplesource.saga.user.command.model.user.UserCommand
 import io.circe.{Encoder, Json}
 import io.circe.generic.auto._
 import io.circe.syntax._
@@ -21,11 +20,12 @@ import io.simplesource.saga.model.messages.SagaRequest
 import io.simplesource.saga.model.saga.{ActionCommand, SagaError}
 import io.simplesource.saga.saga.builder.SagaClientBuilder
 import org.slf4j.LoggerFactory
-import shared.TopicUtils
+import io.simplesource.saga.user.shared.TopicUtils
 import io.simplesource.saga.scala.serdes.JsonSerdes
 
 import scala.collection.JavaConverters._
 import io.simplesource.saga.saga.dsl.SagaDsl._
+import io.simplesource.saga.user.action.HttpClient
 
 object App {
   private val logger                       = LoggerFactory.getLogger(classOf[App])
@@ -36,12 +36,12 @@ object App {
     val sagaClientBuilder: SagaClientBuilder[Json] = new SagaClientBuilder[Json](
       (kafkaConfigBuilder: KafkaConfig.Builder) =>
         kafkaConfigBuilder
-          .withKafkaApplicationId("saga-app-1")
+          .withKafkaApplicationId("io.simplesource.saga.user.saga-app-1")
           .withKafkaBootstrap("127.0.0.1:9092"))
     val api: SagaAPI[Json] = sagaClientBuilder
       .withSerdes(JsonSerdes.sagaSerdes[Json])
       .withTopicConfig(TopicUtils.buildSteps(constants.sagaTopicPrefix, constants.sagaBaseName))
-      .withClientId("saga-client-1")
+      .withClientId("io.simplesource.saga.user.saga-io.simplesource.saga.user.client-1")
       .build()
 
     for (_ <- 1 to 3) {
@@ -148,7 +148,7 @@ object App {
       "fx_rates",
       null)
 
-    import action.App.Key
+    import io.simplesource.saga.user.action.App.Key
     implicit val encoder: Encoder[HttpRequest[Key, String]] = HttpClient.httpRequest[Key, String]._1
 
     val testHttpInvoke: SubSaga[Json] = builder.addAction(

@@ -22,7 +22,7 @@ final public class AsyncStream {
   static public <A, I, K, O, R> void addSubTopology(AsyncContext<A, I, K, O, R> ctx,
                                     KStream<UUID, ActionRequest<A>> actionRequest,
                                     KStream<UUID, ActionResponse> actionResponse) {
-    // join the action request with corresponding prior command responses
+    // join the action request with corresponding prior io.simplesource.io.simplesource.saga.user.saga.user.command responses
     IdempotentStream.IdempotentAction<A> idempotentAction = IdempotentStream.getActionRequestsWithResponse(ctx.actionSpec,
             actionRequest,
             actionResponse,

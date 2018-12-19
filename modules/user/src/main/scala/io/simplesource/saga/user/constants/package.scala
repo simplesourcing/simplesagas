@@ -1,7 +1,7 @@
 package object constants {
   // sagas
   val sagaTopicPrefix = "saga_coordinator_"
-  val sagaBaseName    = "saga"
+  val sagaBaseName    = "io/simplesource/saga/user/saga"
 
   // action processors
   val actionTopicPrefix  = "saga_action_processor_"

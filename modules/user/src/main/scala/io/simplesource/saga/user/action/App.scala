@@ -1,23 +1,21 @@
-package action
+package io.simplesource.saga.user.action
+
 import java.util.{Optional, UUID}
 
-import io.simplesource.saga.action.async._
-import io.simplesource.saga.action.sourcing._
-import command.model.auction.AccountCommand
-import command.model.user.UserCommand
-import io.simplesource.saga.action.http.HttpSpec
 import io.circe.Json
 import io.circe.generic.auto._
 import io.simplesource.data.Result
-import org.apache.kafka.common.serialization.Serdes
-import io.simplesource.saga.shared.utils.StreamAppConfig
-import io.simplesource.saga.scala.serdes.{JsonSerdes, ProductCodecs}
 import io.simplesource.kafka.spec.TopicSpec
-import io.simplesource.saga.action.http.{HttpApp, HttpOutput, HttpRequest}
+import io.simplesource.saga.action.async.{AsyncOutput, AsyncSerdes, AsyncSpec, Callback}
+import io.simplesource.saga.action.http.{HttpApp, HttpOutput, HttpRequest, HttpSpec}
+import io.simplesource.saga.action.sourcing.{CommandSpec, SourcingApp}
+import io.simplesource.saga.scala.serdes.{JsonSerdes, ProductCodecs}
 import io.simplesource.saga.shared.topics.TopicCreation
-import shared.TopicUtils
-
-import scala.concurrent.ExecutionContext.Implicits.global
+import io.simplesource.saga.shared.utils.StreamAppConfig
+import io.simplesource.saga.user.command.model.auction.AccountCommand
+import io.simplesource.saga.user.command.model.user.UserCommand
+import io.simplesource.saga.user.shared.TopicUtils
+import org.apache.kafka.common.serialization.Serdes
 import scala.collection.JavaConverters._
 
 object App {
@@ -100,6 +98,7 @@ object App {
   final case class FXRates(date: String, base: String, rates: Map[String, BigDecimal])
 
   import io.circe.generic.auto._
+  import scala.concurrent.ExecutionContext.Implicits.global
   implicit val decoder = HttpClient.httpRequest[Key, Body]._2
 
   lazy val httpSpec = new HttpSpec[Input, Key, Body, Output, FXRates](

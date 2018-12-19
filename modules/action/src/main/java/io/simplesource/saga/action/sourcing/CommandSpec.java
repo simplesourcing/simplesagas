@@ -7,10 +7,10 @@ import lombok.Value;
 import java.util.function.Function;
 
 /**
-  * @param <A> - common representation form for all action commands (typically Json / GenericRecord for Avro)
+  * @param <A> - common representation form for io.simplesource.io.simplesource.saga.user.saga.user.all action commands (typically Json / GenericRecord for Avro)
   * @param <I> - intermediate decoded input type (that can easily be converted both K and C)
   * @param <K> - aggregate key
-  * @param <C> - simple sourcing command type
+  * @param <C> - simple sourcing io.simplesource.io.simplesource.saga.user.saga.user.command type
   */
 @Value
 public final class CommandSpec<A, I, K, C> {

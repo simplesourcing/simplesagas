@@ -3,7 +3,7 @@
 //import org.apache.kafka.common.serialization.Serde
 //import org.apache.kafka.streams.test.ConsumerRecordFactory
 //import org.apache.kafka.streams.{StreamsBuilder, TopologyTestDriver}
-//import shared.utils.{StreamAppConfig, StreamAppUtils}
+//import io.simplesource.saga.user.shared.utils.{StreamAppConfig, StreamAppUtils}
 //
 //object TestUtils {
 //  trait TestProducer[K, V] {

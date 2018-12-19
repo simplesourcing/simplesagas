@@ -41,7 +41,7 @@ final public class SagaStream {
         Tuple2<KStream<UUID, SagaStateTransition>, KStream<UUID, SagaResponse>> stsr = addSagaResponse(ctx, stateStream);
         KStream<UUID, Saga<A>> sagaState = applyStateTransitions(ctx, stateTransitionStream);
 
-        // publish to all the output topics
+        // publish to io.simplesource.io.simplesource.saga.user.saga.user.all the output topics
         SagaProducer.actionRequests(ctx, rtar.v2());
         SagaProducer.sagaStateTransitions(ctx,
                 inputStateTransitions,

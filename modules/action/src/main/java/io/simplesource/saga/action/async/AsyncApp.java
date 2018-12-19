@@ -59,7 +59,7 @@ public final class AsyncApp<A> {
     public <I, K, O, R> AsyncApp<A> addAsync(AsyncSpec<A, I, K, O, R> spec) {
         AsyncContext<A, I, K, O, R> ctx = new AsyncContext<>(actionSpec, actionTopicConfig.namer, spec);
         AsyncTransformer<A> transformer = input -> {
-            // join the action request with corresponding prior command responses
+            // join the action request with corresponding prior io.simplesource.io.simplesource.saga.user.saga.user.command responses
             AsyncStream.addSubTopology(ctx, input.actionRequests, input.actionResponses);
 
             return AsyncTransform.async(ctx);

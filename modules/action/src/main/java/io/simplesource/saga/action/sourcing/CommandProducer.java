@@ -11,7 +11,7 @@ public class CommandProducer {
     public static <A, I, K, C> void commandRequest(CommandSpec<A, I, K, C> cSpec,
                                  TopicNamer commandTopicNamer,
                                  KStream<K, CommandRequest<K, C>> commandRequestByAggregate) {
-    // publish to command request topic
+    // publish to io.simplesource.io.simplesource.saga.user.saga.user.command request topic
     commandRequestByAggregate.to(
       commandTopicNamer.apply(TopicTypes.CommandTopic.request),
       Produced.with(cSpec.commandSerdes.aggregateKey(), cSpec.commandSerdes.commandRequest())

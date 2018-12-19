@@ -23,7 +23,7 @@ object JsonSerdes {
       val aks = serdeFromCodecs[K]
 
       val crs =
-        productCodecs4[K, C, Long, UUID, CommandRequest[K, C]]("key", "command", "readSequence", "commandId")(
+        productCodecs4[K, C, Long, UUID, CommandRequest[K, C]]("key", "io.simplesource.io.simplesource.saga.user.saga.user.command", "readSequence", "commandId")(
           v => (v.aggregateKey(), v.command(), v.readSequence().getSeq, v.commandId()),
           (k, v, rs, id) => new CommandRequest(k, v, Sequence.position(rs), id)
         ).asSerde
@@ -55,7 +55,7 @@ object JsonSerdes {
       val aks = serdeFromCodecs[K]
 
       val crs: Serde[CommandRequest[K, C]] =
-        productCodecs4[K, C, Long, UUID, CommandRequest[K, C]]("key", "command", "readSequence", "commandId")(
+        productCodecs4[K, C, Long, UUID, CommandRequest[K, C]]("key", "io.simplesource.io.simplesource.saga.user.saga.user.command", "readSequence", "commandId")(
           v => (v.aggregateKey(), v.command(), v.readSequence().getSeq, v.commandId()),
           (k, v, rs, id) => new CommandRequest(k, v, Sequence.position(rs), id)
         ).asSerde
@@ -76,7 +76,7 @@ object JsonSerdes {
     val req = productCodecs5[UUID, UUID, UUID, A, String, ActionRequest[A]]("sagaId",
                                                                             "actionId",
                                                                             "commandId",
-                                                                            "command",
+                                                                            "io.simplesource.io.simplesource.saga.user.saga.user.command",
                                                                             "actionType")(
       v => (v.sagaId, v.actionId, v.actionCommand.commandId, v.actionCommand.command, v.actionType),
       (sId, aId, cId, c, at) => new ActionRequest[A](sId, aId, new ActionCommand[A](cId, c), at)
@@ -106,7 +106,7 @@ object JsonSerdes {
 
     import ProductCodecs._
 
-    implicit val (acEnc, acDec) = productCodecs2[UUID, A, ActionCommand[A]]("commandId", "command")(
+    implicit val (acEnc, acDec) = productCodecs2[UUID, A, ActionCommand[A]]("commandId", "io.simplesource.io.simplesource.saga.user.saga.user.command")(
       x => (x.commandId, x.command),
       (cid, c) => new ActionCommand[A](cid, c))
 
@@ -121,7 +121,7 @@ object JsonSerdes {
                                                  Optional[SagaError],
                                                  SagaAction[A]]("actionId",
                                                                 "actionType",
-                                                                "command",
+                                                                "io.simplesource.io.simplesource.saga.user.saga.user.command",
                                                                 "undoCommand",
                                                                 "dependencies",
                                                                 "status",

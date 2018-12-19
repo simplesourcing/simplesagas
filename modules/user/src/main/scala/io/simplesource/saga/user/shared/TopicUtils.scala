@@ -1,4 +1,4 @@
-package shared
+package io.simplesource.saga.user.shared
 import io.simplesource.saga.shared.topics.{TopicConfigBuilder, TopicNamer}
 
 object TopicUtils {
