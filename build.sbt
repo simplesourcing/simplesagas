@@ -17,38 +17,41 @@ val javaxArtifact = Artifact("javax.ws.rs-api", "jar", "jar")
 
 lazy val modelDeps = Seq(
   libraryDependencies ++= Seq(
-    "org.typelevel"    %% "cats-core"                         % catsV,
-    "org.typelevel"    %% "cats-free"                         % catsV,
     "javax.ws.rs"      % "javax.ws.rs-api"                    % "2.1" artifacts javaxArtifact,
     "org.apache.kafka" %% "kafka"                             % kafkaVersion,
-    "org.apache.kafka" % "kafka-streams"                      % kafkaVersion,
     "io.simplesource"  % "simplesource-command-api"           % simpleSourcingV,
     "io.simplesource"  % "simplesource-command-kafka"         % simpleSourcingV,
     "io.simplesource"  % "simplesource-command-serialization" % simpleSourcingV
   )
 )
 
-lazy val dependencies = modelDeps ++ Seq(
+lazy val coreDeps = modelDeps ++ Seq(
   libraryDependencies ++= Seq(
-    "javax.ws.rs"         % "javax.ws.rs-api"          % "2.1" artifacts javaxArtifact,
-    "ch.qos.logback"      % "logback-classic"          % "1.2.3",
-    "org.typelevel"       %% "cats-core"               % catsV,
-    "com.sksamuel.avro4s" %% "avro4s-core"             % avro4sV,
-    "org.scalatest"       %% "scalatest"               % "3.0.5" % Test,
-    "org.scalacheck"      %% "scalacheck"              % "1.14.0" % Test,
-    "io.circe"            %% "circe-core"              % circeV,
-    "io.circe"            %% "circe-generic"           % circeV,
-    "io.circe"            %% "circe-parser"            % circeV,
-    "io.circe"            %% "circe-java8"             % circeV,
-    "org.apache.kafka"    % "kafka-streams-test-utils" % kafkaVersion % Test,
-    "org.junit.jupiter"   % "junit-jupiter-api"        % "5.2.0" % Test,
-    "org.junit.jupiter"   % "junit-jupiter-engine"     % "5.2.0" % Test,
-    "org.junit.platform"  % "junit-platform-engine"    % "1.2.0" % Test,
-    "org.assertj"         % "assertj-core-java8"       % "1.0.0m1" % Test
+    "javax.ws.rs"        % "javax.ws.rs-api"          % "2.1" artifacts javaxArtifact,
+    "ch.qos.logback"     % "logback-classic"          % "1.2.3",
+    "org.apache.kafka"   % "kafka-streams-test-utils" % kafkaVersion % Test,
+    "org.junit.jupiter"  % "junit-jupiter-api"        % "5.2.0" % Test,
+    "org.junit.jupiter"  % "junit-jupiter-engine"     % "5.2.0" % Test,
+    "org.junit.platform" % "junit-platform-engine"    % "1.2.0" % Test,
+    "org.assertj"        % "assertj-core-java8"       % "1.0.0m1" % Test
   )
 )
 
-lazy val httpDependencies = modelDeps ++ Seq(
+lazy val scalaDeps = modelDeps ++ Seq(
+  libraryDependencies ++= Seq(
+    "ch.qos.logback"      % "logback-classic" % "1.2.3",
+    "org.typelevel"       %% "cats-core"      % catsV,
+    "com.sksamuel.avro4s" %% "avro4s-core"    % avro4sV,
+    "org.scalatest"       %% "scalatest"      % "3.0.5" % Test,
+    "org.scalacheck"      %% "scalacheck"     % "1.14.0" % Test,
+    "io.circe"            %% "circe-core"     % circeV,
+    "io.circe"            %% "circe-generic"  % circeV,
+    "io.circe"            %% "circe-parser"   % circeV,
+    "io.circe"            %% "circe-java8"    % circeV,
+  )
+)
+
+lazy val userDeps = Seq(
   libraryDependencies ++= Seq(
     "com.lihaoyi" %% "requests" % "0.1.4"
   )
@@ -98,30 +101,30 @@ lazy val model =
 
 lazy val shared =
   Project(id = "shared", base = file("modules/shared"))
-    .settings(commonSettings, dependencies)
+    .settings(commonSettings, coreDeps)
     .dependsOn(model)
 
 lazy val action =
   Project(id = "action", base = file("modules/action"))
-    .settings(commonSettings, dependencies)
+    .settings(commonSettings, coreDeps)
     .dependsOn(model, sharedDeps)
 
 lazy val http =
   Project(id = "http", base = file("modules/http"))
-    .settings(commonSettings, dependencies)
+    .settings(commonSettings, coreDeps)
     .dependsOn(model, sharedDeps, action)
 
 lazy val saga =
   Project(id = "saga", base = file("modules/saga"))
-    .settings(commonSettings, dependencies)
+    .settings(commonSettings, coreDeps)
     .dependsOn(model, sharedDeps)
 
 lazy val scala =
   Project(id = "scala", base = file("modules/scala"))
-    .settings(commonSettings, dependencies)
+    .settings(commonSettings, scalaDeps)
     .dependsOn(model, sharedDeps, saga)
 
 lazy val user =
   Project(id = "user", base = file("modules/user"))
-    .settings(commonSettings, dependencies, httpDependencies)
+    .settings(commonSettings, coreDeps, scalaDeps, userDeps)
     .dependsOn(model, sharedDeps, action, http, saga, scala)

@@ -1,6 +1,5 @@
 package io.simplesource.saga.scala.dsl
 
-
 import io.simplesource.saga.saga.dsl.SagaDsl
 import io.simplesource.saga.saga.dsl.SagaDsl.SubSaga
 

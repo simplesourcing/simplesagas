@@ -20,7 +20,8 @@ class JsonActionTests extends WordSpec with Matchers {
       val request = new ActionRequest(
         UUID.randomUUID(),
         UUID.randomUUID(),
-        new ActionCommand(UUID.randomUUID(), (UserCommand.Insert(UUID.randomUUID(), "", ""): UserCommand).asJson),
+        new ActionCommand(UUID.randomUUID(),
+                          (UserCommand.Insert(UUID.randomUUID(), "", ""): UserCommand).asJson),
         "action")
       val ser = serdes.request.serializer().serialize(topic, request)
       val de  = serdes.request.deserializer().deserialize(topic, ser)
@@ -28,17 +29,18 @@ class JsonActionTests extends WordSpec with Matchers {
     }
 
     "serialise and deserialise sucess responses" in {
-      val response = new ActionResponse(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), Result.success(true))
-      val ser      = serdes.response.serializer().serialize(topic, response)
-      val de       = serdes.response.deserializer().deserialize(topic, ser)
+      val response =
+        new ActionResponse(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), Result.success(true))
+      val ser = serdes.response.serializer().serialize(topic, response)
+      val de  = serdes.response.deserializer().deserialize(topic, ser)
       de shouldBe response
     }
 
     "serialise and deserialise failure responses" in {
       val response = new ActionResponse(UUID.randomUUID(),
-                                    UUID.randomUUID(),
-                                    UUID.randomUUID(),
-                                    Result.failure(SagaError.of(SagaError.Reason.InternalError, "error")))
+                                        UUID.randomUUID(),
+                                        UUID.randomUUID(),
+                                        Result.failure(SagaError.of(SagaError.Reason.InternalError, "error")))
       val ser = serdes.response.serializer().serialize(topic, response)
       val de  = serdes.response.deserializer().deserialize(topic, ser)
       de shouldBe response
