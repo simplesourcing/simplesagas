@@ -1,4 +1,4 @@
-package shared.serdes
+package io.simplesource.saga.scala.serdes
 
 import io.circe.{Decoder, Encoder}
 import io.simplesource.kafka.serialization.util.GenericSerde

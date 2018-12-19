@@ -6,7 +6,7 @@ import io.simplesource.saga.model.specs.{ActionProcessorSpec, SagaSpec}
 import io.simplesource.saga.saga.SagaApp
 import io.simplesource.saga.shared.utils.StreamAppConfig
 import shared.TopicUtils
-import shared.serdes.JsonSerdes
+import io.simplesource.saga.scala.serdes.JsonSerdes
 
 object App {
   def main(args: Array[String]): Unit = {

@@ -13,12 +13,12 @@ import java.util.stream.Stream;
 
 public final class SagaDsl {
     @Value
-    public static final class Fragment<A> {
+    public static final class SubSaga<A> {
         List<UUID> input;
         List<UUID> output;
         Optional<SagaBuilder<A>> sagaBuilder;
 
-        public Fragment<A> andThen(Fragment<A> next) {
+        public SubSaga<A> andThen(SubSaga<A> next) {
             Optional<SagaBuilder<A>> sbO = this.sagaBuilder;
             Optional<SagaBuilder<A>> sbNextO = next.sagaBuilder;
 
@@ -38,7 +38,7 @@ public final class SagaDsl {
                         }
                     }
                 }
-                return new Fragment<>(this.input, next.output, this.sagaBuilder);
+                return new SubSaga<>(this.input, next.output, this.sagaBuilder);
             } else if (sbO.isPresent()) {
                 return this;
             }
@@ -46,28 +46,28 @@ public final class SagaDsl {
         }
     }
 
-    public static <A> Fragment<A> inParallel(Fragment<A>... fragments) {
+    public static <A> SubSaga<A> inParallel(SubSaga<A>... subSagas) {
 
-        return inParallel(Lists.newArrayList(fragments));
+        return inParallel(Lists.newArrayList(subSagas));
     }
 
-    public static <A> Fragment<A> inSeries(Fragment<A>... fragments) {
-        return inSeries(Lists.newArrayList(fragments));
+    public static <A> SubSaga<A> inSeries(SubSaga<A>... subSagas) {
+        return inSeries(Lists.newArrayList(subSagas));
     }
 
-    public static <A> Fragment<A> inParallel(Collection<Fragment<A>> fragments) {
-        Stream<Optional<SagaBuilder<A>>> a = fragments.stream().map(x -> x.sagaBuilder);
+    public static <A> SubSaga<A> inParallel(Collection<SubSaga<A>> subSagas) {
+        Stream<Optional<SagaBuilder<A>>> a = subSagas.stream().map(x -> x.sagaBuilder);
         Optional<SagaBuilder<A>> c = a.filter(Optional::isPresent).findFirst().flatMap(x -> x);
 
-        return new Fragment<>(
-                fragments.stream().flatMap(f -> f.input.stream()).collect(Collectors.toList()),
-                fragments.stream().flatMap(f -> f.output.stream()).collect(Collectors.toList()),
+        return new SubSaga<>(
+                subSagas.stream().flatMap(f -> f.input.stream()).collect(Collectors.toList()),
+                subSagas.stream().flatMap(f -> f.output.stream()).collect(Collectors.toList()),
                 c);
     }
 
-    public static <A> Fragment<A> inSeries(Iterable<Fragment<A>> fragments) {
-        Fragment<A> cumulative = new Fragment<>(Collections.emptyList(), Collections.emptyList(), Optional.empty());
-        for (Fragment<A> next : fragments) {
+    public static <A> SubSaga<A> inSeries(Iterable<SubSaga<A>> subSagas) {
+        SubSaga<A> cumulative = new SubSaga<>(Collections.emptyList(), Collections.emptyList(), Optional.empty());
+        for (SubSaga<A> next : subSagas) {
             cumulative = cumulative.andThen(next);
         }
 
@@ -80,10 +80,10 @@ public final class SagaDsl {
         Map<UUID, Set<UUID>> dependencies = new HashMap<>();
         List<String> errors = new ArrayList<>();
 
-        private Fragment<A> addAction(UUID actionId,
-                                      String actionType,
-                                      ActionCommand<A> actionCommand,
-                                      Optional<ActionCommand<A>> undoAction) {
+        private SubSaga<A> addAction(UUID actionId,
+                                     String actionType,
+                                     ActionCommand<A> actionCommand,
+                                     Optional<ActionCommand<A>> undoAction) {
             SagaAction<A> action = new SagaAction<A>(actionId,
                     actionType,
                     actionCommand,
@@ -97,19 +97,19 @@ public final class SagaDsl {
             actions.put(action.actionId, action);
             dependencies.put(actionId, Collections.emptySet());
             List<UUID> actionIdList = Collections.singletonList(action.actionId);
-            return new Fragment<>(actionIdList, actionIdList, Optional.of(this));
+            return new SubSaga<>(actionIdList, actionIdList, Optional.of(this));
         }
 
-        public Fragment<A> addAction(UUID actionId,
-                                     String actionType,
-                                     ActionCommand<A> actionCommand) {
+        public SubSaga<A> addAction(UUID actionId,
+                                    String actionType,
+                                    ActionCommand<A> actionCommand) {
             return addAction(actionId, actionType, actionCommand, Optional.empty());
         }
 
-        public Fragment<A> addAction(UUID actionId,
-                                     String actionType,
-                                     ActionCommand<A> actionCommand,
-                                     ActionCommand<A> undoActionCommand) {
+        public SubSaga<A> addAction(UUID actionId,
+                                    String actionType,
+                                    ActionCommand<A> actionCommand,
+                                    ActionCommand<A> undoActionCommand) {
             return addAction(actionId, actionType, actionCommand, Optional.of(undoActionCommand));
         }
 

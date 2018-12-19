@@ -15,34 +15,6 @@ val catsV           = "1.4.0"
 
 val javaxArtifact = Artifact("javax.ws.rs-api", "jar", "jar")
 
-//<dependency>
-//  <groupId>org.junit.jupiter</groupId>
-//  <artifactId>junit-jupiter-api</artifactId>
-//  <version>5.2.0</version>
-//  <scope>test</scope>
-//</dependency>
-//
-//  <dependency>
-//    <groupId>org.junit.jupiter</groupId>
-//    <artifactId>junit-jupiter-engine</artifactId>
-//    <version>5.2.0</version>
-//    <scope>test</scope>
-//  </dependency>
-//
-//  <dependency>
-//    <groupId>org.junit.platform</groupId>
-//    <artifactId>junit-platform-engine</artifactId>
-//    <version>1.2.0</version>
-//    <scope>test</scope>
-//  </dependency>
-//
-//  <dependency>
-//    <groupId>org.assertj</groupId>
-//    <artifactId>assertj-core-java8</artifactId>
-//    <version>1.0.0m1</version>
-//    <scope>test</scope>
-//  </dependency>
-
 lazy val modelDeps = Seq(
   libraryDependencies ++= Seq(
     "org.typelevel"    %% "cats-core"                         % catsV,
@@ -144,7 +116,12 @@ lazy val saga =
     .settings(commonSettings, dependencies)
     .dependsOn(model, sharedDeps)
 
+lazy val scala =
+  Project(id = "scala", base = file("modules/scala"))
+    .settings(commonSettings, dependencies)
+    .dependsOn(model, sharedDeps, saga)
+
 lazy val user =
   Project(id = "user", base = file("modules/user"))
     .settings(commonSettings, dependencies, httpDependencies)
-    .dependsOn(model, sharedDeps, action, http, saga)
+    .dependsOn(model, sharedDeps, action, http, saga, scala)

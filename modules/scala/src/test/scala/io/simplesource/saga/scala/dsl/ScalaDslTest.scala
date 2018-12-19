@@ -1,4 +1,4 @@
-package io.simplesource.saga.saga.dsl
+package io.simplesource.saga.scala.dsl
 import java.util.UUID
 
 import io.simplesource.saga.model.saga.{ActionCommand, Saga}

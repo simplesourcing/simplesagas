@@ -1,4 +1,4 @@
-package shared.serdes
+package io.simplesource.saga.scala.serdes
 import java.util
 import java.util.Optional
 

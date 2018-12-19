@@ -11,8 +11,8 @@
 //import model.specs.ActionProcessorSpec
 //import shared.topics.TopicTypes.{ActionTopic, CommandTopic}
 //import org.scalatest.{Matchers, WordSpec}
-//import shared.serdes.JsonSerdes
-//import shared.serdes.TestTypes.UserCommand
+//import io.simplesource.saga.scala.serdes.JsonSerdes
+//import io.simplesource.saga.scala.serdes.TestTypes.UserCommand
 //import shared.topics.TopicNamer
 //class SourcingStreamTests extends WordSpec with Matchers {
 //  import TestUtils._

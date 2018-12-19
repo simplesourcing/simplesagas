@@ -10,13 +10,13 @@ import io.simplesource.data.Result
 import io.simplesource.saga.action.async.Callback
 import io.simplesource.saga.action.http.HttpRequest
 import io.simplesource.saga.action.http.HttpRequest.HttpVerb
-import shared.serdes.ProductCodecs.productCodecs6
+import io.simplesource.saga.scala.serdes.ProductCodecs.productCodecs6
 
 import scala.concurrent.{ExecutionContext, Future}
 
 object HttpClient {
-  import shared.serdes.JavaCodecs._
-  import shared.serdes.ProductCodecs._
+  import io.simplesource.saga.scala.serdes.JavaCodecs._
+  import io.simplesource.saga.scala.serdes.ProductCodecs._
 
   implicit def httpRequest[K: Encoder: Decoder, B: Encoder: Decoder]
     : (Encoder[HttpRequest[K, B]], Decoder[HttpRequest[K, B]]) = {

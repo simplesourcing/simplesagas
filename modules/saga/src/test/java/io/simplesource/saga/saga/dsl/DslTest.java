@@ -22,7 +22,7 @@ class DslTest {
 
     SagaBuilder<String> builder = SagaBuilder.create();
 
-    Fragment<String> create(String a) {
+    SubSaga<String> create(String a) {
         return builder.addAction(randomId(), "actionType-" + a, new ActionCommand<>(randomId(), "Command-" + a));
     }
 
@@ -46,26 +46,26 @@ class DslTest {
         NonEmptyList<Integer> list = NonEmptyList.of(10, 20, 30, 40);
         assertThat(list.get(2)).isEqualTo(30);
         
-        SagaDsl.Fragment<String> a1 = create("1");
-        SagaDsl.Fragment<String> a2 = create("2");
-        SagaDsl.Fragment<String> a3 = create("3");
+        SubSaga<String> a1 = create("1");
+        SubSaga<String> a2 = create("2");
+        SubSaga<String> a3 = create("3");
 
-        SagaDsl.Fragment<String> a4 = create("4");
-        SagaDsl.Fragment<String> a5a = create("5a");
-        SagaDsl.Fragment<String> a5b = create("5b");
-        SagaDsl.Fragment<String> a6 = create("6");
+        SubSaga<String> a4 = create("4");
+        SubSaga<String> a5a = create("5a");
+        SubSaga<String> a5b = create("5b");
+        SubSaga<String> a6 = create("6");
 
-        SagaDsl.Fragment<String> a7 = create("7");
-        SagaDsl.Fragment<String> a8a = create("8a");
-        SagaDsl.Fragment<String> a8b = create("8b");
-        SagaDsl.Fragment<String> a9 = create("9");
+        SubSaga<String> a7 = create("7");
+        SubSaga<String> a8a = create("8a");
+        SubSaga<String> a8b = create("8b");
+        SubSaga<String> a9 = create("9");
 
-        SagaDsl.Fragment<String> a10 = create("10");
-        SagaDsl.Fragment<String> a11a = create("11a");
-        SagaDsl.Fragment<String> a11b = create("11b");
-        SagaDsl.Fragment<String> a12 = create("12");
+        SubSaga<String> a10 = create("10");
+        SubSaga<String> a11a = create("11a");
+        SubSaga<String> a11b = create("11b");
+        SubSaga<String> a12 = create("12");
 
-        SagaDsl.Fragment<String> a13 = create("13");
+        SubSaga<String> a13 = create("13");
 
 
         a1.andThen(a2).andThen(a3);

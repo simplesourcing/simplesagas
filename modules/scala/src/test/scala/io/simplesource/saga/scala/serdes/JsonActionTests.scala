@@ -1,4 +1,4 @@
-package shared.serdes
+package io.simplesource.saga.scala.serdes
 import java.util.UUID
 
 import io.circe.Json
@@ -11,7 +11,7 @@ import org.scalatest.{Matchers, WordSpec}
 class JsonActionTests extends WordSpec with Matchers {
   import TestTypes._
   import io.circe.syntax._
-  "action shared.serdes" must {
+  "action io.simplesource.saga.scala.serdes" must {
     val serdes =
       JsonSerdes.actionSerdes[Json]
     val topic = "topic"

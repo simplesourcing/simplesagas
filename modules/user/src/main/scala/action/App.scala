@@ -11,7 +11,7 @@ import io.circe.generic.auto._
 import io.simplesource.data.Result
 import org.apache.kafka.common.serialization.Serdes
 import io.simplesource.saga.shared.utils.StreamAppConfig
-import shared.serdes.{JsonSerdes, ProductCodecs}
+import io.simplesource.saga.scala.serdes.{JsonSerdes, ProductCodecs}
 import io.simplesource.kafka.spec.TopicSpec
 import io.simplesource.saga.action.http.{HttpApp, HttpOutput, HttpRequest}
 import io.simplesource.saga.shared.topics.TopicCreation

@@ -22,7 +22,7 @@ import io.simplesource.saga.model.saga.{ActionCommand, SagaError}
 import io.simplesource.saga.saga.builder.SagaClientBuilder
 import org.slf4j.LoggerFactory
 import shared.TopicUtils
-import shared.serdes.JsonSerdes
+import io.simplesource.saga.scala.serdes.JsonSerdes
 
 import scala.collection.JavaConverters._
 import io.simplesource.saga.saga.dsl.SagaDsl._
@@ -133,7 +133,7 @@ object App {
         )
     }
 
-    val testAsyncInvoke: Fragment[Json] = builder.addAction(
+    val testAsyncInvoke: SubSaga[Json] = builder.addAction(
       UUID.randomUUID(),
       "async_test_action_type",
       new ActionCommand(
@@ -151,7 +151,7 @@ object App {
     import action.App.Key
     implicit val encoder: Encoder[HttpRequest[Key, String]] = HttpClient.httpRequest[Key, String]._1
 
-    val testHttpInvoke: Fragment[Json] = builder.addAction(
+    val testHttpInvoke: SubSaga[Json] = builder.addAction(
       UUID.randomUUID(),
       "http_action_type",
       new ActionCommand(
