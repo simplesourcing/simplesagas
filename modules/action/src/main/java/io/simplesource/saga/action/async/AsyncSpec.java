@@ -1,6 +1,8 @@
 package io.simplesource.saga.action.async;
 
 import io.simplesource.data.Result;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Value;
 
 import java.util.Optional;
@@ -15,6 +17,8 @@ import java.util.function.Function;
   * @param <R> - final result type that ends up in output topic
   */
 @Value
+@Builder
+@AllArgsConstructor
 final public class AsyncSpec<A, I, K, O, R> {
     public final String actionType;
     public final Function<A, Result<Throwable, I>> inputDecoder;

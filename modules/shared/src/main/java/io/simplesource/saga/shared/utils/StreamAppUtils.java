@@ -12,10 +12,17 @@ import org.apache.kafka.streams.Topology;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public final class StreamAppUtils {
+    @FunctionalInterface
+    public interface ShutdownHandler {
+        void shutDown();
+    }
+
     public static CreateTopicsResult addMissingTopics(AdminClient adminClient, List<TopicCreation> topics){
         try {
             Set<String> existingTopics = adminClient.listTopics().names().get();
@@ -37,7 +44,22 @@ public final class StreamAppUtils {
         streams.cleanUp();
         streams.start();
 
-        Runtime.getRuntime().addShutdownHook(new Thread(streams::close));
+        addShutdownHook(streams::close);
+    }
+
+    public static void shutdownExecutorService(ExecutorService executorService) {
+        try {
+            executorService.shutdown();
+            if (!executorService.awaitTermination(2000, TimeUnit.MILLISECONDS)) {
+                executorService.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            executorService.shutdownNow();
+        }
+    }
+
+    public static void addShutdownHook(ShutdownHandler handler) {
+        Runtime.getRuntime().addShutdownHook(new Thread(handler::shutDown));
     }
 
 }

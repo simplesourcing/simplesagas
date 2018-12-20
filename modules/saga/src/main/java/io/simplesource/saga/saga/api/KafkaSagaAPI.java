@@ -14,6 +14,7 @@ import io.simplesource.saga.model.serdes.SagaSerdes;
 import io.simplesource.saga.model.specs.SagaSpec;
 import io.simplesource.saga.shared.topics.TopicConfig;
 import io.simplesource.saga.shared.topics.TopicTypes;
+import io.simplesource.saga.shared.utils.StreamAppUtils;
 
 import java.time.Duration;
 import java.util.UUID;
@@ -47,6 +48,11 @@ public final class KafkaSagaAPI<A> implements SagaAPI<A> {
                 .build();
 
         requestApi = new KafkaRequestAPI<>(apiContext);
+
+        StreamAppUtils.addShutdownHook(() ->  {
+            StreamAppUtils.shutdownExecutorService(scheduler);
+            requestApi.close();
+        });
     }
 
     @Override

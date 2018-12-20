@@ -19,9 +19,9 @@ lazy val modelDeps = Seq(
   libraryDependencies ++= Seq(
     "javax.ws.rs"      % "javax.ws.rs-api"                    % "2.1" artifacts javaxArtifact,
     "org.apache.kafka" %% "kafka"                             % kafkaVersion,
-    "io.simplesource"  % "simplesource-io.simplesource.io.simplesource.saga.user.saga.user.command-api"           % simpleSourcingV,
-    "io.simplesource"  % "simplesource-io.simplesource.io.simplesource.saga.user.saga.user.command-kafka"         % simpleSourcingV,
-    "io.simplesource"  % "simplesource-io.simplesource.io.simplesource.saga.user.saga.user.command-serialization" % simpleSourcingV
+    "io.simplesource"  % "simplesource-command-api"           % simpleSourcingV,
+    "io.simplesource"  % "simplesource-command-kafka"         % simpleSourcingV,
+    "io.simplesource"  % "simplesource-command-serialization" % simpleSourcingV
   )
 )
 
@@ -100,7 +100,7 @@ lazy val model =
     .settings(commonSettings, modelDeps)
 
 lazy val shared =
-  Project(id = "io.simplesource.saga.user.shared", base = file("modules/io.simplesource.saga.user.shared"))
+  Project(id = "shared", base = file("modules/shared"))
     .settings(commonSettings, coreDeps)
     .dependsOn(model)
 
@@ -115,7 +115,7 @@ lazy val http =
     .dependsOn(model, sharedDeps, action)
 
 lazy val saga =
-  Project(id = "io.simplesource.saga.user.saga", base = file("modules/io.simplesource.saga.user.saga"))
+  Project(id = "saga", base = file("modules/saga"))
     .settings(commonSettings, coreDeps)
     .dependsOn(model, sharedDeps)
 

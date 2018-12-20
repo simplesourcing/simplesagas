@@ -186,7 +186,7 @@ class ConsumerRunner<A, I, K, O, R> implements Runnable {
         } else {
             Tuple2<I, K> inputWithKey = decodedWithKey.getOrElse(null);
             Callback<O> callback = cpb.apply(inputWithKey);
-            // TODO: check that this needs to be in a new thread (or use an executor)
+            // TODO: use the scheduled executor and add timeout
             new Thread(() -> asyncSpec.asyncFunction.accept(inputWithKey.v1(), callback)).start();
         }
     }

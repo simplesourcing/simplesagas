@@ -1,6 +1,8 @@
 package io.simplesource.saga.action.async;
 
 import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -34,12 +36,14 @@ public final class AsyncApp<A> {
     private final List<TopicCreation> expectedTopics;
     private final TopicConfig actionTopicConfig;
     private final ActionProcessorSpec<A> actionSpec;
+    private ScheduledExecutorService executor;
 
     @Value
     private static class AsyncTransformerInput<A> {
         final StreamsBuilder builder;
         final KStream<UUID, ActionRequest<A>> actionRequests;
         final KStream<UUID, ActionResponse> actionResponses;
+        final ScheduledExecutorService executor;
     }
 
     private interface AsyncTransformer<A> {
@@ -57,8 +61,8 @@ public final class AsyncApp<A> {
     }
 
     public <I, K, O, R> AsyncApp<A> addAsync(AsyncSpec<A, I, K, O, R> spec) {
-        AsyncContext<A, I, K, O, R> ctx = new AsyncContext<>(actionSpec, actionTopicConfig.namer, spec);
         AsyncTransformer<A> transformer = input -> {
+            AsyncContext<A, I, K, O, R> ctx = new AsyncContext<>(actionSpec, actionTopicConfig.namer, spec, input.executor);
             // join the action request with corresponding prior io.simplesource.io.simplesource.saga.user.saga.user.command responses
             AsyncStream.addSubTopology(ctx, input.actionRequests, input.actionResponses);
 
@@ -66,6 +70,11 @@ public final class AsyncApp<A> {
         };
         transformers.add(transformer);
         spec.outputSpec.ifPresent(oSpec -> expectedTopics.addAll(oSpec.getTopicCreations()));
+        return this;
+    }
+
+    public AsyncApp<A> addExecutor(ScheduledExecutorService executor) {
+        this.executor = executor;
         return this;
     }
 
@@ -92,7 +101,8 @@ public final class AsyncApp<A> {
         KStream<UUID, ActionResponse> actionResponses =
                 ActionConsumer.actionResponseStream(actionSpec, actionTopicConfig.namer, builder);
 
-        AsyncTransformerInput<A> commandInput = new AsyncTransformerInput<>(builder, actionRequests, actionResponses);
+        ScheduledExecutorService usedExecutor = executor != null ? executor : Executors.newScheduledThreadPool(1);
+        AsyncTransformerInput<A> commandInput = new AsyncTransformerInput<>(builder, actionRequests, actionResponses, usedExecutor);
         List<AsyncTransform.AsyncPipe> pipes = transformers.stream().map(x -> {
             Function<Properties, AsyncTransform.AsyncPipe> propsToPipe = x.apply(commandInput);
             return propsToPipe.apply(config);
@@ -102,10 +112,12 @@ public final class AsyncApp<A> {
         logger.info("Topology description {}", topology.describe());
         StreamAppUtils.runStreamApp(config, topology);
 
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+        StreamAppUtils.addShutdownHook(() -> {
             logger.info("Shutting down AsyncTransformers");
             pipes.forEach(AsyncTransform.AsyncPipe::close);
             closeHandlers.forEach(Supplier::get);
-        }));
+
+            StreamAppUtils.shutdownExecutorService(usedExecutor);
+        });
     }
 }
