@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Value;
 
+import java.time.Duration;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -26,4 +27,5 @@ final public class AsyncSpec<A, I, K, O, R> {
     public final BiConsumer<I, Callback<O>> asyncFunction;
     public final String groupId;
     public final Optional<AsyncOutput<I, K, O, R>> outputSpec;
+    public final Optional<Duration> timeout;
 }

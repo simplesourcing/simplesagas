@@ -23,6 +23,8 @@ import java.util.Collections;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -155,31 +157,34 @@ class ConsumerRunner<A, I, K, O, R> implements Runnable {
                         tryPure(() ->
                                 asyncSpec.keyMapper.apply(decoded)).map(k -> Tuple2.of(decoded, k)));
 
+        AtomicBoolean completed = new AtomicBoolean(false);
         Function<Tuple2<I, K>, Callback<O>> cpb = tuple -> result -> {
-            Result<Throwable, Optional<ResultGeneration<K, R>>> resultWithOutput = tryWrap(() ->
-                    result.flatMap(output -> {
-                        Optional<Result<Throwable, ResultGeneration<K, R>>> x =
-                                asyncSpec.outputSpec.flatMap(oSpec -> {
-                                    Optional<String> topicNameOpt = oSpec.getTopicName().apply(tuple.v1());
-                                    return topicNameOpt.flatMap(tName ->
-                                            oSpec.getOutputDecoder().apply(output)).map(t ->
-                                            t.map(r -> new ResultGeneration<>(topicNameOpt.get(), oSpec.getSerdes(), r)));
-                                });
+            if (completed.compareAndSet(false, true)) {
+                Result<Throwable, Optional<ResultGeneration<K, R>>> resultWithOutput = tryWrap(() ->
+                        result.flatMap(output -> {
+                            Optional<Result<Throwable, ResultGeneration<K, R>>> x =
+                                    asyncSpec.outputSpec.flatMap(oSpec -> {
+                                        Optional<String> topicNameOpt = oSpec.getTopicName().apply(tuple.v1());
+                                        return topicNameOpt.flatMap(tName ->
+                                                oSpec.getOutputDecoder().apply(output)).map(t ->
+                                                t.map(r -> new ResultGeneration<>(topicNameOpt.get(), oSpec.getSerdes(), r)));
+                                    });
 
-                        // this is just `sequence` in FP - swapping Result and Option
-                        Optional<Result<Throwable, Optional<ResultGeneration<K, R>>>> y = x.map(r -> r.fold(Result::failure, r0 -> Result.success(Optional.of(r0))));
-                        return y.orElseGet(() -> Result.success(Optional.empty()));
-                    }));
+                            // this is just `sequence` in FP - swapping Result and Option
+                            Optional<Result<Throwable, Optional<ResultGeneration<K, R>>>> y = x.map(r -> r.fold(Result::failure, r0 -> Result.success(Optional.of(r0))));
+                            return y.orElseGet(() -> Result.success(Optional.empty()));
+                        }));
 
-            resultWithOutput.ifSuccessful(resultGenOpt ->
-                    resultGenOpt.ifPresent(rg -> {
-                        AsyncSerdes<K, R> serdes = rg.outputSerdes;
-                        ProducerRecord<K, R> outputRecord = new ProducerRecord<>(rg.topicName, tuple.v2(), rg.result);
-                        ProducerRecord<byte[], byte[]> byteRecord = AsyncTransform.toBytes(outputRecord, serdes.getKey(), serdes.getOutput());
-                        producer.send(byteRecord);
-                    }));
+                resultWithOutput.ifSuccessful(resultGenOpt ->
+                        resultGenOpt.ifPresent(rg -> {
+                            AsyncSerdes<K, R> serdes = rg.outputSerdes;
+                            ProducerRecord<K, R> outputRecord = new ProducerRecord<>(rg.topicName, tuple.v2(), rg.result);
+                            ProducerRecord<byte[], byte[]> byteRecord = AsyncTransform.toBytes(outputRecord, serdes.getKey(), serdes.getOutput());
+                            producer.send(byteRecord);
+                        }));
 
-            publishActionResult(sagaId, request, producer, resultWithOutput);
+                publishActionResult(sagaId, request, producer, resultWithOutput);
+            }
         };
 
         if (decodedWithKey.isFailure()) {
@@ -187,7 +192,14 @@ class ConsumerRunner<A, I, K, O, R> implements Runnable {
         } else {
             Tuple2<I, K> inputWithKey = decodedWithKey.getOrElse(null);
             Callback<O> callback = cpb.apply(inputWithKey);
-            // TODO: add timeout
+            asyncSpec.timeout.ifPresent(tmOut -> {
+                        asyncContext.getExecutor().schedule(() -> {
+                            if (completed.compareAndSet(false, true)) {
+                                callback.complete(Result.failure(new TimeoutException("Timeout after " + tmOut.toString())));
+                            }
+                        }, tmOut.toMillis(), TimeUnit.MILLISECONDS);
+                    }
+            );
             asyncContext.getExecutor().execute(() -> asyncSpec.asyncFunction.accept(inputWithKey.v1(), callback));
         }
     }

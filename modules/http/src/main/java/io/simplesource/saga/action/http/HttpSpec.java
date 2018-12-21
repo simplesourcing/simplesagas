@@ -3,6 +3,7 @@ package io.simplesource.saga.action.http;
 import io.simplesource.saga.action.async.Callback;
 import lombok.Value;
 
+import java.time.Duration;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 
@@ -20,4 +21,5 @@ public final class HttpSpec<A, K, B, O, R> {
     public final BiConsumer<HttpRequest<K, B>, Callback<O>> asyncHttpClient;
     public final String groupId;
     public final Optional<HttpOutput<K, O, R>> outputSpec;
+    public final Optional<Duration> timeout;
 }

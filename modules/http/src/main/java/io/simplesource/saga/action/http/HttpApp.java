@@ -25,8 +25,8 @@ public final class HttpApp<A> {
                 httpSpec.asyncHttpClient,
                 httpSpec.groupId,
                 httpSpec.outputSpec.map(o ->
-                        new AsyncOutput<>(o.decoder::decode, o.serdes, r -> r.topicName, o.topicCreations))
-        );
+                        new AsyncOutput<>(o.decoder::decode, o.serdes, r -> r.topicName, o.topicCreations)),
+                httpSpec.timeout);
         asyncApp.addAsync(asyncSpec);
         return this;
     }

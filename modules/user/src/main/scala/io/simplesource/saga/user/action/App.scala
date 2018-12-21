@@ -1,5 +1,7 @@
 package io.simplesource.saga.user.action
 
+import java.time.Duration
+import java.time.temporal.ChronoUnit
 import java.util.{Optional, UUID}
 
 import io.circe.Json
@@ -16,6 +18,7 @@ import io.simplesource.saga.user.command.model.auction.AccountCommand
 import io.simplesource.saga.user.command.model.user.UserCommand
 import io.simplesource.saga.user.shared.TopicUtils
 import org.apache.kafka.common.serialization.Serdes
+
 import scala.collection.JavaConverters._
 
 object App {
@@ -88,6 +91,7 @@ object App {
         _ => Optional.of("async_test_topic"),
         List(new TopicCreation("async_test_topic", new TopicSpec(6, 1, Map.empty[String, String].asJava))).asJava
       )),
+    Optional.of(Duration.of(60, ChronoUnit.SECONDS))
   )
 
   // Http currency fetch example
@@ -111,6 +115,7 @@ object App {
         (o: Input) => Optional.of(o.as[FXRates].toResult.errorMap(e => e)),
         new AsyncSerdes(ProductCodecs.serdeFromCodecs[Key], ProductCodecs.serdeFromCodecs[FXRates]),
         List(new TopicCreation("fx_rates", new TopicSpec(6, 1, Map.empty[String, String].asJava))).asJava
-      ))
+      )),
+    Optional.of(Duration.of(60, ChronoUnit.SECONDS))
   )
 }
