@@ -30,10 +30,10 @@ public class SourcingStream {
         return (k, v) -> logger.info("{}: {}={}", prefix, k.toString().substring(0, 6), v.toString());
     }
 
-    public static <A, I, K, C> void addSubTopology(SourcingContext<A, I, K, C> ctx,
-                                                   KStream<UUID, ActionRequest<A>> actionRequest,
-                                                   KStream<UUID, ActionResponse> actionResponse,
-                                                   KStream<K, CommandResponse> commandResponseByAggregate) {
+    static <A, I, K, C> void addSubTopology(SourcingContext<A, I, K, C> ctx,
+                                            KStream<UUID, ActionRequest<A>> actionRequest,
+                                            KStream<UUID, ActionResponse> actionResponse,
+                                            KStream<K, CommandResponse> commandResponseByAggregate) {
         KStream<UUID, CommandResponse> commandResponseByCommandId = commandResponseByAggregate.selectKey((k, v) -> v.commandId());
 
         IdempotentStream.IdempotentAction<A> idempotentAction = IdempotentStream.getActionRequestsWithResponse(ctx.actionSpec,
@@ -57,8 +57,7 @@ public class SourcingStream {
                 requestErrorResponses);
     }
 
-
-    public static <A, I, K, C>
+    static <A, I, K, C>
     Tuple2<KStream<UUID, ActionResponse>, KStream<K, CommandRequest<K, C>>> handleActionRequest(
             SourcingContext<A, I, K, C> ctx,
             KStream<UUID, ActionRequest<A>> actionRequests,
@@ -129,7 +128,7 @@ public class SourcingStream {
     }
 
 
-    public static <A, I, K, C> KStream<UUID, ActionResponse> handleCommandResponse(
+    static <A, I, K, C> KStream<UUID, ActionResponse> handleCommandResponse(
             SourcingContext<A, I, K, C> ctx,
             KStream<UUID, ActionRequest<A>> actionRequests,
             KStream<UUID, CommandResponse> responseByCommandId) {
@@ -152,7 +151,6 @@ public class SourcingStream {
 
         // turn the pair into an ActionResponse
         return getActionResponse(ctx, actionRequestWithResponse);
-
     }
 
     static <A, I, K, C> KStream<UUID, ActionResponse> getActionResponse(
