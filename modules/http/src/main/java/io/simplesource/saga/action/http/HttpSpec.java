@@ -7,7 +7,7 @@ import java.util.Optional;
 import java.util.function.BiConsumer;
 
 /**
-  * @param <A> - common representation type for io.simplesource.io.simplesource.saga.user.saga.user.all action commands (typically Json / GenericRecord for Avro)
+  * @param <A> - common representation type for all action commands (typically Json / GenericRecord for Avro)
   * @param <K> - key for the output topic
   * @param <B> - body for Http request
   * @param <O> - output returned by the Http request - also normally quite generic

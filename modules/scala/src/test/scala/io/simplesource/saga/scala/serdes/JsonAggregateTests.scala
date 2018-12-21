@@ -11,12 +11,12 @@ import org.scalatest.{Matchers, WordSpec}
 
 class JsonAggregateTests extends WordSpec with Matchers {
   import TestTypes._
-  "aggregate io.simplesource.io.simplesource.saga.user.saga.scala.serdes" must {
+  "aggregate serdes" must {
     val serdes =
       JsonSerdes.aggregateSerdes[UUID, UserCommand, UserEvent, Option[User]]
     val topic = "topic"
 
-    "serialise and deserialise io.simplesource.io.simplesource.saga.user.saga.user.command key UUIDs" in {
+    "serialise and deserialise command key UUIDs" in {
       val initial = UUID.randomUUID()
       val ser =
         serdes.commandResponseKey().serializer().serialize(topic, initial)
@@ -32,7 +32,7 @@ class JsonAggregateTests extends WordSpec with Matchers {
       de shouldBe initial
     }
 
-    "serialise and deserialise io.simplesource.io.simplesource.saga.user.saga.user.command requests" in {
+    "serialise and deserialise command requests" in {
       val initial =
         new CommandRequest[UUID, UserCommand](UUID.randomUUID(),
                                               UserCommand.Insert(UUID.randomUUID(), "fn", "ln"),
@@ -59,7 +59,7 @@ class JsonAggregateTests extends WordSpec with Matchers {
       de shouldBe initial
     }
 
-    "serialise and deserialise io.simplesource.io.simplesource.saga.user.saga.user.command response success" in {
+    "serialise and deserialise command response success" in {
       val initial =
         new CommandResponse(UUID.randomUUID(), Sequence.first(), Result.success(Sequence.first().next()))
       val ser = serdes.commandResponse().serializer().serialize(topic, initial)
@@ -67,11 +67,11 @@ class JsonAggregateTests extends WordSpec with Matchers {
       de shouldBe initial
     }
 
-    "serialise and deserialise io.simplesource.io.simplesource.saga.user.saga.user.command response failure" in {
+    "serialise and deserialise command response failure" in {
       val initial =
         new CommandResponse(UUID.randomUUID(),
                             Sequence.first(),
-                            Result.failure(CommandError.of(Reason.InvalidCommand, "Invalid io.simplesource.io.simplesource.saga.user.saga.user.command")))
+                            Result.failure(CommandError.of(Reason.InvalidCommand, "Invalid command")))
       val ser = serdes.commandResponse().serializer().serialize(topic, initial)
       val de  = serdes.commandResponse().deserializer().deserialize(topic, ser)
       de shouldBe initial

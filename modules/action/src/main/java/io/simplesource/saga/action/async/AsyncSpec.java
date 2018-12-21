@@ -10,7 +10,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 /**
-  * @param <A> - common representation form for io.simplesource.io.simplesource.saga.user.saga.user.all action commands (typically Json / GenericRecord for Avro)
+  * @param <A> - common representation form for all action commands (typically Json / GenericRecord for Avro)
   * @param <I> - input to async function
   * @param <K> - key for the output topic
   * @param <O> - output returned by async function

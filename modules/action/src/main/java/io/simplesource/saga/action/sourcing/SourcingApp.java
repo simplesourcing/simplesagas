@@ -78,7 +78,7 @@ public final class SourcingApp<A> {
               .all()
               .get(30L, TimeUnit.SECONDS);
         } catch (Exception e) {
-            throw new RuntimeException("Unable to create io.simplesource.io.simplesource.saga.user.saga.user.all the topics");
+            throw new RuntimeException("Unable to create all the topics");
         }
 
         StreamsBuilder builder = new StreamsBuilder();
@@ -111,14 +111,14 @@ public final class SourcingApp<A> {
 //
 //  private var commands: List<Command> = List.empty
 //  private var topics
-//    : List<TopicCreation> = TopicCreation.allTopics(actionTopicConfig) //   topicNames.ActionTopic.io.simplesource.io.simplesource.saga.user.saga.user.all.map(TopicCreation(actionTopicConfig))
+//    : List<TopicCreation> = TopicCreation.allTopics(actionTopicConfig) //   topicNames.ActionTopic.all.map(TopicCreation(actionTopicConfig))
 //
 //  def addCommand<I, K, C>(cSpec: CommandSpec<A, I, K, C>,
 //                          topicBuildFn: TopicConfigBuilder.BuildSteps): SourcingApp<A> = {
 //    val commandTopicConfig =
-//      TopicConfigBuilder.buildTopics(TopicTypes.CommandTopic.io.simplesource.io.simplesource.saga.user.saga.user.all, Map.empty)(topicBuildFn)
+//      TopicConfigBuilder.buildTopics(TopicTypes.CommandTopic.all, Map.empty)(topicBuildFn)
 //    val actionContext = SourcingContext(actionSpec, cSpec, actionTopicConfig.namer, commandTopicConfig.namer)
-//    val io.simplesource.io.simplesource.saga.user.saga.user.command: Command = input => {
+//    val command: Command = input => {
 //      val commandResponses =
 //        CommandConsumer.commandResponseStream(cSpec, commandTopicConfig.namer, input.builder)
 //      SourcingStream.addSubTopology(actionContext,
@@ -126,7 +126,7 @@ public final class SourcingApp<A> {
 //                                    input.actionResponses,
 //                                    commandResponses)
 //    }
-//    commands = io.simplesource.io.simplesource.saga.user.saga.user.command :: commands
+//    commands = command :: commands
 //    topics = topics ++ TopicCreation.allTopics(commandTopicConfig)
 //    this
 //  }
@@ -136,7 +136,7 @@ public final class SourcingApp<A> {
 //
 //    StreamAppUtils
 //      .addMissingTopics(AdminClient.create(config))(topics.distinct)
-//      .io.simplesource.io.simplesource.saga.user.saga.user.all()
+//      .all()
 //      .get(30L, TimeUnit.SECONDS)
 //
 //    val builder = new StreamsBuilder()

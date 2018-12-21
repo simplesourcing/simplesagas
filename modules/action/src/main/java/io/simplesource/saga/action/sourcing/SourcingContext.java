@@ -7,10 +7,10 @@ import io.simplesource.saga.shared.topics.TopicNamer;
 import lombok.Value;
 
 /**
-  * @param <A> - common representation form for io.simplesource.io.simplesource.saga.user.saga.user.all action commands (typically Json / GenericRecord for Avro)
+  * @param <A> - common representation form for all action commands (typically Json / GenericRecord for Avro)
   * @param <I> - intermediate decoded input type (that can easily be converted to both K and C)
   * @param <K> - aggregate key
-  * @param <C> - simple sourcing io.simplesource.io.simplesource.saga.user.saga.user.command type
+  * @param <C> - simple sourcing command type
   */
 
 @Value

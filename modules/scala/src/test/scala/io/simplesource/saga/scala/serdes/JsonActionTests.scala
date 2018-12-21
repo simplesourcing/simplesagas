@@ -11,7 +11,7 @@ import org.scalatest.{Matchers, WordSpec}
 class JsonActionTests extends WordSpec with Matchers {
   import TestTypes._
   import io.circe.syntax._
-  "action io.simplesource.io.simplesource.saga.user.saga.scala.serdes" must {
+  "action serdes" must {
     val serdes =
       JsonSerdes.actionSerdes[Json]
     val topic = "topic"

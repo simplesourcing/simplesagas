@@ -40,6 +40,7 @@ class ConsumerRunner<A, I, K, O, R> implements Runnable {
     private final Properties consumerConfig;
     private final Properties producerProps;
     private final AsyncContext<A, I, K, O, R> asyncContext;
+    private Optional<Result<Throwable, Optional<ResultGeneration<K, R>>>> y;
 
     ConsumerRunner(
             AsyncContext<A, I, K, O, R> asyncContext,
@@ -186,8 +187,8 @@ class ConsumerRunner<A, I, K, O, R> implements Runnable {
         } else {
             Tuple2<I, K> inputWithKey = decodedWithKey.getOrElse(null);
             Callback<O> callback = cpb.apply(inputWithKey);
-            // TODO: use the scheduled executor and add timeout
-            new Thread(() -> asyncSpec.asyncFunction.accept(inputWithKey.v1(), callback)).start();
+            // TODO: add timeout
+            asyncContext.getExecutor().execute(() -> asyncSpec.asyncFunction.accept(inputWithKey.v1(), callback));
         }
     }
 

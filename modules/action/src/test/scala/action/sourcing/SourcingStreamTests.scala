@@ -7,12 +7,12 @@
 //import io.circe.generic.auto._
 //import io.circe.syntax._
 //import model.messages.ActionRequest
-//import model.io.simplesource.saga.user.saga.ActionCommand
+//import model.saga.ActionCommand
 //import model.specs.ActionProcessorSpec
 //import io.simplesource.saga.user.shared.topics.TopicTypes.{ActionTopic, CommandTopic}
 //import org.scalatest.{Matchers, WordSpec}
-//import io.simplesource.io.simplesource.saga.user.saga.scala.serdes.JsonSerdes
-//import io.simplesource.io.simplesource.saga.user.saga.scala.serdes.TestTypes.UserCommand
+//import serdes.JsonSerdes
+//import serdes.TestTypes.UserCommand
 //import io.simplesource.saga.user.shared.topics.TopicNamer
 //class SourcingStreamTests extends WordSpec with Matchers {
 //  import TestUtils._
@@ -32,7 +32,7 @@
 //  )
 //
 //  "action streams" must {
-//    "turn an action request into a io.simplesource.io.simplesource.saga.user.saga.user.command request" in {
+//    "turn an action request into a command request" in {
 //      val ctx = SourcingContext(actionSpec, userSpec, actionTopicNamer, commandTopicNamer)
 //
 //      val ctxDriver = ContextDriver(
@@ -57,10 +57,10 @@
 //      val cSerdes = userSpec.serdes
 //
 //      val sagaId               = UUID.randomUUID()
-//      val io.simplesource.io.simplesource.saga.user.saga.user.command: UserCommand = UserCommand.Insert(UUID.randomUUID(), "Roscoe", "Marcellus")
+//      val command: UserCommand = UserCommand.Insert(UUID.randomUUID(), "Roscoe", "Marcellus")
 //      val actionRequest = ActionRequest(sagaId,
 //                                        UUID.randomUUID(),
-//                                        ActionCommand(UUID.randomUUID(), io.simplesource.io.simplesource.saga.user.saga.user.command.asJson),
+//                                        ActionCommand(UUID.randomUUID(), command.asJson),
 //                                        "user_action")
 //
 //      ctxDriver
@@ -71,7 +71,7 @@
 //        ctxDriver.readOutput(commandTopicNamer(CommandTopic.request),
 //                             cSerdes.aggregateKey,
 //                             cSerdes.commandRequest())
-//      output.value().io.simplesource.io.simplesource.saga.user.saga.user.command() shouldBe io.simplesource.io.simplesource.saga.user.saga.user.command
+//      output.value().command() shouldBe command
 //    }
 //  }
 //}

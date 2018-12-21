@@ -18,7 +18,7 @@ object App {
     new SagaApp[Json](sagaSpec, TopicUtils.buildSteps(constants.sagaTopicPrefix, constants.sagaBaseName))
       .addActionProcessor(actionProcessorSpec,
                           TopicUtils.buildSteps(constants.actionTopicPrefix, constants.sagaActionBaseName))
-      .run(new StreamAppConfig("io.simplesource.saga.user.saga-coordinator-1", constants.kafkaBootstrap))
+      .run(new StreamAppConfig("saga-coordinator-1", constants.kafkaBootstrap))
   }
 
   lazy val actionProcessorSpec: ActionProcessorSpec[Json] =

@@ -25,7 +25,7 @@ object AccountHandlers {
       case (_, None) => None
     }
 
-  // Crude io.simplesource.io.simplesource.saga.user.saga.user.command handler implementation
+  // Crude command handler implementation
   def commandHandler(k: UUID, aOpt: Option[Account])(
       c: AccountCommand): Result[CommandError, NonEmptyList[AccountEvent]] =
     (c, aOpt) match {

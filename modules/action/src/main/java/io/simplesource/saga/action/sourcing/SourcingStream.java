@@ -40,12 +40,12 @@ public class SourcingStream {
                 actionRequest,
                 actionResponse,
                 ctx.commandSpec.actionType);
-        // get new io.simplesource.io.simplesource.saga.user.saga.user.command requests
+        // get new command requests
         Tuple2<KStream<UUID, ActionResponse>, KStream<K, CommandRequest<K, C>>> requestResp = handleActionRequest(ctx, idempotentAction.unprocessedRequests, commandResponseByAggregate);
         KStream<UUID, ActionResponse> requestErrorResponses = requestResp.v1();
         KStream<K, CommandRequest<K, C>> commandRequests = requestResp.v2();
 
-        // handle incoming io.simplesource.io.simplesource.saga.user.saga.user.command responses
+        // handle incoming command responses
         KStream<UUID, ActionResponse> newActionResponses = handleCommandResponse(ctx, actionRequest, commandResponseByCommandId);
 
         // publish to output topics
@@ -95,7 +95,7 @@ public class SourcingStream {
                         .withKeySerde(ctx.cSerdes().aggregateKey())
                         .withValueSerde(ctx.cSerdes().commandResponse());
 
-        // Get the most recent io.simplesource.io.simplesource.saga.user.saga.user.command response for the aggregate
+        // Get the most recent command response for the aggregate
         KTable<K, CommandResponse> lastCommandByAggregate =
                 commandResponseByAggregate
                         .groupByKey()
@@ -115,7 +115,7 @@ public class SourcingStream {
                             aReq.actionCommand.commandId);
                 };
 
-        // Get the latest sequence number and turn action request into a io.simplesource.io.simplesource.saga.user.saga.user.command request
+        // Get the latest sequence number and turn action request into a command request
         KStream<K, CommandRequest<K, C>> commandRequestByAggregate = requestByAggregateKey
                 .leftJoin(
                         lastCommandByAggregate,
@@ -137,7 +137,7 @@ public class SourcingStream {
         // find the response for the request
         KStream<UUID, Tuple2<ActionRequest<A>, CommandResponse>> actionRequestWithResponse =
 
-                // join io.simplesource.io.simplesource.saga.user.saga.user.command response to action request by the io.simplesource.io.simplesource.saga.user.saga.user.command / action ID
+                // join command response to action request by the command / action ID
                 // TODO: timeouts - will be easy to do timeouts with a left join once https://issues.apache.org/jira/browse/KAFKA-6556 has been released
                 actionRequests
                         .selectKey((k, aReq) -> aReq.actionCommand.commandId)

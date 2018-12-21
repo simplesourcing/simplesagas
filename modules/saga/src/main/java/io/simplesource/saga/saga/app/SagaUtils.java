@@ -128,7 +128,7 @@ final class SagaUtils {
             return s.updated(actionMap, s.status, s.sagaError);
         }
         if (t instanceof SagaStateTransition.SagaStatusChanged) {
-            // TODO: add io.simplesource.saga.user.saga errors
+            // TODO: add saga errors
             SagaStateTransition.SagaStatusChanged st = ((SagaStateTransition.SagaStatusChanged) t);
             return s.updated(st.sagaStatus, st.actionErrors.map(NonEmptyList::head));
         }

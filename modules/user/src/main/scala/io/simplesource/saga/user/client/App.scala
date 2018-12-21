@@ -36,12 +36,12 @@ object App {
     val sagaClientBuilder: SagaClientBuilder[Json] = new SagaClientBuilder[Json](
       (kafkaConfigBuilder: KafkaConfig.Builder) =>
         kafkaConfigBuilder
-          .withKafkaApplicationId("io.simplesource.saga.user.saga-app-1")
+          .withKafkaApplicationId("saga-app-1")
           .withKafkaBootstrap("127.0.0.1:9092"))
     val api: SagaAPI[Json] = sagaClientBuilder
       .withSerdes(JsonSerdes.sagaSerdes[Json])
       .withTopicConfig(TopicUtils.buildSteps(constants.sagaTopicPrefix, constants.sagaBaseName))
-      .withClientId("io.simplesource.saga.user.saga-io.simplesource.saga.user.client-1")
+      .withClientId("saga-client-1")
       .build()
 
     for (_ <- 1 to 3) {
