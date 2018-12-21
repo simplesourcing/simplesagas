@@ -39,12 +39,12 @@ At the project folder, in separate terminal windows:
 1. Start the command processor, the action processor and the saga coordinator:
     
     ```bash
-    sbt "user/runMain all.App"
+    sbt "user/runMain io.simplesource.saga.user.all.App"
     ```
 
 1. Run the client app to submit some saga requests
     ```bash
-    sbt "user/runMain client.App"
+    sbt "user/runMain io.simplesource.saga.user.client.App"
     ```
     
 The Kafka topics are created as required.
@@ -62,17 +62,17 @@ In a production environment this would probably be the recommended practice.
 
 1. Simple sourcing command processor
     ```bash
-    sbt "user/runMain command.App"
+    sbt "user/runMain io.simplesource.saga.user.command.App" 
     ```
 
 1. Action processor
     ```bash
-    sbt "user/runMain action.App"
+    sbt "user/runMain io.simplesource.saga.user.action.App"
     ```
 
 1. Saga coordinator
     ```bash
-    sbt "user/runMain saga.App"
+    sbt "user/runMain io.simplesource.saga.user.saga.App"
     ```
  
 There are also scripts to follow the progress of the Saga. e.g.:

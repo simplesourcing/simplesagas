@@ -31,7 +31,6 @@ import java.util.function.Supplier;
 
 import static io.simplesource.saga.action.async.AsyncTransform.*;
 
-
 class ConsumerRunner<A, I, K, O, R> implements Runnable {
 
     private final AsyncSpec<A, I, K, O, R> asyncSpec;
@@ -54,7 +53,6 @@ class ConsumerRunner<A, I, K, O, R> implements Runnable {
         this.asyncContext = asyncContext;
         this.consumerConfig = consumerConfig;
         this.producerProps = producerProps;
-
     }
 
     @Override
