@@ -4,14 +4,6 @@
 
 ***Please note:** This repo is **experimental***.
 
-The following could happen to this code:
-* Nothing
-* It could be refactored, rewritten or modified extensively
-* It could disappear
-* It could be ported to Java, Kotlin or something else
-
-Now that that's out the way...
-
 ## Introduction
 
 A Saga is a sequence of operations in a distributed environment that spans multiple transactional boundaries. 
@@ -183,7 +175,7 @@ A simple DSL is provided to simplify creating sagas, loosely based on the [Akka 
 
 1. Create a builder:
     ```scala
-    import saga.dsl._
+    import io.simplesource.saga.scala.dsl._
    
     val builder = SagaBuilder[A]()
     ```
@@ -272,10 +264,7 @@ action processor fails to forward this result to the saga manager, the saga will
 
 ## Design and Implementation Notes
 
-1. This app is written in Scala, mainly for the convenience of free Serde derivation for Json serialization.
-    It's definitely not pure FP. 
-    The expectation is pretty strong that it's going to be ported to Java.
-    For this reason the development has shied away from more complex Scala language features and frameworks.
+1. The core code is written in Java, with some parts written in Scala. 
     
 1. The distinction between actions and commands is probably not that clear. I'm open to discussion on naming if things help.
     - An action is shorthand for a saga action. Actions are saga aware.
@@ -352,4 +341,3 @@ The highest bid wins, but if this fails to settle because the user has insuffici
 it should then pass through to the next highest bid, and successively repeat this until successfully settled.
 
 To support this use case requires conditional saga logic.
- 

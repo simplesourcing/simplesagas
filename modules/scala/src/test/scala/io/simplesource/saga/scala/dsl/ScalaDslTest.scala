@@ -8,7 +8,6 @@ import org.scalatest.{Matchers, WordSpec}
 import scala.collection.JavaConverters._
 
 class ScalaDslTest extends WordSpec with Matchers {
-  import SagaScalaDsl._
 
   implicit class DependsOps(action: String) {
     def shouldDependOnSet[A](dependsOn: Set[String])(implicit sagaState: Saga[A]) = {

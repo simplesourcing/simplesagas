@@ -5,7 +5,7 @@ import io.simplesource.saga.saga.dsl.SagaDsl.SubSaga
 
 import scala.collection.JavaConverters._
 
-object SagaScalaDsl {
+trait SagaScalaDsl {
   implicit class SubSagaOps[A](subSaga: SubSaga[A]) {
     def ~>(next: SubSaga[A]): SubSaga[A] =
       subSaga.andThen(next)
