@@ -4,14 +4,6 @@
 
 ***Please note:** This repo is **experimental***.
 
-The following could happen to this code:
-* Nothing
-* It could be refactored, rewritten or modified extensively
-* It could disappear
-* It could be ported to Java, Kotlin or something else
-
-Now that that's out the way...
-
 ## Introduction
 
 A Saga is a sequence of operations in a distributed environment that spans multiple transactional boundaries. 
@@ -20,7 +12,7 @@ A saga generally represents a single complex logical business transaction that c
 
 If one of the operations fails it may be necessary to execute compensating actions against those actions that have already been successfully executed.
 
-Simple Sagas is a simple, flexible and resilient mechanism for executing sagas, where all inter-process communication is handled via Kafka. 
+Simple Sagas is a simple, flexible and resilient mechanism for executing sagas, where all inter-process communication is handled via Kafka.
 It takes full advantage of the robustness and fault-tolerance provided by Kafka and Kafka Streams.
 
 It also integrates natively with the [Simple Sourcing](https://http://simplesource.io/) event sourcing framework.
@@ -39,12 +31,12 @@ At the project folder, in separate terminal windows:
 1. Start the command processor, the action processor and the saga coordinator:
     
     ```bash
-    sbt "user/runMain all.App"
+    sbt "user/runMain io.simplesource.saga.user.all.App"
     ```
 
 1. Run the client app to submit some saga requests
     ```bash
-    sbt "user/runMain client.App"
+    sbt "user/runMain io.simplesource.saga.user.client.App"
     ```
     
 The Kafka topics are created as required.
@@ -56,23 +48,23 @@ If it all runs correctly, you should see some console output that ends with this
 09:02:25.222 [saga-...] INFO  SagaStream - sagaState: 1b230f=Completed=>6-(e06ac7,Completed)-(719a58,Completed)-(a2ad32,Completed)
 ```
 
-It is also possible to run the command processor, the action processor 
+It is also possible to run the command processor, the action processor
 and the saga coordinator a separate processes.
 In a production environment this would probably be the recommended practice.
 
 1. Simple sourcing command processor
     ```bash
-    sbt "user/runMain command.App"
+    sbt "user/runMain io.simplesource.saga.user.command.App" 
     ```
 
 1. Action processor
     ```bash
-    sbt "user/runMain action.App"
+    sbt "user/runMain io.simplesource.saga.user.action.App"
     ```
 
 1. Saga coordinator
     ```bash
-    sbt "user/runMain saga.App"
+    sbt "user/runMain io.simplesource.saga.user.saga.App"
     ```
  
 There are also scripts to follow the progress of the Saga. e.g.:
@@ -111,8 +103,8 @@ Note that the Simple Sourcing `CommandAPI` is not exposed. All communication wit
 An adaptor layer that takes saga-specific actions and translates them command requests.
 It turns the command response from the command processor into an action response.
 
-This action processor is idempotent. If an action request with the same action ID (command ID) is resubmitted, 
-it will re-emit the action response, but will not re-execute the command. 
+This action processor is idempotent. If an action request with the same action ID (command ID) is resubmitted,
+it will re-emit the action response, but will not re-execute the command.
 We don't currently make use of this feature, as retries are not currently implemented.
 
 All that's required for an action processor listen to the action request topic, execute an action (potentially with effects), 
@@ -128,8 +120,8 @@ It's important that only one action processor handles an action.
 #### Simple Sourcing Action Processor
 
 This is the base implementation of an action processor. It turns saga action requests into Simple Sourcing action requests.
-It gets the latest sequence Id from the the stream of command responses for the aggregate. 
-It then forwards the Simple Sourcing command response back to the sagas coordinator. 
+It gets the latest sequence Id from the the stream of command responses for the aggregate.
+It then forwards the Simple Sourcing command response back to the sagas coordinator.
 
 #### Async Action Processor
 
@@ -157,7 +149,7 @@ be reasonably straightforward to add this in future.
 This is a thin layer over the async action processor. 
 This wraps the async processor with an http client interface.
 
-The choice of http client implementation is left to the user. A simple example using [Requests-Scala](https://github.com/lihaoyi/requests-scala) is provided. 
+The choice of http client implementation is left to the user. A simple example using [Requests-Scala](https://github.com/lihaoyi/requests-scala) is provided.
 
 *This code is experimental.*
 
@@ -170,8 +162,8 @@ Actions that are not dependent on one another can be executed in parallel.
 Action execution involves submitting to the action request topic and waiting for it to finish by 
 listening to the action response topic.
 
-The result of action execution leads to a saga state transition. 
-When this happens the next action(s) can be submitted, or if all actions have completed, 
+The result of action execution leads to a saga state transition.
+When this happens the next action(s) can be submitted, or if all actions have completed,
 finishing the saga and publishing to the saga response topic.
 
 If any of the actions fail, the actions that are already completed are undone, if a undo action is defined.
@@ -183,7 +175,7 @@ A simple DSL is provided to simplify creating sagas, loosely based on the [Akka 
 
 1. Create a builder:
     ```scala
-    import saga.dsl._
+    import io.simplesource.saga.scala.dsl._
    
     val builder = SagaBuilder[A]()
     ```
@@ -248,7 +240,7 @@ A simple DSL is provided to simplify creating sagas, loosely based on the [Akka 
 Currently the only way to request a sagas and validate its response is via the 
 sagas request and response Kafka topics respectively.
 
-The intention is to build a client API that allows a user to submit a sagas request and query its state, 
+The intention is to build a client API that allows a user to submit a sagas request and query its state,
 without having to interact directly with Kafka 
 (though this will still remain an option). 
 
@@ -263,7 +255,7 @@ This consists of the following example streams apps:
 
 ## PoC Scope
 
-* There is currently no support for retries and timeouts. If the command processor fails to return a result, or the 
+* There is currently no support for retries and timeouts. If the command processor fails to return a result, or the
 action processor fails to forward this result to the saga manager, the saga will simply not complete.
 
     It is slightly tricky to implement this feature, but should become quite straightforward once the following issue is implemented in Kafka Streams:
@@ -272,25 +264,22 @@ action processor fails to forward this result to the saga manager, the saga will
 
 ## Design and Implementation Notes
 
-1. This app is written in Scala, mainly for the convenience of free Serde derivation for Json serialization.
-    It's definitely not pure FP. 
-    The expectation is pretty strong that it's going to be ported to Java.
-    For this reason the development has shied away from more complex Scala language features and frameworks.
+1. The core code is written in Java, with some parts written in Scala. 
     
 1. The distinction between actions and commands is probably not that clear. I'm open to discussion on naming if things help.
-    - An action is shorthand for a saga action. Actions are saga aware. 
+    - An action is shorthand for a saga action. Actions are saga aware.
       Action requests are published in the action request topic, and keyed by saga ID.
     - Actions represent a node in the saga dependency graph. When in undo mode, the arrows of the dependency graph are effectively reversed, but the actions are still the same.
     - For this reason there are the following IDs associated with an action:
         + saga ID
         + action ID
         + command ID
-      When executing the undo operation for an action, the saga ID and the action ID will be the same, but the command ID will be different.  
-      Idempotence is with respect to the command ID. 
+      When executing the undo operation for an action, the saga ID and the action ID will be the same, but the command ID will be different.
+      Idempotence is with respect to the command ID.
       So if we want to retry submitting a failed action (e.g. optimistic locking fails with an invalid sequence number), we need to modify the command ID.
     - Commands are effectively action executions. So an action has associated with it a command, and optionally, and undo command.
 
-1. Saga commands must have a uniform representation for all action / command types in the sagas. 
+1. Saga commands must have a uniform representation for all action / command types in the sagas.
     It's a hard to offer anything better in a way that can be ported to Java. It could be done in Scala with dependent types.
     
     This uniform type is the type `A` is the sagas and action APIs. 
@@ -303,7 +292,7 @@ action processor fails to forward this result to the saga manager, the saga will
     The type `D` should be rich enough that the operations `D => K` and `D => C` never throw.
 
 
-1. The saga implementation follows a state transition model. 
+1. The saga implementation follows a state transition model.
     This may not be the most efficient, but I think it is pretty clean. It makes the sagas execution fully event sourced.
     
     The alternative may be to apply the state changes directly. This may be more efficient as it cuts out an extra step.
@@ -351,5 +340,4 @@ The auction closes with a sequence of bids.
 The highest bid wins, but if this fails to settle because the user has insufficient funds,
 it should then pass through to the next highest bid, and successively repeat this until successfully settled.
 
-To support this use case requires conditional saga logic. 
- 
+To support this use case requires conditional saga logic.
