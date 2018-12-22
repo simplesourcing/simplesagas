@@ -1,6 +1,6 @@
 package io.simplesource.saga.model.messages;
 
-import io.simplesource.saga.model.saga.*;
+import io.simplesource.saga.model.action.ActionCommand;
 import lombok.Value;
 
 import java.util.UUID;

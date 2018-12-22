@@ -11,7 +11,7 @@ import io.simplesource.data.NonEmptyList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static io.simplesource.saga.saga.dsl.SagaDsl.*;
 
-import io.simplesource.saga.model.saga.ActionCommand;
+import io.simplesource.saga.model.action.ActionCommand;
 import io.simplesource.saga.model.saga.Saga;
 import org.junit.jupiter.api.Test;
 

@@ -1,6 +1,7 @@
 package io.simplesource.saga.model.saga;
 
 import io.simplesource.data.Sequence;
+import io.simplesource.saga.model.action.SagaAction;
 import lombok.Value;
 
 import java.util.Map;

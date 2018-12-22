@@ -6,11 +6,11 @@ import io.circe.{Decoder, Encoder}
 import io.simplesource.data.{NonEmptyList, Result, Sequence}
 import io.simplesource.kafka.api.{AggregateSerdes, CommandSerdes}
 import io.simplesource.kafka.model._
+import io.simplesource.saga.model.action.{ActionCommand, ActionStatus, SagaAction}
 import io.simplesource.saga.model.saga
-import io.simplesource.saga.model.saga.{ActionCommand, SagaError}
+import io.simplesource.saga.model.saga.SagaError
 import io.simplesource.saga.model.serdes.{ActionSerdes, SagaSerdes}
 import org.apache.kafka.common.serialization.Serde
-import org.slf4j.LoggerFactory
 
 object JsonSerdes {
   import ProductCodecs._

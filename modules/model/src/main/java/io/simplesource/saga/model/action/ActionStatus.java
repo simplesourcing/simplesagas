@@ -1,4 +1,4 @@
-package io.simplesource.saga.model.saga;
+package io.simplesource.saga.model.action;
 
 public enum ActionStatus {
     Pending,

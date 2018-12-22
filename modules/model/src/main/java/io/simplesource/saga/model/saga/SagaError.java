@@ -53,6 +53,7 @@ public class SagaError {
         this.error = error;
     }
 
+    // TODO: flesh out error cases
     public enum Reason {
         Timeout,
         CommandError,

@@ -3,6 +3,8 @@ package io.simplesource.saga.saga.app;
 
 import io.simplesource.data.NonEmptyList;
 import io.simplesource.data.Sequence;
+import io.simplesource.saga.model.action.ActionStatus;
+import io.simplesource.saga.model.action.SagaAction;
 import io.simplesource.saga.model.messages.SagaStateTransition;
 import io.simplesource.saga.model.saga.*;
 import org.slf4j.Logger;

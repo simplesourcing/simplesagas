@@ -4,8 +4,9 @@ import java.util.UUID
 import io.circe.Json
 import io.circe.generic.auto._
 import io.simplesource.data.Result
+import io.simplesource.saga.model.action.ActionCommand
 import io.simplesource.saga.model.messages.{ActionRequest, ActionResponse}
-import io.simplesource.saga.model.saga.{ActionCommand, SagaError}
+import io.simplesource.saga.model.saga.SagaError
 import org.scalatest.{Matchers, WordSpec}
 
 class JsonActionTests extends WordSpec with Matchers {

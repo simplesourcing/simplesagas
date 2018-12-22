@@ -15,9 +15,10 @@ import io.simplesource.data.Result
 import io.simplesource.kafka.dsl.KafkaConfig
 import io.simplesource.saga.action.http.HttpRequest
 import io.simplesource.saga.action.http.HttpRequest.HttpVerb
+import io.simplesource.saga.model.action.ActionCommand
 import io.simplesource.saga.model.api.SagaAPI
 import io.simplesource.saga.model.messages.SagaRequest
-import io.simplesource.saga.model.saga.{ActionCommand, SagaError}
+import io.simplesource.saga.model.saga.SagaError
 import io.simplesource.saga.saga.builder.SagaClientBuilder
 import org.slf4j.LoggerFactory
 import io.simplesource.saga.user.shared.TopicUtils

@@ -1,5 +1,7 @@
 package io.simplesource.saga.model.saga;
 
+import io.simplesource.saga.model.action.ActionCommand;
+import io.simplesource.saga.model.action.ActionStatus;
 import lombok.Value;
 
 import java.util.Optional;

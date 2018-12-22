@@ -1,7 +1,8 @@
 package io.simplesource.saga.scala.dsl
 import java.util.UUID
 
-import io.simplesource.saga.model.saga.{ActionCommand, Saga}
+import io.simplesource.saga.model.action.ActionCommand
+import io.simplesource.saga.model.saga.Saga
 import io.simplesource.saga.saga.dsl.SagaDsl.SagaBuilder
 import org.scalatest.{Matchers, WordSpec}
 

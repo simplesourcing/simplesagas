@@ -1,7 +1,7 @@
 package io.simplesource.saga.model.messages;
 
 import io.simplesource.data.NonEmptyList;
-import io.simplesource.saga.model.saga.ActionStatus;
+import io.simplesource.saga.model.action.ActionStatus;
 import io.simplesource.saga.model.saga.Saga;
 import io.simplesource.saga.model.saga.SagaError;
 import io.simplesource.saga.model.saga.SagaStatus;

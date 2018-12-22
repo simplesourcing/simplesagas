@@ -1,5 +1,6 @@
-package io.simplesource.saga.model.saga;
+package io.simplesource.saga.model.action;
 
+import io.simplesource.saga.model.saga.SagaError;
 import lombok.Value;
 
 import java.util.Optional;
