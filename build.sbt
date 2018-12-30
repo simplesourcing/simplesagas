@@ -1,5 +1,4 @@
 import sbt.Resolver
-// The simplest possible sbt build file is just one line:
 
 scalaVersion := "2.12.7"
 
@@ -8,8 +7,7 @@ organization := "io.simplesource"
 version := "0.1.0"
 
 val circeV          = "0.10.0"
-val avro4sV         = "2.0.0-M1"
-val simpleSourcingV = "0.2.2-SNAPSHOT"
+val simpleSourcingV = "0.2.2"
 val kafkaVersion    = "2.0.0"
 val catsV           = "1.4.0"
 
@@ -41,7 +39,6 @@ lazy val scalaDeps = modelDeps ++ Seq(
   libraryDependencies ++= Seq(
     "ch.qos.logback"      % "logback-classic" % "1.2.3",
     "org.typelevel"       %% "cats-core"      % catsV,
-    "com.sksamuel.avro4s" %% "avro4s-core"    % avro4sV,
     "org.scalatest"       %% "scalatest"      % "3.0.5" % Test,
     "org.scalacheck"      %% "scalacheck"     % "1.14.0" % Test,
     "io.circe"            %% "circe-core"     % circeV,
