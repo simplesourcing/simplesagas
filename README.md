@@ -22,19 +22,17 @@ without the extensive overhead of including and interfacing with an additional f
 
 ## Quick Start
 
-### Core Java Build
+### Build
 
-1. Change to `java` folder
-2. Run `mvn install`
+Simply run the following:
 
-### Scala Build
-
-1. Change to `scala` folder
-2. Run `sbt test`
+```bash
+make build
+```
 
 ### Running Sample Code
 
-Perform the Core Java buld as above.
+Build as above.
 
 In separate terminal windows in the `scala` folder:
 
