@@ -22,7 +22,21 @@ without the extensive overhead of including and interfacing with an additional f
 
 ## Quick Start
 
-At the project folder, in separate terminal windows:
+### Core Java Build
+
+1. Change to `java` folder
+2. Run `mvn install`
+
+### Scala Build
+
+1. Change to `scala` folder
+2. Run `sbt test`
+
+### Running Sample Code
+
+Perform the Core Java buld as above.
+
+In separate terminal windows in the `scala` folder:
 
 1. Start kafka stack
     ```bash
