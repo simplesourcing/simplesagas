@@ -1,6 +1,4 @@
 language: java
-jdk: oraclejdk10
-sudo: false
-dist: trusty
+jdk: oraclejdk11
 
 script: make build
