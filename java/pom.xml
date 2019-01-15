@@ -33,7 +33,8 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <java.version>1.8</java.version>
+        <java.version>10</java.version>
+        <simplesource.version>0.2.2</simplesource.version>
         <kafka.version>2.0.0</kafka.version>
         <avro.version>1.8.2</avro.version>
         <confluent.version>5.0.0</confluent.version>
@@ -232,20 +233,21 @@
                 <version>1.7.25</version>
             </dependency>
 
+            <!-- SimpleSource -->
             <dependency>
                 <groupId>io.simplesource</groupId>
                 <artifactId>simplesource-data</artifactId>
-                <version>${project.version}</version>
+                <version>${simplesource.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.simplesource</groupId>
                 <artifactId>simplesource-command-api</artifactId>
-                <version>${project.version}</version>
+                <version>${simplesource.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.simplesource</groupId>
                 <artifactId>simplesource-command-kafka</artifactId>
-                <version>${project.version}</version>
+                <version>${simplesource.version}</version>
             </dependency>
 
             <!-- Sagas -->
@@ -281,33 +283,38 @@
                 <groupId>org.junit.jupiter</groupId>
                 <artifactId>junit-jupiter-api</artifactId>
                 <version>${junit.jupiter.version}</version>
+                <scope>test</scope>
             </dependency>
             <dependency>
                 <groupId>org.junit.jupiter</groupId>
                 <artifactId>junit-jupiter-engine</artifactId>
                 <version>${junit.jupiter.version}</version>
+                <scope>test</scope>
             </dependency>
             <!-- To avoid compiler warnings about @API annotations in JUnit code -->
             <dependency>
                 <groupId>org.apiguardian</groupId>
                 <artifactId>apiguardian-api</artifactId>
                 <version>1.0.0</version>
+                <scope>test</scope>
             </dependency>
             <dependency>
                 <groupId>org.junit.platform</groupId>
                 <artifactId>junit-platform-launcher</artifactId>
                 <version>${junit.platform.version}</version>
+                <scope>test</scope>
             </dependency>
             <!-- Old JUnit used by Kafka Streams KStreamTestDriver -->
             <dependency>
                 <groupId>junit</groupId>
                 <artifactId>junit</artifactId>
                 <version>${junit.version}</version>
+                <scope>test</scope>
             </dependency>
             <dependency>
-                <groupId>org.quicktheories</groupId>
-                <artifactId>quicktheories</artifactId>
-                <version>${quicktheories.version}</version>
+                <groupId>org.assertj</groupId>
+                <artifactId>assertj-core-java8</artifactId>
+                <version>1.0.0m1</version>
                 <scope>test</scope>
             </dependency>
 

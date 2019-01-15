@@ -10,22 +10,20 @@
         <relativePath>../</relativePath>
     </parent>
 
-    <artifactId>simplesource-data</artifactId>
+    <artifactId>simplesaga-http</artifactId>
     <version>0.2.3-SNAPSHOT</version>
-
     <packaging>jar</packaging>
 
     <dependencies>
-        <!-- Simple Sourcing -->
-        <dependency>
-            <groupId>io.simplesource</groupId>
-            <artifactId>simplesource-data</artifactId>
-        </dependency>
 
         <!-- Simple Sagas -->
         <dependency>
             <groupId>io.simplesource</groupId>
             <artifactId>simplesaga-action</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.simplesource</groupId>
+            <artifactId>simplesaga-shared</artifactId>
         </dependency>
     </dependencies>
 

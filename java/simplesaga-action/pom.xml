@@ -10,7 +10,7 @@
         <relativePath>../</relativePath>
     </parent>
 
-    <artifactId>simplesaga-api</artifactId>
+    <artifactId>simplesaga-action</artifactId>
     <version>0.2.3-SNAPSHOT</version>
 
     <packaging>jar</packaging>
@@ -34,10 +34,10 @@
         </dependency>
 
         <!-- External -->
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-        </dependency>
+        <!--<dependency>-->
+            <!--<groupId>org.projectlombok</groupId>-->
+            <!--<artifactId>lombok</artifactId>-->
+        <!--</dependency>-->
     </dependencies>
 
 </project>

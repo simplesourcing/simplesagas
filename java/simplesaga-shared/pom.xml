@@ -18,11 +18,15 @@
             <groupId>io.simplesource</groupId>
             <artifactId>simplesource-command-api</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.simplesource</groupId>
+            <artifactId>simplesource-command-kafka</artifactId>
+        </dependency>
 
         <!-- Simple Sagas -->
         <dependency>
             <groupId>io.simplesource</groupId>
-            <artifactId>simplesaga-shared</artifactId>
+            <artifactId>simplesaga-model</artifactId>
         </dependency>
 
         <!-- Kafka -->
