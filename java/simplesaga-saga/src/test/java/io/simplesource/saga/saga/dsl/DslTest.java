@@ -12,6 +12,7 @@ import static io.simplesource.saga.saga.dsl.SagaDsl.*;
 
 import io.simplesource.saga.model.action.ActionCommand;
 import io.simplesource.saga.model.saga.Saga;
+import io.simplesource.saga.shared.utils.Sets;
 import org.junit.jupiter.api.Test;
 
 class DslTest {
@@ -87,17 +88,17 @@ class DslTest {
         dependsOn("5a", "4", saga);
         dependsOn("5b", "4", saga);
 
-        dependsOnSet("6", Set.of("5a", "5b"), saga);
+        dependsOnSet("6", Sets.of("5a", "5b"), saga);
 
         dependsOnSet("7", Collections.emptySet(), saga);
         dependsOn("8a", "7", saga);
         dependsOn("8b", "8a", saga);
-        dependsOnSet("9", Set.of("8b", "13"), saga);
+        dependsOnSet("9", Sets.of("8b", "13"), saga);
 
         dependsOnSet("10", Collections.emptySet(), saga);
         dependsOn("11a", "10", saga);
         dependsOn("11b", "10", saga);
-        dependsOnSet("12", Set.of("11a", "11b"), saga);
+        dependsOnSet("12", Sets.of("11a", "11b"), saga);
 
         dependsOn("13", "7", saga);
     }

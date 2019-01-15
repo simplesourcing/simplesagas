@@ -7,6 +7,7 @@ import io.simplesource.saga.model.action.ActionCommand;
 import io.simplesource.saga.model.action.ActionStatus;
 import io.simplesource.saga.model.action.SagaAction;
 import io.simplesource.saga.model.saga.*;
+import io.simplesource.saga.shared.utils.Lists;
 import lombok.Value;
 
 import java.util.*;
@@ -50,11 +51,11 @@ public final class SagaDsl {
 
     public static <A> SubSaga<A> inParallel(SubSaga<A>... subSagas) {
 
-        return inParallel(List.of(subSagas));
+        return inParallel(Lists.of(subSagas));
     }
 
     public static <A> SubSaga<A> inSeries(SubSaga<A>... subSagas) {
-        return inSeries(List.of(subSagas));
+        return inSeries(Lists.of(subSagas));
     }
 
     public static <A> SubSaga<A> inParallel(Collection<SubSaga<A>> subSagas) {
