@@ -1,0 +1,8 @@
+language:
+  - scala
+  - java
+
+scala:
+  - 2.12.7
+
+script: make build

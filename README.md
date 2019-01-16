@@ -22,7 +22,19 @@ without the extensive overhead of including and interfacing with an additional f
 
 ## Quick Start
 
-At the project folder, in separate terminal windows:
+### Build
+
+Simply run the following:
+
+```bash
+make build
+```
+
+### Running Sample Code
+
+Build as above.
+
+In separate terminal windows in the `scala` folder:
 
 1. Start kafka stack
     ```bash
