@@ -107,41 +107,38 @@ final class SagaUtils {
     static <A> Saga<A> applyTransition(SagaStateTransition t, Saga<A> s) {
         return t.cata(
                 setInitialState -> {
-                    Saga<A> i = ((SagaStateTransition.SetInitialState<A>) t).sagaState;
+                    Saga<A> i = ((SagaStateTransition.SetInitialState<A>) setInitialState).sagaState;
                     return Saga.of(i.sagaId, i.actions, SagaStatus.InProgress, Sequence.first());
                 },
 
                 sagaActionStatusChanged -> {
-                    SagaStateTransition.SagaActionStatusChanged st = ((SagaStateTransition.SagaActionStatusChanged) t);
-                    SagaAction<A> oa = s.actions.getOrDefault(st.actionId, null);
+                    SagaAction<A> oa = s.actions.getOrDefault(sagaActionStatusChanged.actionId, null);
                     if (oa == null) {
-                        logger.error("SagaAction with ID {} could not be found", st.actionId);
+                        logger.error("SagaAction with ID {} could not be found", sagaActionStatusChanged.actionId);
                         return s;
                     }
-                    ActionStatus newStatus =  st.actionStatus;
+                    ActionStatus newStatus =  sagaActionStatusChanged.actionStatus;
                     if (oa.status == ActionStatus.InUndo) {
-                        if (st.actionStatus == ActionStatus.Completed) newStatus = ActionStatus.Undone;
-                        else if (st.actionStatus == ActionStatus.Failed) newStatus = ActionStatus.UndoFailed;
+                        if (sagaActionStatusChanged.actionStatus == ActionStatus.Completed) newStatus = ActionStatus.Undone;
+                        else if (sagaActionStatusChanged.actionStatus == ActionStatus.Failed) newStatus = ActionStatus.UndoFailed;
                     }
                     SagaAction<A> action =
-                            new SagaAction<>(oa.actionId, oa.actionType, oa.command, oa.undoCommand, oa.dependencies, newStatus, st.actionError);
+                            new SagaAction<>(oa.actionId, oa.actionType, oa.command, oa.undoCommand, oa.dependencies, newStatus, sagaActionStatusChanged.actionError);
 
                     // TODO: add a MapUtils updated
                     Map<UUID, SagaAction<A>> actionMap = new HashMap<>();
-                    s.actions.forEach((k, v) -> actionMap.put(k, k.equals(st.actionId) ? action : v));
+                    s.actions.forEach((k, v) -> actionMap.put(k, k.equals(sagaActionStatusChanged.actionId) ? action : v));
                     return s.updated(actionMap, s.status, s.sagaError);
                 },
 
                 sagaStatusChanged -> {
                     // TODO: add saga errors
-                    SagaStateTransition.SagaStatusChanged st = ((SagaStateTransition.SagaStatusChanged) t);
-                    return s.updated(st.sagaStatus, st.actionErrors.map(NonEmptyList::head));
+                    return s.updated(sagaStatusChanged.sagaStatus, sagaStatusChanged.actionErrors.map(NonEmptyList::head));
                 },
 
                 transitionList -> {
                     Saga<A> sNew = s;
-                    SagaStateTransition.TransitionList tl = ((SagaStateTransition.TransitionList) t);
-                    for (SagaStateTransition change: tl.actions) {
+                    for (SagaStateTransition change: transitionList.actions) {
                         sNew = applyTransition(change, sNew);
                     }
                     return sNew;
