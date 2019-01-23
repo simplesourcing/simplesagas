@@ -63,10 +63,10 @@ public interface SagaStateTransition {
     /**
      * Catamorphism over SagaStateTransition
      */
-    <A> A cata(
-            Function<SetInitialState<?>, A> f1,
-            Function<SagaActionStatusChanged, A> f2,
-            Function<SagaStatusChanged, A> f3,
-            Function<TransitionList, A> f4
+    <B> B cata(
+            Function<SetInitialState<?>, B> f1,
+            Function<SagaActionStatusChanged, B> f2,
+            Function<SagaStatusChanged, B> f3,
+            Function<TransitionList, B> f4
             );
 }
