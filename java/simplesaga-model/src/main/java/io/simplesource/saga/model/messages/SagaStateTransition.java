@@ -10,30 +10,63 @@ import lombok.Value;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Function;
 
 public interface SagaStateTransition {
+
     @Value
-    class SetInitialState<A> implements SagaStateTransition {
+    final class SetInitialState<A> implements SagaStateTransition {
         public final Saga<A> sagaState;
+
+        @Override
+        public <A> A cata(Function<SetInitialState<?>, A> f1, Function<SagaActionStatusChanged, A> f2, Function<SagaStatusChanged, A> f3, Function<TransitionList, A> f4) {
+            return f1.apply(this);
+        }
     }
 
     @Value
-    class SagaActionStatusChanged implements SagaStateTransition {
+    final class SagaActionStatusChanged implements SagaStateTransition {
         public final UUID sagaId;
         public final UUID actionId;
         public final ActionStatus actionStatus;
         public final Optional<SagaError> actionError;
+
+        @Override
+        public <A> A cata(Function<SetInitialState<?>, A> f1, Function<SagaActionStatusChanged, A> f2, Function<SagaStatusChanged, A> f3, Function<TransitionList, A> f4) {
+            return f2.apply(this);
+        }
     }
 
     @Value
-    class SagaStatusChanged implements SagaStateTransition {
+    final class SagaStatusChanged implements SagaStateTransition {
         public final UUID sagaId;
         public final SagaStatus sagaStatus;
         public final Optional<NonEmptyList<SagaError>> actionErrors;
+
+
+        @Override
+        public <A> A cata(Function<SetInitialState<?>, A> f1, Function<SagaActionStatusChanged, A> f2, Function<SagaStatusChanged, A> f3, Function<TransitionList, A> f4) {
+            return f3.apply(this);
+        }
     }
 
     @Value
-    class TransitionList implements SagaStateTransition {
+    final class TransitionList implements SagaStateTransition {
         public final List<SagaActionStatusChanged> actions;
+
+        @Override
+        public <A> A cata(Function<SetInitialState<?>, A> f1, Function<SagaActionStatusChanged, A> f2, Function<SagaStatusChanged, A> f3, Function<TransitionList, A> f4) {
+            return f4.apply(this);
+        }
     }
+
+    /**
+     * Catamorphism over SagaStateTransition
+     */
+    <A> A cata(
+            Function<SetInitialState<?>, A> f1,
+            Function<SagaActionStatusChanged, A> f2,
+            Function<SagaStatusChanged, A> f3,
+            Function<TransitionList, A> f4
+            );
 }
