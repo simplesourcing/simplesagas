@@ -32,8 +32,9 @@ class AvroSerdes {
     static <A extends GenericRecord> ActionSerdes<A> actionSerdes(
             final String schemaRegistryUrl,
             final boolean useMockSchemaRegistry) {
+        SchemaRegistryClient regClient = useMockSchemaRegistry ? new MockSchemaRegistryClient() : null;
         return actionSerdes(
-                GenericSerdeUtils.genericAvroSerde(schemaRegistryUrl, false),
+                GenericSerdeUtils.genericAvroSerde(schemaRegistryUrl, false, regClient),
                 schemaRegistryUrl,
                 useMockSchemaRegistry);
     }
