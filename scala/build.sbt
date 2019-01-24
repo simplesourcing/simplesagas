@@ -2,7 +2,7 @@ import sbt.Resolver
 
 scalaVersion := "2.12.7"
 
-name := "simple-sagas"
+name := "simple-sagas-scala"
 organization := "io.simplesource"
 version := "0.1.0"
 

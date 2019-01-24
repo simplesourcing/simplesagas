@@ -1,0 +1,31 @@
+// reverted to strings for date not to have a JodaTime dependency
+@namespace("io.simplesource.saga.serialization.generated.avro")
+protocol ActionSchemas {
+  record AvroActionId {
+    string id;
+  }
+
+  record AvroActionCommand {
+    string commandId;
+    bytes command;
+  }
+
+  record AvroActionRequest {
+    string sagaId;
+    string actionId;
+    AvroActionCommand actionCommand;
+    string actionType;
+  }
+
+   record AvroSagaError {
+    string reason;
+    string message;
+  }
+
+  record AvroActionResponse {
+    string sagaId;
+    string actionId;
+    string commandId;
+    union { array<AvroSagaError>, boolean } result;
+  }
+}
