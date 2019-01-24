@@ -168,10 +168,12 @@ final public class SagaStream {
                 nextActionsStream
                         .filter((sagaId, v) -> v.command.isPresent())
                         .mapValues((sagaId, ae) ->
-                                new ActionRequest<>(sagaId,
-                                        ae.actionId,
-                                        ae.command.get(),
-                                        ae.actionType))
+                                ActionRequest.<A>builder()
+                                        .sagaId(sagaId)
+                                        .actionId(ae.actionId)
+                                        .actionCommand(ae.command.get())
+                                        .actionType(ae.actionType)
+                                        .build())
                         .peek(logValues("actionRequests"));
 
         return Tuple2.of(stateUpdateNewActions, actionRequests);

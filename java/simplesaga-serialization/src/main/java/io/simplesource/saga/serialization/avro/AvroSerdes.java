@@ -1,61 +1,60 @@
 package io.simplesource.saga.serialization.avro;
 
+import io.confluent.kafka.schemaregistry.client.MockSchemaRegistryClient;
+import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
 import io.simplesource.data.NonEmptyList;
 import io.simplesource.data.Result;
-import io.simplesource.kafka.serialization.util.GenericMapper;
+import io.simplesource.saga.model.action.ActionCommand;
 import io.simplesource.saga.model.messages.ActionRequest;
 import io.simplesource.saga.model.messages.ActionResponse;
 import io.simplesource.saga.model.saga.SagaError;
 import io.simplesource.saga.model.serdes.ActionSerdes;
-import io.simplesource.saga.serialization.generated.avro.*;
+import io.simplesource.saga.serialization.avro.generated.*;
 import io.simplesource.saga.serialization.utils.SerdeUtils;
 import org.apache.avro.generic.GenericRecord;
-import org.apache.avro.specific.SpecificRecord;
-import org.apache.kafka.common.serialization.Deserializer;
 import org.apache.kafka.common.serialization.Serde;
-import org.apache.kafka.common.serialization.Serializer;
 
+import java.nio.ByteBuffer;
 import java.util.Arrays;
-import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static io.simplesource.kafka.serialization.avro.AvroSpecificGenericMapper.specificDomainMapper;
-
 class AvroSerdes {
+    static String PAYLOAD_TOPIC_SUFFIX = "-payload";
+
     static <A> ActionSerdes<A> actionSerdes(
-            final GenericMapper<A, GenericRecord> keyMapper,
+            final Serde<A> payloadSerde,
             final String schemaRegistryUrl,
             final boolean useMockSchemaRegistry) {
-        return null;
+        return new AvroActionSerdes<>(payloadSerde, schemaRegistryUrl, useMockSchemaRegistry);
     }
 
     static <A extends GenericRecord> ActionSerdes<A> actionSerdes(
             final String schemaRegistryUrl,
             final boolean useMockSchemaRegistry) {
-        return actionSerdes(specificDomainMapper(),
+        return actionSerdes(
+                GenericSerdeUtils.genericAvroSerde(schemaRegistryUrl, false),
                 schemaRegistryUrl,
                 useMockSchemaRegistry);
     }
 
     static class AvroActionSerdes<A> implements ActionSerdes<A> {
 
-        private final String schemaRegistryUrl;
-        private final boolean useMockSchemaRegistry;
+        private final Serde<A> payloadSerde;
         private final Serde<AvroActionId> actionIdSerde;
         private final Serde<AvroActionRequest> avroActionRequestSerde;
         private final Serde<AvroActionResponse> avroActionResponseSerde;
 
         public AvroActionSerdes(
-                final GenericMapper<A, GenericRecord> keyMapper,
+                final Serde<A> payloadSerde,
                 final String schemaRegistryUrl,
                 final boolean useMockSchemaRegistry) {
+            this.payloadSerde = payloadSerde;
 
-            this.schemaRegistryUrl = schemaRegistryUrl;
-            this.useMockSchemaRegistry = useMockSchemaRegistry;
-            actionIdSerde = SpecificSerdeUtils.specificAvroSerde(schemaRegistryUrl, true);
-            avroActionRequestSerde = SpecificSerdeUtils.specificAvroSerde(schemaRegistryUrl, false);
-            avroActionResponseSerde = SpecificSerdeUtils.specificAvroSerde(schemaRegistryUrl, false);
+            SchemaRegistryClient regClient = useMockSchemaRegistry ? new MockSchemaRegistryClient() : null;
+            actionIdSerde = SpecificSerdeUtils.specificAvroSerde(schemaRegistryUrl, true, regClient);
+            avroActionRequestSerde = SpecificSerdeUtils.specificAvroSerde(schemaRegistryUrl, false, regClient);
+            avroActionResponseSerde = SpecificSerdeUtils.specificAvroSerde(schemaRegistryUrl, false, regClient);
         }
 
         @Override
@@ -65,7 +64,34 @@ class AvroSerdes {
 
         @Override
         public Serde<ActionRequest<A>> request() {
-            return null;
+            return SerdeUtils.iMap(avroActionRequestSerde,
+                    (topic, r) -> {
+                        byte[] serializedPayload = payloadSerde.serializer().serialize(topic + PAYLOAD_TOPIC_SUFFIX, r.actionCommand.command);
+                        AvroActionCommand aac = AvroActionCommand
+                                .newBuilder()
+                                .setCommandId(r.actionCommand.commandId.toString())
+                                .setCommand(ByteBuffer.wrap(serializedPayload))
+                                .build();
+                        return AvroActionRequest.newBuilder()
+                                .setActionId(r.actionId().toString())
+                                .setSagaId(r.sagaId().toString())
+                                .setActionType(r.actionType())
+                                .setActionCommand(aac)
+                                .build();
+                    },
+                    (topic, ar) -> {
+                        AvroActionCommand aac = ar.getActionCommand();
+                        ByteBuffer spf = aac.getCommand();
+                        A payload = payloadSerde.deserializer().deserialize(topic + PAYLOAD_TOPIC_SUFFIX, spf.array());
+                        ActionCommand<A> ac = new ActionCommand<>(UUID.fromString(aac.getCommandId()), payload);
+                        return ActionRequest.<A>builder()
+                                .sagaId(UUID.fromString(ar.getSagaId()))
+                                .actionId(UUID.fromString(ar.getActionId()))
+                                .actionCommand(ac)
+                                .actionType(ar.getActionType())
+                                .build();
+                    }
+            );
         }
 
         @Override
@@ -83,7 +109,7 @@ class AvroSerdes {
                         if (aRes instanceof AvroSagaError[]) {
                             result = getSagaError((AvroSagaError[]) aRes);
                         } else if (aRes instanceof Boolean) {
-                            result = Result.success((Boolean)aRes);
+                            result = Result.success((Boolean) aRes);
                         } else {
                             result = Result.failure(SagaError.of(SagaError.Reason.InternalError, "Serialization error"));
                         }
@@ -99,14 +125,11 @@ class AvroSerdes {
     }
 
     private static Result<SagaError, Boolean> getSagaError(AvroSagaError[] aRes) {
-        Result<SagaError, Boolean> result;
-        AvroSagaError[] era = aRes;
-        result = Result.failure(NonEmptyList.fromList(
-                Arrays.stream(era)
+        return Result.failure(NonEmptyList.fromList(
+                Arrays.stream(aRes)
                         .map(ae -> SagaError.of(SagaError.Reason.valueOf(ae.getReason()), ae.getMessage()))
                         .collect(Collectors.toList()))
                 .orElse(NonEmptyList.of(
                         SagaError.of(SagaError.Reason.InternalError, "Serialization error"))));
-        return result;
     }
 }

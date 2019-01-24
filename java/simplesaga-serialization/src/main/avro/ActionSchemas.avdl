@@ -1,5 +1,4 @@
-// reverted to strings for date not to have a JodaTime dependency
-@namespace("io.simplesource.saga.serialization.generated.avro")
+@namespace("io.simplesource.saga.serialization.avro.generated")
 protocol ActionSchemas {
   record AvroActionId {
     string id;
