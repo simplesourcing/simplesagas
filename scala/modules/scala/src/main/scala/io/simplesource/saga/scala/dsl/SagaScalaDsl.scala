@@ -11,16 +11,20 @@ trait SagaScalaDsl {
       subSaga.andThen(next)
   }
 
-  def inParallel[A](subSagas: SubSaga[A]*): SubSaga[A] = inParallel(List(subSagas: _*))
+  def inParallel[A](subSagas: SubSaga[A]*): SubSaga[A] =
+    inParallel(List(subSagas: _*))
 
-  def inParallel[A](subSagas: List[SubSaga[A]]): SubSaga[A] = inParallelImpl(subSagas)
+  def inParallel[A](subSagas: List[SubSaga[A]]): SubSaga[A] =
+    inParallelImpl(subSagas)
 
   private def inParallelImpl[A](subSagas: List[SubSaga[A]]): SubSaga[A] =
     SagaDsl.inParallel(subSagas.asJava)
 
-  def inSeries[A](subSagas: SubSaga[A]*): SubSaga[A] = inSeriesImpl(List(subSagas: _*))
+  def inSeries[A](subSagas: SubSaga[A]*): SubSaga[A] =
+    inSeriesImpl(List(subSagas: _*))
 
-  def inSeries[A](subSagas: List[SubSaga[A]]): SubSaga[A] = inSeriesImpl(subSagas)
+  def inSeries[A](subSagas: List[SubSaga[A]]): SubSaga[A] =
+    inSeriesImpl(subSagas)
 
   private def inSeriesImpl[A](subSagas: List[SubSaga[A]]): SubSaga[A] =
     SagaDsl.inSeries(subSagas.asJava)

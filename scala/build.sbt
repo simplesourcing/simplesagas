@@ -6,39 +6,39 @@ name := "simple-sagas-scala"
 organization := "io.simplesource"
 version := "0.1.0"
 
-val circeV          = "0.10.0"
+val circeV = "0.10.0"
 val simpleSourcingV = "0.2.2"
-val simpleSagaV     = "0.2.3-SNAPSHOT"
-val kafkaVersion    = "2.0.0"
-val catsV           = "1.4.0"
+val simpleSagaV = "0.2.3-SNAPSHOT"
+val kafkaVersion = "2.0.0"
+val catsV = "1.4.0"
 
 val javaxArtifact = Artifact("javax.ws.rs-api", "jar", "jar")
 
 lazy val baseDeps = Seq(
   libraryDependencies ++= Seq(
-    "javax.ws.rs"      % "javax.ws.rs-api"                    % "2.1" artifacts javaxArtifact,
-    "org.apache.kafka" %% "kafka"                             % kafkaVersion,
-    "io.simplesource"  % "simplesource-command-api"           % simpleSourcingV,
-    "io.simplesource"  % "simplesource-command-kafka"         % simpleSourcingV,
-    "io.simplesource"  % "simplesource-command-serialization" % simpleSourcingV,
-    "io.simplesource"  % "simplesource-command-serialization" % simpleSourcingV,
-    "io.simplesource"  % "simplesaga-model"                   % simpleSagaV,
-    "io.simplesource"  % "simplesaga-action"                  % simpleSagaV,
-    "io.simplesource"  % "simplesaga-http"                    % simpleSagaV,
-    "io.simplesource"  % "simplesaga-saga"                    % simpleSagaV,
+    "javax.ws.rs" % "javax.ws.rs-api" % "2.1" artifacts javaxArtifact,
+    "org.apache.kafka" %% "kafka" % kafkaVersion,
+    "io.simplesource" % "simplesource-command-api" % simpleSourcingV,
+    "io.simplesource" % "simplesource-command-kafka" % simpleSourcingV,
+    "io.simplesource" % "simplesource-command-serialization" % simpleSourcingV,
+    "io.simplesource" % "simplesource-command-serialization" % simpleSourcingV,
+    "io.simplesource" % "simplesaga-model" % simpleSagaV,
+    "io.simplesource" % "simplesaga-action" % simpleSagaV,
+    "io.simplesource" % "simplesaga-http" % simpleSagaV,
+    "io.simplesource" % "simplesaga-saga" % simpleSagaV,
   )
 )
 
 lazy val scalaDeps = baseDeps ++ Seq(
   libraryDependencies ++= Seq(
     "ch.qos.logback" % "logback-classic" % "1.2.3",
-    "org.typelevel"  %% "cats-core"      % catsV,
-    "org.scalatest"  %% "scalatest"      % "3.0.5" % Test,
-    "org.scalacheck" %% "scalacheck"     % "1.14.0" % Test,
-    "io.circe"       %% "circe-core"     % circeV,
-    "io.circe"       %% "circe-generic"  % circeV,
-    "io.circe"       %% "circe-parser"   % circeV,
-    "io.circe"       %% "circe-java8"    % circeV,
+    "org.typelevel" %% "cats-core" % catsV,
+    "org.scalatest" %% "scalatest" % "3.0.5" % Test,
+    "org.scalacheck" %% "scalacheck" % "1.14.0" % Test,
+    "io.circe" %% "circe-core" % circeV,
+    "io.circe" %% "circe-generic" % circeV,
+    "io.circe" %% "circe-parser" % circeV,
+    "io.circe" %% "circe-java8" % circeV,
   )
 )
 

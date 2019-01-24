@@ -32,11 +32,13 @@ object ProductCodecs {
     GenericSerde.of[B, String](KafkaSerdes.String(), fromB, toB)
   }
 
-  def mappedCodec[A, B](b2p: B => A, p2b: A => B)(implicit aEnc: Encoder[A],
-                                                  aDec: Decoder[A]): (Encoder[B], Decoder[B]) =
+  def mappedCodec[A, B](b2p: B => A, p2b: A => B)(
+      implicit aEnc: Encoder[A],
+      aDec: Decoder[A]): (Encoder[B], Decoder[B]) =
     (aEnc.contramap(b2p), aDec.map(p2b))
 
-  def productCodecs2[A0: Encoder: Decoder, A1: Encoder: Decoder, B](n0: String, n1: String)(
+  def productCodecs2[A0: Encoder: Decoder, A1: Encoder: Decoder, B](n0: String,
+                                                                    n1: String)(
       b2p: B => (A0, A1),
       p2b: (A0, A1) => B): (Encoder[B], Decoder[B]) = {
     val encoder: Encoder[B] = Encoder.forProduct2(n0, n1)(b2p)
@@ -46,13 +48,16 @@ object ProductCodecs {
     (encoder, decoder)
   }
 
-  def productCodecs3[A0: Encoder: Decoder, A1: Encoder: Decoder, A2: Encoder: Decoder, B](
-      n0: String,
-      n1: String,
-      n2: String)(b2p: B => (A0, A1, A2), p2b: (A0, A1, A2) => B): (Encoder[B], Decoder[B]) = {
+  def productCodecs3[A0: Encoder: Decoder,
+                     A1: Encoder: Decoder,
+                     A2: Encoder: Decoder,
+                     B](n0: String, n1: String, n2: String)(
+      b2p: B => (A0, A1, A2),
+      p2b: (A0, A1, A2) => B): (Encoder[B], Decoder[B]) = {
     implicit val encoder: Encoder[B] = Encoder.forProduct3(n0, n1, n2)(b2p)
     implicit val decoder: Decoder[B] =
-      Decoder.forProduct3(n0, n1, n2)((a0: A0, a1: A1, a2: A2) => p2b(a0, a1, a2))
+      Decoder.forProduct3(n0, n1, n2)((a0: A0, a1: A1, a2: A2) =>
+        p2b(a0, a1, a2))
 
     (encoder, decoder)
   }
@@ -66,7 +71,8 @@ object ProductCodecs {
       p2b: (A0, A1, A2, A3) => B): (Encoder[B], Decoder[B]) = {
     implicit val encoder: Encoder[B] = Encoder.forProduct4(n0, n1, n2, n3)(b2p)
     implicit val decoder: Decoder[B] =
-      Decoder.forProduct4(n0, n1, n2, n3)((a0: A0, a1: A1, a2: A2, a3: A3) => p2b(a0, a1, a2, a3))
+      Decoder.forProduct4(n0, n1, n2, n3)((a0: A0, a1: A1, a2: A2, a3: A3) =>
+        p2b(a0, a1, a2, a3))
 
     (encoder, decoder)
   }
@@ -76,13 +82,18 @@ object ProductCodecs {
                      A2: Encoder: Decoder,
                      A3: Encoder: Decoder,
                      A4: Encoder: Decoder,
-                     B](n0: String, n1: String, n2: String, n3: String, n4: String)(
+                     B](n0: String,
+                        n1: String,
+                        n2: String,
+                        n3: String,
+                        n4: String)(
       b2p: B => (A0, A1, A2, A3, A4),
       p2b: (A0, A1, A2, A3, A4) => B): (Encoder[B], Decoder[B]) = {
-    implicit val encoder: Encoder[B] = Encoder.forProduct5(n0, n1, n2, n3, n4)(b2p)
+    implicit val encoder: Encoder[B] =
+      Encoder.forProduct5(n0, n1, n2, n3, n4)(b2p)
     implicit val decoder: Decoder[B] =
-      Decoder.forProduct5(n0, n1, n2, n3, n4)((a0: A0, a1: A1, a2: A2, a3: A3, a4: A4) =>
-        p2b(a0, a1, a2, a3, a4))
+      Decoder.forProduct5(n0, n1, n2, n3, n4)(
+        (a0: A0, a1: A1, a2: A2, a3: A3, a4: A4) => p2b(a0, a1, a2, a3, a4))
 
     (encoder, decoder)
   }
@@ -93,13 +104,20 @@ object ProductCodecs {
                      A3: Encoder: Decoder,
                      A4: Encoder: Decoder,
                      A5: Encoder: Decoder,
-                     B](n0: String, n1: String, n2: String, n3: String, n4: String, n5: String)(
+                     B](n0: String,
+                        n1: String,
+                        n2: String,
+                        n3: String,
+                        n4: String,
+                        n5: String)(
       b2p: B => (A0, A1, A2, A3, A4, A5),
       p2b: (A0, A1, A2, A3, A4, A5) => B): (Encoder[B], Decoder[B]) = {
-    implicit val encoder: Encoder[B] = Encoder.forProduct6(n0, n1, n2, n3, n4, n5)(b2p)
+    implicit val encoder: Encoder[B] =
+      Encoder.forProduct6(n0, n1, n2, n3, n4, n5)(b2p)
     implicit val decoder: Decoder[B] =
-      Decoder.forProduct6(n0, n1, n2, n3, n4, n5)((a0: A0, a1: A1, a2: A2, a3: A3, a4: A4, a5: A5) =>
-        p2b(a0, a1, a2, a3, a4, a5))
+      Decoder.forProduct6(n0, n1, n2, n3, n4, n5)(
+        (a0: A0, a1: A1, a2: A2, a3: A3, a4: A4, a5: A5) =>
+          p2b(a0, a1, a2, a3, a4, a5))
 
     (encoder, decoder)
   }
@@ -111,13 +129,21 @@ object ProductCodecs {
                      A4: Encoder: Decoder,
                      A5: Encoder: Decoder,
                      A6: Encoder: Decoder,
-                     B](n0: String, n1: String, n2: String, n3: String, n4: String, n5: String, n6: String)(
+                     B](n0: String,
+                        n1: String,
+                        n2: String,
+                        n3: String,
+                        n4: String,
+                        n5: String,
+                        n6: String)(
       b2p: B => (A0, A1, A2, A3, A4, A5, A6),
       p2b: (A0, A1, A2, A3, A4, A5, A6) => B): (Encoder[B], Decoder[B]) = {
-    implicit val encoder: Encoder[B] = Encoder.forProduct7(n0, n1, n2, n3, n4, n5, n6)(b2p)
+    implicit val encoder: Encoder[B] =
+      Encoder.forProduct7(n0, n1, n2, n3, n4, n5, n6)(b2p)
     implicit val decoder: Decoder[B] =
       Decoder.forProduct7(n0, n1, n2, n3, n4, n5, n6)(
-        (a0: A0, a1: A1, a2: A2, a3: A3, a4: A4, a5: A5, a6: A6) => p2b(a0, a1, a2, a3, a4, a5, a6))
+        (a0: A0, a1: A1, a2: A2, a3: A3, a4: A4, a5: A5, a6: A6) =>
+          p2b(a0, a1, a2, a3, a4, a5, a6))
 
     (encoder, decoder)
   }

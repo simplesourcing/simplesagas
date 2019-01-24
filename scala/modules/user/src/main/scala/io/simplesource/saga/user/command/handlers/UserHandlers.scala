@@ -1,7 +1,11 @@
 package io.simplesource.saga.user.command.handlers
 import java.util.UUID
 
-import io.simplesource.saga.user.command.model.user.{User, UserCommand, UserEvent}
+import io.simplesource.saga.user.command.model.user.{
+  User,
+  UserCommand,
+  UserEvent
+}
 import io.simplesource.api.CommandError
 import io.simplesource.data.{NonEmptyList, Result}
 
@@ -20,7 +24,8 @@ object UserHandlers {
     case UserCommand.Insert(_, firstName, lastName) =>
       Result.success(NonEmptyList.of(UserEvent.Inserted(firstName, lastName)))
     case UserCommand.UpdateName(_, firstName, lastName) =>
-      Result.success(NonEmptyList.of(UserEvent.NameUpdated(firstName, lastName)))
+      Result.success(
+        NonEmptyList.of(UserEvent.NameUpdated(firstName, lastName)))
     case UserCommand.UpdateYearOfBirth(_, yearOfBirth) =>
       Result.success(NonEmptyList.of(UserEvent.YearOfBirthUpdated(yearOfBirth)))
     case UserCommand.Delete(_) =>

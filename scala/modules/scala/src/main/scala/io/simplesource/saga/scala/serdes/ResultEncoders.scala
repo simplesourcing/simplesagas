@@ -12,7 +12,8 @@ object ResultEncoders {
   import JavaCodecs._
   import ProductCodecs._
 
-  def au[A: Encoder: Decoder]: (Encoder[AggregateUpdate[A]], Decoder[AggregateUpdate[A]]) =
+  def au[A: Encoder: Decoder]
+    : (Encoder[AggregateUpdate[A]], Decoder[AggregateUpdate[A]]) =
     productCodecs2[A, Long, AggregateUpdate[A]]("aggregate", "sequence")(
       v => (v.aggregate(), v.sequence().getSeq),
       (v, s) => new AggregateUpdate(v, Sequence.position(s))
@@ -25,7 +26,8 @@ object ResultEncoders {
     io.circe.generic.semiauto
       .deriveEncoder[EitherNel[E, A]]
       .contramapObject(r => {
-        r.fold[EitherNel[E, A]](e => Left[NonEmptyList[E], A](e), a => Right[NonEmptyList[E], A](a))
+        r.fold[EitherNel[E, A]](e => Left[NonEmptyList[E], A](e),
+                                a => Right[NonEmptyList[E], A](a))
       })
 
   implicit def resd[E: Decoder, A: Decoder]: Decoder[Result[E, A]] =
@@ -46,9 +48,10 @@ object ResultEncoders {
       implicitly[Decoder[(String, String)]]
         .map(s => CommandError.of(CommandError.Reason.valueOf(s._1), s._2))
 
-    productCodecs3[UUID, Long, Result[CommandError, Sequence], CommandResponse]("commandId",
-                                                                                "readSequence",
-                                                                                "sequenceResult")(
+    productCodecs3[UUID, Long, Result[CommandError, Sequence], CommandResponse](
+      "commandId",
+      "readSequence",
+      "sequenceResult")(
       x => (x.commandId(), x.readSequence().getSeq, x.sequenceResult()),
       (id, seq, ur) => new CommandResponse(id, Sequence.position(seq), ur))
   }.asSerde

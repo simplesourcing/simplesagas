@@ -8,8 +8,18 @@ import io.circe.Json
 import io.circe.generic.auto._
 import io.simplesource.data.Result
 import io.simplesource.kafka.spec.TopicSpec
-import io.simplesource.saga.action.async.{AsyncOutput, AsyncSerdes, AsyncSpec, Callback}
-import io.simplesource.saga.action.http.{HttpApp, HttpOutput, HttpRequest, HttpSpec}
+import io.simplesource.saga.action.async.{
+  AsyncOutput,
+  AsyncSerdes,
+  AsyncSpec,
+  Callback
+}
+import io.simplesource.saga.action.http.{
+  HttpApp,
+  HttpOutput,
+  HttpRequest,
+  HttpSpec
+}
 import io.simplesource.saga.action.sourcing.{CommandSpec, SourcingApp}
 import io.simplesource.saga.scala.serdes.{JsonSerdes, ProductCodecs}
 import io.simplesource.saga.shared.topics.TopicCreation
@@ -24,7 +34,8 @@ import scala.collection.JavaConverters._
 object App {
   val sourcingConfig =
     new StreamAppConfig("sourcing-action-processor-1", "127.0.0.1:9092")
-  val asyncConfig = new StreamAppConfig("async-action-processor-1", "127.0.0.1:9092")
+  val asyncConfig =
+    new StreamAppConfig("async-action-processor-1", "127.0.0.1:9092")
 
   def main(args: Array[String]): Unit = {
     startSourcingActionProcessor()
@@ -34,23 +45,29 @@ object App {
   def startSourcingActionProcessor(): Unit = {
     new SourcingApp[Json](
       JsonSerdes.actionSerdes[Json],
-      TopicUtils.buildSteps(constants.actionTopicPrefix, constants.sagaActionBaseName)
+      TopicUtils.buildSteps(constants.actionTopicPrefix,
+                            constants.sagaActionBaseName)
     ).addCommand(accountSpec,
-                  TopicUtils.buildSteps(constants.commandTopicPrefix, constants.accountAggregateName))
-      .addCommand(userSpec, TopicUtils.buildSteps(constants.commandTopicPrefix, constants.userAggregateName))
+                  TopicUtils.buildSteps(constants.commandTopicPrefix,
+                                        constants.accountAggregateName))
+      .addCommand(userSpec,
+                  TopicUtils.buildSteps(constants.commandTopicPrefix,
+                                        constants.userAggregateName))
       .run(sourcingConfig)
   }
 
   def startAsyncActionProcessor(): Unit = {
     new HttpApp[Json](JsonSerdes.actionSerdes[Json],
-                      TopicUtils.buildSteps(constants.actionTopicPrefix, constants.sagaActionBaseName))
+                      TopicUtils.buildSteps(constants.actionTopicPrefix,
+                                            constants.sagaActionBaseName))
       .addAsync(asyncSpec)
       .addHttpProcessor(httpSpec)
       .run(asyncConfig)
   }
 
   implicit class EOps[E, A](eea: Either[E, A]) {
-    def toResult: Result[E, A] = eea.fold(e => Result.failure(e), a => Result.success(a))
+    def toResult: Result[E, A] =
+      eea.fold(e => Result.failure(e), a => Result.success(a))
   }
 
   lazy val userSpec = new CommandSpec[Json, UserCommand, UUID, UserCommand](
@@ -63,15 +80,16 @@ object App {
     30000L
   )
 
-  lazy val accountSpec = new CommandSpec[Json, AccountCommand, UUID, AccountCommand](
-    constants.accountActionType,
-    json => json.as[AccountCommand].toResult.errorMap(e => e),
-    (a: AccountCommand) => a,
-    _.accountId,
-    JsonSerdes.commandSerdes[UUID, AccountCommand],
-    constants.accountAggregateName,
-    30000L
-  )
+  lazy val accountSpec =
+    new CommandSpec[Json, AccountCommand, UUID, AccountCommand](
+      constants.accountActionType,
+      json => json.as[AccountCommand].toResult.errorMap(e => e),
+      (a: AccountCommand) => a,
+      _.accountId,
+      JsonSerdes.commandSerdes[UUID, AccountCommand],
+      constants.accountAggregateName,
+      30000L
+    )
 
   lazy val asyncSpec = new AsyncSpec[Json, String, String, String, String](
     "async_test_action_type",
@@ -89,17 +107,22 @@ object App {
         o => Optional.of(Result.success(o)),
         new AsyncSerdes(Serdes.String(), Serdes.String()),
         _ => Optional.of("async_test_topic"),
-        List(new TopicCreation("async_test_topic", new TopicSpec(6, 1, Map.empty[String, String].asJava))).asJava
+        List(
+          new TopicCreation(
+            "async_test_topic",
+            new TopicSpec(6, 1, Map.empty[String, String].asJava))).asJava
       )),
     Optional.of(Duration.of(60, ChronoUnit.SECONDS))
   )
 
   // Http currency fetch example
   final case class Key(id: String)
-  type Body   = Option[String]
-  type Input  = Json
+  type Body = Option[String]
+  type Input = Json
   type Output = Json
-  final case class FXRates(date: String, base: String, rates: Map[String, BigDecimal])
+  final case class FXRates(date: String,
+                           base: String,
+                           rates: Map[String, BigDecimal])
 
   import io.circe.generic.auto._
   import scala.concurrent.ExecutionContext.Implicits.global
@@ -113,8 +136,12 @@ object App {
     Optional.of(
       new HttpOutput(
         (o: Input) => Optional.of(o.as[FXRates].toResult.errorMap(e => e)),
-        new AsyncSerdes(ProductCodecs.serdeFromCodecs[Key], ProductCodecs.serdeFromCodecs[FXRates]),
-        List(new TopicCreation("fx_rates", new TopicSpec(6, 1, Map.empty[String, String].asJava))).asJava
+        new AsyncSerdes(ProductCodecs.serdeFromCodecs[Key],
+                        ProductCodecs.serdeFromCodecs[FXRates]),
+        List(
+          new TopicCreation(
+            "fx_rates",
+            new TopicSpec(6, 1, Map.empty[String, String].asJava))).asJava
       )),
     Optional.of(Duration.of(60, ChronoUnit.SECONDS))
   )

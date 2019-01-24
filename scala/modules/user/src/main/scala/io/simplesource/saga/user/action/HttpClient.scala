@@ -34,13 +34,16 @@ object HttpClient {
       "body",
       "topicName"
     )(r => (r.key, r.verb.toString, r.url, r.headers, r.body, r.topicName),
-      (k, v, u, h, b, t) => new HttpRequest[K, B](k, HttpVerb.valueOf(v), u, h, b, t))
+      (k, v, u, h, b, t) =>
+        new HttpRequest[K, B](k, HttpVerb.valueOf(v), u, h, b, t))
   }
 
-  final case class HttpError(statusCode: Int, statusMessage: String) extends Throwable(statusMessage)
+  final case class HttpError(statusCode: Int, statusMessage: String)
+      extends Throwable(statusMessage)
 
   def requester[K, B: Decoder: Encoder, O: Decoder](
-      implicit ec: ExecutionContext): BiConsumer[HttpRequest[K, B], Callback[O]] = (r, callBack) => {
+      implicit ec: ExecutionContext)
+    : BiConsumer[HttpRequest[K, B], Callback[O]] = (r, callBack) => {
     val httpAction = r.verb match {
       case HttpVerb.Get    => requests.get
       case HttpVerb.Post   => requests.post
@@ -54,12 +57,16 @@ object HttpClient {
     Future(httpAction(url = r.url, data = data))
       .map { resp =>
         if (resp.statusCode >= 300) {
-          throw HttpError(resp.statusCode, s"Error in Http Request: ${resp.statusMessage}")
+          throw HttpError(resp.statusCode,
+                          s"Error in Http Request: ${resp.statusMessage}")
         }
-        parse(resp.data.text).flatMap(_.as[O]).fold(e => Result.failure(e), a => Result.success(a))
+        parse(resp.data.text)
+          .flatMap(_.as[O])
+          .fold(e => Result.failure(e), a => Result.success(a))
       }
       .map[Result[Throwable, O]](_.errorMap[Throwable](e => e).map(x => x))
       .onComplete(tryRes =>
-        tryRes.fold[Int](e => { callBack.complete(Result.failure(e)); 0 }, r => { callBack.complete(r); 0 }))
+        tryRes.fold[Int](e => { callBack.complete(Result.failure(e)); 0 },
+                         r => { callBack.complete(r); 0 }))
   }
 }

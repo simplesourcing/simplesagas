@@ -10,12 +10,14 @@ object TestTypes {
   }
 
   object UserCommand {
-    final case class Insert(userId: UUID, firstName: String, lastName: String) extends UserCommand
+    final case class Insert(userId: UUID, firstName: String, lastName: String)
+        extends UserCommand
   }
 
   sealed trait UserEvent
   object UserEvent {
-    final case class Inserted(firstName: String, lastName: String) extends UserEvent
-    final case class Deleted()                                     extends UserEvent
+    final case class Inserted(firstName: String, lastName: String)
+        extends UserEvent
+    final case class Deleted() extends UserEvent
   }
 }

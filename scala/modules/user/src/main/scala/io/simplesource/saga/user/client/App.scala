@@ -29,40 +29,47 @@ import io.simplesource.saga.saga.dsl.SagaDsl._
 import io.simplesource.saga.user.action.HttpClient
 
 object App {
-  private val logger                       = LoggerFactory.getLogger(classOf[App])
+  private val logger = LoggerFactory.getLogger(classOf[App])
   private val responseCount: AtomicInteger = new AtomicInteger(0)
 
   def main(args: Array[String]): Unit = {
 
-    val sagaClientBuilder: SagaClientBuilder[Json] = new SagaClientBuilder[Json](
-      (kafkaConfigBuilder: KafkaConfig.Builder) =>
-        kafkaConfigBuilder
-          .withKafkaApplicationId("saga-app-1")
-          .withKafkaBootstrap("127.0.0.1:9092"))
+    val sagaClientBuilder: SagaClientBuilder[Json] =
+      new SagaClientBuilder[Json](
+        (kafkaConfigBuilder: KafkaConfig.Builder) =>
+          kafkaConfigBuilder
+            .withKafkaApplicationId("saga-app-1")
+            .withKafkaBootstrap("127.0.0.1:9092"))
     val api: SagaAPI[Json] = sagaClientBuilder
       .withSerdes(JsonSerdes.sagaSerdes[Json])
-      .withTopicConfig(TopicUtils.buildSteps(constants.sagaTopicPrefix, constants.sagaBaseName))
+      .withTopicConfig(TopicUtils.buildSteps(constants.sagaTopicPrefix,
+                                             constants.sagaBaseName))
       .withClientId("saga-client-1")
       .build()
 
     for (_ <- 1 to 3) {
-      val shouldSucceed = actionSequence("Harry", "Hughley", 1000.0, List(500, 100), 0)
+      val shouldSucceed =
+        actionSequence("Harry", "Hughley", 1000.0, List(500, 100), 0)
       submitSagaRequest(api, shouldSucceed)
 
-      val shouldFailReservation = actionSequence("Peter", "Bogue", 1000.0, List(500, 100, 550), 0)
+      val shouldFailReservation =
+        actionSequence("Peter", "Bogue", 1000.0, List(500, 100, 550), 0)
       submitSagaRequest(api, shouldFailReservation)
 
-      val shouldFailConfirmation = actionSequence("Lemuel", "Osorio", 1000.0, List(500, 100, 350), 50)
+      val shouldFailConfirmation =
+        actionSequence("Lemuel", "Osorio", 1000.0, List(500, 100, 350), 50)
       submitSagaRequest(api, shouldFailConfirmation)
     }
   }
 
-  private def submitSagaRequest(sagaApi: SagaAPI[Json], request: Result[SagaError, SagaRequest[Json]]): Unit =
+  private def submitSagaRequest(
+      sagaApi: SagaAPI[Json],
+      request: Result[SagaError, SagaRequest[Json]]): Unit =
     request.fold[Unit](
       es => es.map(e => logger.error(e.getMessage)),
       r => {
         for {
-          _        <- sagaApi.submitSaga(r)
+          _ <- sagaApi.submitSaga(r)
           response <- sagaApi.getSagaResponse(r.sagaId, Duration.ofSeconds(60L))
           _ = {
             val count = responseCount.incrementAndGet()
@@ -73,11 +80,12 @@ object App {
       }
     )
 
-  def actionSequence(firstName: String,
-                     lastName: String,
-                     funds: BigDecimal,
-                     amounts: List[BigDecimal],
-                     adjustment: BigDecimal = 0): Result[SagaError, SagaRequest[Json]] = {
+  def actionSequence(
+      firstName: String,
+      lastName: String,
+      funds: BigDecimal,
+      amounts: List[BigDecimal],
+      adjustment: BigDecimal = 0): Result[SagaError, SagaRequest[Json]] = {
     val accountId = UUID.randomUUID()
 
     val builder = SagaBuilder.create[Json]
@@ -85,9 +93,10 @@ object App {
     val addUser = builder.addAction(
       UUID.randomUUID(),
       constants.userActionType,
-      new ActionCommand(
-        UUID.randomUUID(),
-        (UserCommand.Insert(userId = UUID.randomUUID(), firstName, lastName): UserCommand).asJson)
+      new ActionCommand(UUID.randomUUID(),
+                        (UserCommand.Insert(userId = UUID.randomUUID(),
+                                            firstName,
+                                            lastName): UserCommand).asJson)
     )
 
     val createAccount = builder.addAction(
@@ -109,15 +118,17 @@ object App {
           constants.accountActionType,
           new ActionCommand(
             UUID.randomUUID(),
-            (AccountCommand.ReserveFunds(accountId = accountId,
-                                         reservationId = resId,
-                                         description = s"res-${resId.toString.take(4)}",
-                                         amount = amount): AccountCommand).asJson
+            (AccountCommand.ReserveFunds(
+              accountId = accountId,
+              reservationId = resId,
+              description = s"res-${resId.toString.take(4)}",
+              amount = amount): AccountCommand).asJson
           ),
-          new ActionCommand(
-            UUID.randomUUID(),
-            (AccountCommand
-              .CancelReservation(accountId = accountId, reservationId = resId): AccountCommand).asJson)
+          new ActionCommand(UUID.randomUUID(),
+                            (AccountCommand
+                              .CancelReservation(
+                                accountId = accountId,
+                                reservationId = resId): AccountCommand).asJson)
         )
     }
 
@@ -128,9 +139,10 @@ object App {
           constants.accountActionType,
           new ActionCommand(
             UUID.randomUUID(),
-            (AccountCommand.ConfirmReservation(accountId = accountId,
-                                               reservationId = resId,
-                                               finalAmount = amount + adjustment): AccountCommand).asJson)
+            (AccountCommand.ConfirmReservation(
+              accountId = accountId,
+              reservationId = resId,
+              finalAmount = amount + adjustment): AccountCommand).asJson)
         )
     }
 
@@ -150,7 +162,8 @@ object App {
       null)
 
     import io.simplesource.saga.user.action.App.Key
-    implicit val encoder: Encoder[HttpRequest[Key, String]] = HttpClient.httpRequest[Key, String]._1
+    implicit val encoder: Encoder[HttpRequest[Key, String]] =
+      HttpClient.httpRequest[Key, String]._1
 
     val testHttpInvoke: SubSaga[Json] = builder.addAction(
       UUID.randomUUID(),
