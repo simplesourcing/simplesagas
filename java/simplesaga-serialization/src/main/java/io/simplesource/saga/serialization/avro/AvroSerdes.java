@@ -11,13 +11,19 @@ import io.simplesource.saga.model.saga.SagaError;
 import io.simplesource.saga.model.serdes.ActionSerdes;
 import io.simplesource.saga.serialization.avro.generated.*;
 import io.simplesource.saga.serialization.utils.SerdeUtils;
+import io.simplesource.saga.shared.utils.StreamAppUtils;
+import org.apache.avro.generic.GenericArray;
+import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.kafka.common.serialization.Serde;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 class AvroSerdes {
     static String PAYLOAD_TOPIC_SUFFIX = "-payload";
@@ -56,6 +62,10 @@ class AvroSerdes {
             actionIdSerde = SpecificSerdeUtils.specificAvroSerde(schemaRegistryUrl, true, regClient);
             avroActionRequestSerde = SpecificSerdeUtils.specificAvroSerde(schemaRegistryUrl, false, regClient);
             avroActionResponseSerde = SpecificSerdeUtils.specificAvroSerde(schemaRegistryUrl, false, regClient);
+        }
+
+        private static Object apply(Object e) {
+            return (AvroSagaError) e;
         }
 
         @Override
@@ -102,13 +112,25 @@ class AvroSerdes {
                             .setSagaId(r.sagaId.toString())
                             .setActionId(r.actionId.toString())
                             .setCommandId(r.commandId.toString())
+                            .setResult(r.result.fold(
+                                    es -> es.map(e ->
+                                            new AvroSagaError(
+                                                    e.getReason().toString(),
+                                                    e.getMessage()))
+                                            .toList(),
+                                    Boolean::valueOf))
                             .build(),
                     ar -> {
                         Object aRes = ar.getResult();
                         Result<SagaError, Boolean> result;
+
                         // TODO: remove the casting
-                        if (aRes instanceof AvroSagaError[]) {
-                            result = getSagaError((AvroSagaError[]) aRes);
+                        if (aRes instanceof GenericArray) {
+                            GenericArray<Object> v = (GenericArray) aRes;
+                            Stream<AvroSagaError> avroErrors = v.stream()
+                                    .map(x -> (AvroSagaError) x)
+                                    .filter(Objects::nonNull);
+                            result = getSagaError(avroErrors);
                         } else if (aRes instanceof Boolean) {
                             result = Result.success((Boolean) aRes);
                         } else {
@@ -125,9 +147,9 @@ class AvroSerdes {
         }
     }
 
-    private static Result<SagaError, Boolean> getSagaError(AvroSagaError[] aRes) {
+    private static Result<SagaError, Boolean> getSagaError(Stream<AvroSagaError> aRes) {
         return Result.failure(NonEmptyList.fromList(
-                Arrays.stream(aRes)
+                aRes
                         .map(ae -> SagaError.of(SagaError.Reason.valueOf(ae.getReason()), ae.getMessage()))
                         .collect(Collectors.toList()))
                 .orElse(NonEmptyList.of(
