@@ -16,7 +16,8 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class AvroSerdesTest {
+
+class ActionSerdesTest {
 
     private static String SCHEMA_URL = "http://localhost:8081/";
     private static String FAKE_TOPIC = "topic";

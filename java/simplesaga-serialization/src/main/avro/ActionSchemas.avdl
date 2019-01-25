@@ -1,5 +1,5 @@
 @namespace("io.simplesource.saga.serialization.avro.generated")
-protocol ActionSchemas {
+protocol SagaSchemas {
   record AvroActionId {
     string id;
   }
@@ -26,5 +26,37 @@ protocol ActionSchemas {
     string actionId;
     string commandId;
     union { array<AvroSagaError>, boolean } result;
+  }
+
+  record AvroSagaId {
+    string id;
+  }
+
+  record AvroSagaResponse {
+    string sagaId;
+    union { array<AvroSagaError>, long } result;
+  }
+
+  record AvroSagaAction {
+    string actionId;
+    string actionType;
+    AvroActionCommand actionCommand;
+    union { array<AvroActionCommand>, null } undoCommand;
+    array<string> dependencies;
+    string actionStatus;
+    union { array<AvroSagaError>, null } actionError;
+  }
+
+  record AvroSaga {
+    string sagaId;
+    map<AvroSagaAction> actions;
+    string sagaStatus;
+    union { array<AvroSagaError>, null } sagaError;
+    long sequence;
+  }
+
+  record AvroSagaRequest {
+    string sagaId;
+    AvroSaga initialState;
   }
 }
