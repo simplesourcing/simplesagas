@@ -19,7 +19,7 @@ public class Saga<A> {
             Map<UUID, SagaAction<A>> actions,
             SagaStatus status,
             Sequence sequence) {
-        return new Saga<>(sagaId, actions, status, new ArrayList<>(), sequence);
+        return new Saga<>(sagaId, actions, status, Collections.emptyList(), sequence);
     }
 
     public Saga<A> updated(SagaStatus status) {

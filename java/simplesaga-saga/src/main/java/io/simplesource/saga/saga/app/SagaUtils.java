@@ -100,7 +100,7 @@ final class SagaUtils {
 
             return pendingExecutions;
         }
-        return new ArrayList<>();
+        return Collections.emptyList();
     }
 
     static <A> Saga<A> applyTransition(SagaStateTransition t, Saga<A> s) {

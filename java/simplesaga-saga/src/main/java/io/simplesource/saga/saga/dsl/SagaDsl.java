@@ -87,7 +87,7 @@ public final class SagaDsl {
                                      String actionType,
                                      ActionCommand<A> actionCommand,
                                      Optional<ActionCommand<A>> undoAction) {
-            SagaAction<A> action = new SagaAction<A>(actionId,
+            SagaAction<A> action = new SagaAction<>(actionId,
                     actionType,
                     actionCommand,
                     undoAction,
@@ -131,7 +131,8 @@ public final class SagaDsl {
                 return Result.success(Saga.of(UUID.randomUUID(), newActions, SagaStatus.NotStarted, Sequence.first()));
             } else {
                 NonEmptyList<SagaError> nelError = NonEmptyList.fromList(
-                        errors.stream().map(e -> SagaError.of(SagaError.Reason.InternalError, e))
+                        errors.stream()
+                                .map(e -> SagaError.of(SagaError.Reason.InternalError, e))
                                 .collect(Collectors.toList()))
                         .get();
                 return Result.failure(nelError);

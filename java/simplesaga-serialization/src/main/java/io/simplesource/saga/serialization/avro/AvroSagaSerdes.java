@@ -9,6 +9,7 @@ import io.simplesource.saga.model.saga.SagaStatus;
 import io.simplesource.saga.model.serdes.SagaSerdes;
 import io.simplesource.saga.serialization.avro.generated.*;
 import io.simplesource.saga.serialization.utils.SerdeUtils;
+import org.apache.kafka.common.errors.SerializationException;
 import org.apache.kafka.common.serialization.Serde;
 
 import java.util.List;
@@ -74,7 +75,7 @@ public class AvroSagaSerdes<A> extends AvroSagaClientSerdes<A> implements SagaSe
                         l.getActionChanges().stream().map(AvroSagaSerdes::actionStatusChangeFromAvro).collect(Collectors.toList());
                 return new SagaStateTransition.TransitionList(actions);
             }
-            return null;
+            throw new RuntimeException("Unexpected exception. Avro failed to validate SagaStateTransition union type.");
         });
     }
 
