@@ -16,12 +16,9 @@ object App {
   def startSagaCoordinator(): Unit = {
     val sagaSpec =
       new SagaSpec(JsonSerdes.sagaSerdes[Json], new WindowSpec(3600L))
-    new SagaApp[Json](
-      sagaSpec,
-      TopicUtils.buildSteps(constants.sagaTopicPrefix, constants.sagaBaseName))
+    new SagaApp[Json](sagaSpec, TopicUtils.buildSteps(constants.sagaTopicPrefix, constants.sagaBaseName))
       .addActionProcessor(actionProcessorSpec,
-                          TopicUtils.buildSteps(constants.actionTopicPrefix,
-                                                constants.sagaActionBaseName))
+                          TopicUtils.buildSteps(constants.actionTopicPrefix, constants.sagaActionBaseName))
       .run(new StreamAppConfig("saga-coordinator-1", constants.kafkaBootstrap))
   }
 

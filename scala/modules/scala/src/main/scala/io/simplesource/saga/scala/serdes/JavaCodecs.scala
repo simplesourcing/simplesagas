@@ -26,17 +26,15 @@ object JavaCodecs {
   implicit def seqD(implicit enc: Decoder[Long]): Decoder[Sequence] =
     enc.map(Sequence.position)
 
-  implicit def mapDecoder[A: Decoder, B: Decoder]
-    : Decoder[java.util.Map[A, B]] =
+  implicit def mapDecoder[A: Decoder, B: Decoder]: Decoder[java.util.Map[A, B]] =
     implicitly[Decoder[List[(A, B)]]].map(m => {
       val l: util.List[(A, B)] = m.asJava
-      val map = new util.HashMap[A, B]()
+      val map                  = new util.HashMap[A, B]()
       l.forEach(x => map.put(x._1, x._2))
       map
     })
 
-  implicit def mapEncoder[A: Encoder, B: Encoder]
-    : Encoder[java.util.Map[A, B]] =
+  implicit def mapEncoder[A: Encoder, B: Encoder]: Encoder[java.util.Map[A, B]] =
     implicitly[Encoder[List[(A, B)]]].contramap(_.asScala.toList)
 
   implicit def setDecoder[A: Decoder]: Decoder[java.util.Set[A]] =
