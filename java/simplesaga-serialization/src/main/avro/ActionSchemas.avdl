@@ -44,19 +44,49 @@ protocol SagaSchemas {
     union { AvroActionCommand, null } undoCommand;
     array<string> dependencies;
     string actionStatus;
-    union { array<AvroSagaError>, null } actionError;
+    union { array<AvroSagaError>, null } actionErrors;
   }
 
   record AvroSaga {
     string sagaId;
     map<AvroSagaAction> actions;
     string sagaStatus;
-    union { array<AvroSagaError>, null } sagaError;
+    union { array<AvroSagaError>, null } sagaErrors;
     long sequence;
   }
 
   record AvroSagaRequest {
     string sagaId;
     AvroSaga initialState;
+  }
+
+  record AvroSagaTransitionInitial {
+    AvroSaga sagaState;
+  }
+
+  record AvroSagaTransitionActionStatusChange {
+    string sagaId;
+    string actionId;
+    string actionStatus;
+    union { array<AvroSagaError>, null } actionErrors;
+  }
+
+  record AvroSagaTransitionSagaStatusChange {
+    string sagaId;
+    string sagaStatus;
+    union { array<AvroSagaError>, null } sagaErrors;
+  }
+
+  record AvroSagaTransitionList {
+    array<AvroSagaTransitionActionStatusChange> actionChanges;
+  }
+
+  record AvroSagaTransition {
+    union {
+      AvroSagaTransitionInitial,
+      AvroSagaTransitionActionStatusChange,
+      AvroSagaTransitionSagaStatusChange,
+      AvroSagaTransitionList
+    } transition;
   }
 }

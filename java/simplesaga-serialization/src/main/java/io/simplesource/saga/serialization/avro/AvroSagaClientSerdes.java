@@ -92,7 +92,7 @@ public class AvroSagaClientSerdes<A> implements SagaClientSerdes<A> {
                     Optional.ofNullable(SagaSerdeUtils.actionCommandFromAvro(payloadSerde, String.format("%s-%s-undo", topic, actionId), aa.getUndoCommand())),
                     aa.getDependencies().stream().map(UUID::fromString).collect(Collectors.toSet()),
                     ActionStatus.valueOf(aa.getActionStatus()),
-                    SagaSerdeUtils.sagaErrorListFromAvro(aa.getActionError()));
+                    SagaSerdeUtils.sagaErrorListFromAvro(aa.getActionErrors()));
             actions.put(actionId, action);
         });
 
@@ -110,7 +110,7 @@ public class AvroSagaClientSerdes<A> implements SagaClientSerdes<A> {
             String actionId = id.toString();
             AvroSagaAction avroSagaAction = AvroSagaAction.newBuilder()
                     .setActionId(actionId)
-                    .setActionError(SagaSerdeUtils.sagaErrorListToAvro(act.error))
+                    .setActionErrors(SagaSerdeUtils.sagaErrorListToAvro(act.error))
                     .setActionCommand(SagaSerdeUtils.actionCommandToAvro(
                             payloadSerde,
                             String.format("%s-%s", topic, actionId),
@@ -133,7 +133,7 @@ public class AvroSagaClientSerdes<A> implements SagaClientSerdes<A> {
                 .newBuilder()
                 .setSagaId(s.sagaId.toString())
                 .setSagaStatus(s.status.toString())
-                .setSagaError(SagaSerdeUtils.sagaErrorListToAvro(s.sagaError))
+                .setSagaErrors(SagaSerdeUtils.sagaErrorListToAvro(s.sagaError))
                 .setActions(avroActions)
                 .setSequence(s.sequence.getSeq())
                 .build();

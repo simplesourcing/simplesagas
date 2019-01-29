@@ -29,7 +29,7 @@ public interface SagaStateTransition {
         public final UUID sagaId;
         public final UUID actionId;
         public final ActionStatus actionStatus;
-        public final List<SagaError> actionError;
+        public final List<SagaError> actionErrors;
 
         @Override
         public <A> A cata(Function<SetInitialState<?>, A> f1, Function<SagaActionStatusChanged, A> f2, Function<SagaStatusChanged, A> f3, Function<TransitionList, A> f4) {
@@ -41,7 +41,7 @@ public interface SagaStateTransition {
     final class SagaStatusChanged implements SagaStateTransition {
         public final UUID sagaId;
         public final SagaStatus sagaStatus;
-        public final List<SagaError> actionErrors;
+        public final List<SagaError> sagaErrors;
 
 
         @Override
