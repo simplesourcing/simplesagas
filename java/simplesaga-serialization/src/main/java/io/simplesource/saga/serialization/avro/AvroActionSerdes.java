@@ -40,20 +40,15 @@ public class AvroActionSerdes<A> implements ActionSerdes<A> {
     @Override
     public Serde<ActionRequest<A>> request() {
         return SerdeUtils.iMap(avroActionRequestSerde,
-                (topic, r) -> {
-                    byte[] serializedPayload = payloadSerde.serializer().serialize(topic + AvroSerdes.PAYLOAD_TOPIC_SUFFIX, r.actionCommand.command);
-                    AvroActionCommand aac = AvroActionCommand
-                            .newBuilder()
-                            .setCommandId(r.actionCommand.commandId.toString())
-                            .setCommand(ByteBuffer.wrap(serializedPayload))
-                            .build();
-                    return AvroActionRequest.newBuilder()
-                            .setActionId(r.actionId().toString())
-                            .setSagaId(r.sagaId().toString())
-                            .setActionType(r.actionType())
-                            .setActionCommand(aac)
-                            .build();
-                },
+                (topic, r) -> AvroActionRequest.newBuilder()
+                        .setActionId(r.actionId().toString())
+                        .setSagaId(r.sagaId().toString())
+                        .setActionType(r.actionType())
+                        .setActionCommand(SagaSerdeUtils.actionCommandToAvro(
+                                payloadSerde,
+                                topic + AvroSerdes.PAYLOAD_TOPIC_SUFFIX,
+                                r.actionCommand))
+                        .build(),
                 (topic, ar) -> {
                     AvroActionCommand aac = ar.getActionCommand();
                     ByteBuffer spf = aac.getCommand();
@@ -76,18 +71,12 @@ public class AvroActionSerdes<A> implements ActionSerdes<A> {
                         .setSagaId(r.sagaId.toString())
                         .setActionId(r.actionId.toString())
                         .setCommandId(r.commandId.toString())
-                        .setResult(r.result.fold(
-                                es -> es.map(e ->
-                                        new AvroSagaError(
-                                                e.getReason().toString(),
-                                                e.getMessage()))
-                                        .toList(),
-                                x -> x))
+                        .setResult(r.result.fold(SagaSerdeUtils::sagaErrorListToAvro, x -> x))
                         .build(),
                 ar -> new ActionResponse(
                         UUID.fromString(ar.getSagaId()),
                         UUID.fromString(ar.getActionId()),
                         UUID.fromString(ar.getCommandId()),
-                        SagaSerdeUtils.<Boolean, Boolean>getSagaResult(ar.getResult(), x -> x)));
+                        SagaSerdeUtils.<Boolean, Boolean>sagaResultFromAvro(ar.getResult(), x -> x)));
     }
 }

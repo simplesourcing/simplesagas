@@ -79,9 +79,9 @@ public final class SagaDsl {
 
     @Value(staticConstructor = "create")
     public static final class SagaBuilder<A> {
-        Map<UUID, SagaAction<A>> actions = new HashMap<>();
-        Map<UUID, Set<UUID>> dependencies = new HashMap<>();
-        List<String> errors = new ArrayList<>();
+        private Map<UUID, SagaAction<A>> actions = new HashMap<>();
+        private Map<UUID, Set<UUID>> dependencies = new HashMap<>();
+        private List<String> errors = new ArrayList<>();
 
         private SubSaga<A> addAction(UUID actionId,
                                      String actionType,
@@ -93,7 +93,7 @@ public final class SagaDsl {
                     undoAction,
                     Collections.emptySet(),
                     ActionStatus.Pending,
-                    Optional.empty());
+                    Collections.emptyList());
 
             if (actions.containsKey(actionId))
                 errors.add(String.format("Action Id already used %s", actionId));
@@ -126,7 +126,7 @@ public final class SagaDsl {
                             eAct.undoCommand,
                             dependencies.get(entry.getKey()),
                             eAct.status,
-                            Optional.empty());
+                            Collections.emptyList());
                 }).collect(Collectors.toMap(sa -> sa.actionId, sa -> sa));
                 return Result.success(Saga.of(UUID.randomUUID(), newActions, SagaStatus.NotStarted, Sequence.first()));
             } else {

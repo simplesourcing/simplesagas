@@ -41,7 +41,7 @@ protocol SagaSchemas {
     string actionId;
     string actionType;
     AvroActionCommand actionCommand;
-    union { array<AvroActionCommand>, null } undoCommand;
+    union { AvroActionCommand, null } undoCommand;
     array<string> dependencies;
     string actionStatus;
     union { array<AvroSagaError>, null } actionError;

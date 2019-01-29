@@ -132,8 +132,9 @@ final class SagaUtils {
                 },
 
                 sagaStatusChanged -> {
-                    // TODO: add saga errors
-                    return s.updated(sagaStatusChanged.sagaStatus, sagaStatusChanged.actionErrors.map(NonEmptyList::head));
+                    // TODO: add saga errors as a separate error type
+                    return s.updated(sagaStatusChanged.sagaStatus,
+                            sagaStatusChanged.actionErrors);
                 },
 
                 transitionList -> {

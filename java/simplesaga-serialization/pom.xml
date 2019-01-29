@@ -24,6 +24,11 @@
             <artifactId>simplesaga-shared</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>io.simplesource</groupId>
+            <artifactId>simplesaga-saga</artifactId>
+        </dependency>
+
         <!-- Simple Sourcing -->
         <dependency>
             <groupId>io.simplesource</groupId>

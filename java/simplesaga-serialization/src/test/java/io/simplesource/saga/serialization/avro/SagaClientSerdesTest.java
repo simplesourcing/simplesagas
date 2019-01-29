@@ -2,9 +2,13 @@ package io.simplesource.saga.serialization.avro;
 
 import io.simplesource.data.Result;
 import io.simplesource.data.Sequence;
+import io.simplesource.saga.model.messages.SagaRequest;
 import io.simplesource.saga.model.messages.SagaResponse;
+import io.simplesource.saga.model.saga.Saga;
 import io.simplesource.saga.model.saga.SagaError;
 import io.simplesource.saga.model.serdes.SagaClientSerdes;
+import io.simplesource.saga.model.serdes.SagaSerdes;
+import org.apache.avro.generic.GenericRecord;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -54,4 +58,23 @@ class SagaClientSerdesTest {
             assertThat(el.get(1)).isEqualToComparingFieldByField(sagaError2);
         });
     }
+
+    @Test
+    void sagaRequestTest() {
+        SagaClientSerdes<GenericRecord> serdes = AvroSerdes.sagaClientSerdes(SCHEMA_URL, true);
+
+        Saga<GenericRecord> saga = SagaTestUtils.getTestSaga();
+
+        // SagaRequest<GenericRecord> original = new SagaRequest<>(UUID.randomUUID(), saga);
+        SagaRequest<GenericRecord> original = new SagaRequest<>(saga.sagaId(), saga);
+
+        byte[] serialized = serdes.request().serializer().serialize(FAKE_TOPIC, original);
+        SagaRequest<GenericRecord> deserialized = serdes.request().deserializer().deserialize(FAKE_TOPIC, serialized);
+
+        String originalAsString = original.toString();
+
+        assertThat(deserialized.toString()).isEqualTo(originalAsString);
+    }
+
 }
+

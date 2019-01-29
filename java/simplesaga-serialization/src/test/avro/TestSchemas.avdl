@@ -5,4 +5,20 @@ protocol TestSchemas {
     string lastName;
     int yearOfBirth;
   }
+
+  record CreateAccount {
+    string id;
+    string userName;
+  }
+
+  record AddFunds {
+    string id;
+    double amount;
+  }
+
+  record TransferFunds {
+    string fromId;
+    string toId;
+    double amount;
+  }
 }
