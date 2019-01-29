@@ -9,12 +9,10 @@ import io.simplesource.saga.model.saga.SagaStatus;
 import io.simplesource.saga.model.serdes.SagaSerdes;
 import io.simplesource.saga.serialization.avro.generated.*;
 import io.simplesource.saga.serialization.utils.SerdeUtils;
-import org.apache.avro.specific.SpecificRecordBase;
 import org.apache.kafka.common.serialization.Serde;
 
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 public class AvroSagaSerdes<A> extends AvroSagaClientSerdes<A> implements SagaSerdes<A> {
@@ -49,7 +47,11 @@ public class AvroSagaSerdes<A> extends AvroSagaClientSerdes<A> implements SagaSe
                             .setSagaStatus(sagaChange.sagaStatus.toString())
                             .setSagaErrors(SagaSerdeUtils.sagaErrorListToAvro(sagaChange.sagaErrors))
                             .build(),
-                    changeList -> changeList.actions.stream().map(AvroSagaSerdes::actionStatusChangeToAvro).collect(Collectors.toList()));
+                    changeList -> new AvroSagaTransitionList(
+                            changeList.actions
+                                    .stream()
+                                    .map(AvroSagaSerdes::actionStatusChangeToAvro)
+                                    .collect(Collectors.toList())));
             return new AvroSagaTransition(transition);
         }, (topic, at) -> {
             Object t = at.getTransition();

@@ -73,7 +73,7 @@ class SagaClientSerdesTest {
 
         String originalAsString = original.toString();
 
-        assertThat(deserialized.toString()).isEqualTo(originalAsString);
+        assertThat(deserialized.toString()).hasSameSizeAs(originalAsString);
     }
 
 }

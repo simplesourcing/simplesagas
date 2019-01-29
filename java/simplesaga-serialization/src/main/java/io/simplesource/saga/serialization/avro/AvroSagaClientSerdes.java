@@ -88,8 +88,8 @@ public class AvroSagaClientSerdes<A> implements SagaClientSerdes<A> {
             SagaAction<A> action = new SagaAction<>(
                     actionId,
                     aa.getActionType(),
-                    SagaSerdeUtils.actionCommandFromAvro(payloadSerde, String.format("%s-%s", topic, actionId), aa.getActionCommand()),
-                    Optional.ofNullable(SagaSerdeUtils.actionCommandFromAvro(payloadSerde, String.format("%s-%s-undo", topic, actionId), aa.getUndoCommand())),
+                    SagaSerdeUtils.actionCommandFromAvro(payloadSerde, topic + AvroSerdes.PAYLOAD_TOPIC_SUFFIX, aa.getActionCommand()),
+                    Optional.ofNullable(SagaSerdeUtils.actionCommandFromAvro(payloadSerde, topic + AvroSerdes.PAYLOAD_TOPIC_SUFFIX, aa.getUndoCommand())),
                     aa.getDependencies().stream().map(UUID::fromString).collect(Collectors.toSet()),
                     ActionStatus.valueOf(aa.getActionStatus()),
                     SagaSerdeUtils.sagaErrorListFromAvro(aa.getActionErrors()));
@@ -113,11 +113,11 @@ public class AvroSagaClientSerdes<A> implements SagaClientSerdes<A> {
                     .setActionErrors(SagaSerdeUtils.sagaErrorListToAvro(act.error))
                     .setActionCommand(SagaSerdeUtils.actionCommandToAvro(
                             payloadSerde,
-                            String.format("%s-%s", topic, actionId),
+                            topic + AvroSerdes.PAYLOAD_TOPIC_SUFFIX,
                             act.command))
                     .setUndoCommand(act.undoCommand.map(uc -> SagaSerdeUtils.actionCommandToAvro(
                             payloadSerde,
-                            String.format("%s-%s-undo", topic, actionId),
+                            topic + AvroSerdes.PAYLOAD_TOPIC_SUFFIX,
                             uc)).orElse(null))
                     .setActionStatus(act.status.toString())
                     .setActionType(act.actionType)
@@ -138,6 +138,5 @@ public class AvroSagaClientSerdes<A> implements SagaClientSerdes<A> {
                 .setSequence(s.sequence.getSeq())
                 .build();
     }
-
 }
 
