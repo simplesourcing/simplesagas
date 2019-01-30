@@ -18,12 +18,17 @@ class JsonActionTests extends WordSpec with Matchers {
     val topic = "topic"
 
     "serialise and deserialise key UUIDs" in {
-      val request = new ActionRequest(
-        UUID.randomUUID(),
-        UUID.randomUUID(),
-        new ActionCommand(UUID.randomUUID(),
-                          (UserCommand.Insert(UUID.randomUUID(), "", ""): UserCommand).asJson),
-        "action")
+      val request =
+        ActionRequest
+          .builder()
+          .sagaId(UUID.randomUUID())
+          .actionId(UUID.randomUUID())
+          .actionCommand(
+            new ActionCommand(UUID.randomUUID(),
+                              (UserCommand.Insert(UUID.randomUUID(), "", ""): UserCommand).asJson))
+          .actionType("action")
+          .build()
+
       val ser = serdes.request.serializer().serialize(topic, request)
       val de  = serdes.request.deserializer().deserialize(topic, ser)
       de shouldBe request

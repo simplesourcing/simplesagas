@@ -3,6 +3,7 @@ package io.simplesource.saga.model.action;
 import io.simplesource.saga.model.saga.SagaError;
 import lombok.Value;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -15,5 +16,5 @@ public class SagaAction<A> {
     public final Optional<ActionCommand<A>> undoCommand;
     public final Set<UUID> dependencies;
     public final ActionStatus status;
-    public final Optional<SagaError> error;
+    public final List<SagaError> error;
 }

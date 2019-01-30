@@ -79,21 +79,21 @@ public final class SagaDsl {
 
     @Value(staticConstructor = "create")
     public static final class SagaBuilder<A> {
-        Map<UUID, SagaAction<A>> actions = new HashMap<>();
-        Map<UUID, Set<UUID>> dependencies = new HashMap<>();
-        List<String> errors = new ArrayList<>();
+        private Map<UUID, SagaAction<A>> actions = new HashMap<>();
+        private Map<UUID, Set<UUID>> dependencies = new HashMap<>();
+        private List<String> errors = new ArrayList<>();
 
         private SubSaga<A> addAction(UUID actionId,
                                      String actionType,
                                      ActionCommand<A> actionCommand,
                                      Optional<ActionCommand<A>> undoAction) {
-            SagaAction<A> action = new SagaAction<A>(actionId,
+            SagaAction<A> action = new SagaAction<>(actionId,
                     actionType,
                     actionCommand,
                     undoAction,
                     Collections.emptySet(),
                     ActionStatus.Pending,
-                    Optional.empty());
+                    Collections.emptyList());
 
             if (actions.containsKey(actionId))
                 errors.add(String.format("Action Id already used %s", actionId));
@@ -126,12 +126,13 @@ public final class SagaDsl {
                             eAct.undoCommand,
                             dependencies.get(entry.getKey()),
                             eAct.status,
-                            Optional.empty());
+                            Collections.emptyList());
                 }).collect(Collectors.toMap(sa -> sa.actionId, sa -> sa));
                 return Result.success(Saga.of(UUID.randomUUID(), newActions, SagaStatus.NotStarted, Sequence.first()));
             } else {
                 NonEmptyList<SagaError> nelError = NonEmptyList.fromList(
-                        errors.stream().map(e -> SagaError.of(SagaError.Reason.InternalError, e))
+                        errors.stream()
+                                .map(e -> SagaError.of(SagaError.Reason.InternalError, e))
                                 .collect(Collectors.toList()))
                         .get();
                 return Result.failure(nelError);

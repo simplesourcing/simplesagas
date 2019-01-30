@@ -27,7 +27,8 @@ object App {
           .newBuilder[UUID, UserCommand, UserEvent, Option[User]]()
           .withAggregator((a, e) => UserHandlers.aggregator(a)(e))
           .withCommandHandler((k, a, c) => UserHandlers.commandHandler(k, a)(c))
-          .withSerdes(JsonSerdes.aggregateSerdes[UUID, UserCommand, UserEvent, Option[User]])
+          .withSerdes(JsonSerdes
+            .aggregateSerdes[UUID, UserCommand, UserEvent, Option[User]])
           .withResourceNamingStrategy(new PrefixResourceNamingStrategy(constants.commandTopicPrefix))
           .withName(constants.userAggregateName)
           .withInitialValue(_ => None)
@@ -39,7 +40,8 @@ object App {
           .newBuilder[UUID, AccountCommand, AccountEvent, Option[Account]]()
           .withAggregator((a, e) => AccountHandlers.aggregator(a)(e))
           .withCommandHandler((k, a, c) => AccountHandlers.commandHandler(k, a)(c))
-          .withSerdes(JsonSerdes.aggregateSerdes[UUID, AccountCommand, AccountEvent, Option[Account]])
+          .withSerdes(JsonSerdes
+            .aggregateSerdes[UUID, AccountCommand, AccountEvent, Option[Account]])
           .withResourceNamingStrategy(new PrefixResourceNamingStrategy(constants.commandTopicPrefix))
           .withName(constants.accountAggregateName)
           .withInitialValue(_ => None)

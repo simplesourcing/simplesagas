@@ -11,7 +11,8 @@ object JavaCodecs {
     implicitly[Encoder[Option[A]]].contramap[Optional[A]](optionalA =>
       optionalA.map[Option[A]](a => Option(a)).orElse(None))
   implicit def optionalDecoder[A: Decoder]: Decoder[Optional[A]] =
-    implicitly[Decoder[Option[A]]].map(_.fold[Optional[A]](Optional.empty())(a => Optional.of(a)))
+    implicitly[Decoder[Option[A]]]
+      .map(_.fold[Optional[A]](Optional.empty())(a => Optional.of(a)))
 
   implicit def nelEncoder[A: Encoder]: Encoder[NonEmptyList[A]] =
     implicitly[Encoder[List[A]]]
@@ -20,8 +21,10 @@ object JavaCodecs {
     implicitly[Decoder[List[A]]]
       .map(l => NonEmptyList.fromList(l.asJava).get())
 
-  implicit def seqE(implicit enc: Encoder[Long]): Encoder[Sequence] = enc.contramap(_.getSeq)
-  implicit def seqD(implicit enc: Decoder[Long]): Decoder[Sequence] = enc.map(Sequence.position)
+  implicit def seqE(implicit enc: Encoder[Long]): Encoder[Sequence] =
+    enc.contramap(_.getSeq)
+  implicit def seqD(implicit enc: Decoder[Long]): Decoder[Sequence] =
+    enc.map(Sequence.position)
 
   implicit def mapDecoder[A: Decoder, B: Decoder]: Decoder[java.util.Map[A, B]] =
     implicitly[Decoder[List[(A, B)]]].map(m => {

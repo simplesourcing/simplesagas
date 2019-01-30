@@ -24,7 +24,8 @@ import scala.collection.JavaConverters._
 object App {
   val sourcingConfig =
     new StreamAppConfig("sourcing-action-processor-1", "127.0.0.1:9092")
-  val asyncConfig = new StreamAppConfig("async-action-processor-1", "127.0.0.1:9092")
+  val asyncConfig =
+    new StreamAppConfig("async-action-processor-1", "127.0.0.1:9092")
 
   def main(args: Array[String]): Unit = {
     startSourcingActionProcessor()
@@ -50,7 +51,8 @@ object App {
   }
 
   implicit class EOps[E, A](eea: Either[E, A]) {
-    def toResult: Result[E, A] = eea.fold(e => Result.failure(e), a => Result.success(a))
+    def toResult: Result[E, A] =
+      eea.fold(e => Result.failure(e), a => Result.success(a))
   }
 
   lazy val userSpec = new CommandSpec[Json, UserCommand, UUID, UserCommand](
@@ -63,15 +65,16 @@ object App {
     30000L
   )
 
-  lazy val accountSpec = new CommandSpec[Json, AccountCommand, UUID, AccountCommand](
-    constants.accountActionType,
-    json => json.as[AccountCommand].toResult.errorMap(e => e),
-    (a: AccountCommand) => a,
-    _.accountId,
-    JsonSerdes.commandSerdes[UUID, AccountCommand],
-    constants.accountAggregateName,
-    30000L
-  )
+  lazy val accountSpec =
+    new CommandSpec[Json, AccountCommand, UUID, AccountCommand](
+      constants.accountActionType,
+      json => json.as[AccountCommand].toResult.errorMap(e => e),
+      (a: AccountCommand) => a,
+      _.accountId,
+      JsonSerdes.commandSerdes[UUID, AccountCommand],
+      constants.accountAggregateName,
+      30000L
+    )
 
   lazy val asyncSpec = new AsyncSpec[Json, String, String, String, String](
     "async_test_action_type",

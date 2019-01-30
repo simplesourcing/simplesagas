@@ -34,11 +34,12 @@ object App {
 
   def main(args: Array[String]): Unit = {
 
-    val sagaClientBuilder: SagaClientBuilder[Json] = new SagaClientBuilder[Json](
-      (kafkaConfigBuilder: KafkaConfig.Builder) =>
-        kafkaConfigBuilder
-          .withKafkaApplicationId("saga-app-1")
-          .withKafkaBootstrap("127.0.0.1:9092"))
+    val sagaClientBuilder: SagaClientBuilder[Json] =
+      new SagaClientBuilder[Json](
+        (kafkaConfigBuilder: KafkaConfig.Builder) =>
+          kafkaConfigBuilder
+            .withKafkaApplicationId("saga-app-1")
+            .withKafkaBootstrap("127.0.0.1:9092"))
     val api: SagaAPI[Json] = sagaClientBuilder
       .withSerdes(JsonSerdes.sagaSerdes[Json])
       .withTopicConfig(TopicUtils.buildSteps(constants.sagaTopicPrefix, constants.sagaBaseName))
@@ -46,13 +47,16 @@ object App {
       .build()
 
     for (_ <- 1 to 3) {
-      val shouldSucceed = actionSequence("Harry", "Hughley", 1000.0, List(500, 100), 0)
+      val shouldSucceed =
+        actionSequence("Harry", "Hughley", 1000.0, List(500, 100), 0)
       submitSagaRequest(api, shouldSucceed)
 
-      val shouldFailReservation = actionSequence("Peter", "Bogue", 1000.0, List(500, 100, 550), 0)
+      val shouldFailReservation =
+        actionSequence("Peter", "Bogue", 1000.0, List(500, 100, 550), 0)
       submitSagaRequest(api, shouldFailReservation)
 
-      val shouldFailConfirmation = actionSequence("Lemuel", "Osorio", 1000.0, List(500, 100, 350), 50)
+      val shouldFailConfirmation =
+        actionSequence("Lemuel", "Osorio", 1000.0, List(500, 100, 350), 50)
       submitSagaRequest(api, shouldFailConfirmation)
     }
   }
@@ -150,7 +154,8 @@ object App {
       null)
 
     import io.simplesource.saga.user.action.App.Key
-    implicit val encoder: Encoder[HttpRequest[Key, String]] = HttpClient.httpRequest[Key, String]._1
+    implicit val encoder: Encoder[HttpRequest[Key, String]] =
+      HttpClient.httpRequest[Key, String]._1
 
     val testHttpInvoke: SubSaga[Json] = builder.addAction(
       UUID.randomUUID(),

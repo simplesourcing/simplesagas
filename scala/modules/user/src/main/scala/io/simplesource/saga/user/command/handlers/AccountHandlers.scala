@@ -36,7 +36,9 @@ object AccountHandlers {
       case (AccountCommand.AddFunds(accountId, funds), Some(a)) =>
         Result.success(NonEmptyList.of(AccountEvent.FundsAdded(accountId, funds)))
 
-      case (AccountCommand.ReserveFunds(accountId, reservationId, amount, description), Some(a)) =>
+      case (AccountCommand
+              .ReserveFunds(accountId, reservationId, amount, description),
+            Some(a)) =>
         val exists = a.reservations.exists(_.reservationId == reservationId)
         if (exists)
           Result.failure(
@@ -46,7 +48,8 @@ object AccountHandlers {
           val sufficient = a.funds - a.reservations.map(_.amount).sum >= amount
           if (sufficient)
             Result.success(
-              NonEmptyList.of(AccountEvent.FundsReserved(accountId, reservationId, amount, description)))
+              NonEmptyList.of(AccountEvent
+                .FundsReserved(accountId, reservationId, amount, description)))
           else
             Result.failure(
               NonEmptyList.of(CommandError.of(CommandError.Reason.InvalidCommand, "Insufficient funds.")))
@@ -64,7 +67,10 @@ object AccountHandlers {
         if (exists) {
           val sufficient = a.funds - a.reservations
             .map(_.amount)
-            .sum + a.reservations.find(_.reservationId == reservationId).get.amount >= finalAmount
+            .sum + a.reservations
+            .find(_.reservationId == reservationId)
+            .get
+            .amount >= finalAmount
           if (sufficient)
             Result.success(NonEmptyList.of(AccountEvent.ReservationConfirmed(reservationId, finalAmount)))
           else

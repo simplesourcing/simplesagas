@@ -115,8 +115,8 @@ final public class SagaStream {
                     if ((state.status == SagaStatus.InFailure || state.status == SagaStatus.InProgress) &&
                             SagaUtils.sagaFailed(state)) {
                         List<SagaError> errors = state.actions.values().stream()
-                                .filter(action -> action.status == ActionStatus.Failed && action.error.isPresent())
-                                .map(action -> action.error.get())
+                                .filter(action -> action.status == ActionStatus.Failed && !action.error.isEmpty())
+                                .flatMap(action -> action.error.stream())
                                 .collect(Collectors.toList());
 
                         return StatusWithError.of(state.sequence, errors);
@@ -127,7 +127,7 @@ final public class SagaStream {
                 .mapValues((k, v) -> v.get());
 
         KStream<UUID, SagaStateTransition> stateTransition = statusWithError.mapValues((sagaId, someStatus) ->
-                new SagaStateTransition.SagaStatusChanged(sagaId, someStatus.status, someStatus.errors));
+                new SagaStateTransition.SagaStatusChanged(sagaId, someStatus.status, someStatus.errors.map(NonEmptyList::toList).orElse(Collections.emptyList())));
 
         KStream<UUID, SagaResponse> sagaResponses = statusWithError
                 .mapValues((sagaId, sWithE) -> {
@@ -158,7 +158,7 @@ final public class SagaStream {
                 .filter((k, actions) -> !actions.isEmpty())
                 .<SagaStateTransition>mapValues((sagaId, actions) -> {
                     List<SagaStateTransition.SagaActionStatusChanged> transitions = actions.stream().map(action ->
-                            new SagaStateTransition.SagaActionStatusChanged(sagaId, action.actionId, action.status, Optional.empty())
+                            new SagaStateTransition.SagaActionStatusChanged(sagaId, action.actionId, action.status, Collections.emptyList())
                     ).collect(Collectors.toList());
                     return new SagaStateTransition.TransitionList(transitions);
                 })
@@ -168,10 +168,12 @@ final public class SagaStream {
                 nextActionsStream
                         .filter((sagaId, v) -> v.command.isPresent())
                         .mapValues((sagaId, ae) ->
-                                new ActionRequest<>(sagaId,
-                                        ae.actionId,
-                                        ae.command.get(),
-                                        ae.actionType))
+                                ActionRequest.<A>builder()
+                                        .sagaId(sagaId)
+                                        .actionId(ae.actionId)
+                                        .actionCommand(ae.command.get())
+                                        .actionType(ae.actionType)
+                                        .build())
                         .peek(logValues("actionRequests"));
 
         return Tuple2.of(stateUpdateNewActions, actionRequests);
@@ -179,11 +181,11 @@ final public class SagaStream {
 
     static private KStream<UUID, SagaStateTransition> addActionResponses(KStream<UUID, ActionResponse> actionResponses) {
 
-        // TODO: fix and simplify the error handling
+        // TODO: simplify the error handling
         return actionResponses.<SagaStateTransition>mapValues((sagaId, response) -> {
-            Tuple2<ActionStatus, Optional<SagaError>> se = response.result.fold(
-                    errors -> Tuple2.of(ActionStatus.Failed, Optional.of(errors.head())), // TODO: FIX this
-                    r -> Tuple2.of(ActionStatus.Completed, Optional.empty()));
+            Tuple2<ActionStatus, List<SagaError>> se = response.result.fold(
+                    errors -> Tuple2.of(ActionStatus.Failed, errors.toList()), // TODO: FIX this
+                    r -> Tuple2.of(ActionStatus.Completed, Collections.emptyList()));
             return new SagaStateTransition.SagaActionStatusChanged(sagaId, response.actionId, se.v1(), se.v2());
         }).peek(logValues("stateTransitionsActionResponse"));
     }

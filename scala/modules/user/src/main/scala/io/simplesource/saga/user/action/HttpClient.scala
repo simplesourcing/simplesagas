@@ -56,7 +56,9 @@ object HttpClient {
         if (resp.statusCode >= 300) {
           throw HttpError(resp.statusCode, s"Error in Http Request: ${resp.statusMessage}")
         }
-        parse(resp.data.text).flatMap(_.as[O]).fold(e => Result.failure(e), a => Result.success(a))
+        parse(resp.data.text)
+          .flatMap(_.as[O])
+          .fold(e => Result.failure(e), a => Result.success(a))
       }
       .map[Result[Throwable, O]](_.errorMap[Throwable](e => e).map(x => x))
       .onComplete(tryRes =>

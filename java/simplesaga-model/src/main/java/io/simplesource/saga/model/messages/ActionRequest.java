@@ -1,11 +1,13 @@
 package io.simplesource.saga.model.messages;
 
 import io.simplesource.saga.model.action.ActionCommand;
+import lombok.Builder;
 import lombok.Value;
 
 import java.util.UUID;
 
 @Value
+@Builder
 public class ActionRequest<A> {
     public final UUID sagaId;
     public final UUID actionId;

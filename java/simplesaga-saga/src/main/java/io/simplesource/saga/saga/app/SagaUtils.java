@@ -1,7 +1,6 @@
 package io.simplesource.saga.saga.app;
 
 
-import io.simplesource.data.NonEmptyList;
 import io.simplesource.data.Sequence;
 import io.simplesource.saga.model.action.ActionStatus;
 import io.simplesource.saga.model.action.SagaAction;
@@ -101,7 +100,7 @@ final class SagaUtils {
 
             return pendingExecutions;
         }
-        return new ArrayList<>();
+        return Collections.emptyList();
     }
 
     static <A> Saga<A> applyTransition(SagaStateTransition t, Saga<A> s) {
@@ -123,7 +122,7 @@ final class SagaUtils {
                         else if (sagaActionStatusChanged.actionStatus == ActionStatus.Failed) newStatus = ActionStatus.UndoFailed;
                     }
                     SagaAction<A> action =
-                            new SagaAction<>(oa.actionId, oa.actionType, oa.command, oa.undoCommand, oa.dependencies, newStatus, sagaActionStatusChanged.actionError);
+                            new SagaAction<>(oa.actionId, oa.actionType, oa.command, oa.undoCommand, oa.dependencies, newStatus, sagaActionStatusChanged.actionErrors);
 
                     // TODO: add a MapUtils updated
                     Map<UUID, SagaAction<A>> actionMap = new HashMap<>();
@@ -132,8 +131,9 @@ final class SagaUtils {
                 },
 
                 sagaStatusChanged -> {
-                    // TODO: add saga errors
-                    return s.updated(sagaStatusChanged.sagaStatus, sagaStatusChanged.actionErrors.map(NonEmptyList::head));
+                    // TODO: add saga errors as a separate error type
+                    return s.updated(sagaStatusChanged.sagaStatus,
+                            sagaStatusChanged.sagaErrors);
                 },
 
                 transitionList -> {
