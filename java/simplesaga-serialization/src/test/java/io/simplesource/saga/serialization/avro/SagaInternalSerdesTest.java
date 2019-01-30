@@ -30,10 +30,11 @@ class SagaInternalSerdesTest {
         Saga<GenericRecord> deserialized = serdes.state().deserializer().deserialize(FAKE_TOPIC, serialized);
 
         String originalAsString = original.toString();
-        assertThat(deserialized.toString()).isEqualTo(originalAsString);
+        assertThat(deserialized.toString()).hasSameSizeAs(originalAsString);
+        SagaTestUtils.validataSaga(deserialized, original);
     }
 
-    SagaStateTransition testTransition(SagaStateTransition transition) {
+    <A extends SagaStateTransition> A testTransition(SagaStateTransition transition) {
         SagaSerdes<GenericRecord> serdes = AvroSerdes.sagaSerdes(SCHEMA_URL, true);
 
         byte[] serialized = serdes.transition().serializer().serialize(FAKE_TOPIC, transition);
@@ -42,7 +43,7 @@ class SagaInternalSerdesTest {
         String originalAsString = transition.toString();
         assertThat(deserialized.toString()).hasSameSizeAs(originalAsString);
 
-        return deserialized;
+        return (A)deserialized;
     }
 
     @Test
@@ -50,7 +51,9 @@ class SagaInternalSerdesTest {
         Saga<GenericRecord> testSaga = SagaTestUtils.getTestSaga();
         SagaStateTransition.SetInitialState<GenericRecord> original = new SagaStateTransition.SetInitialState<>(testSaga);
 
-        testTransition(original);
+        SagaStateTransition.SetInitialState deserialized = testTransition(original);
+        SagaTestUtils.validataSaga(deserialized.sagaState, original.sagaState);
+
     }
 
     @Test

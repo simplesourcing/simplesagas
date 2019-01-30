@@ -2,6 +2,7 @@ package io.simplesource.saga.serialization.avro;
 
 import io.simplesource.data.Result;
 import io.simplesource.saga.model.action.ActionCommand;
+import io.simplesource.saga.model.action.SagaAction;
 import io.simplesource.saga.model.saga.Saga;
 import io.simplesource.saga.model.saga.SagaError;
 import io.simplesource.saga.saga.dsl.SagaDsl;
@@ -13,6 +14,7 @@ import org.apache.avro.generic.GenericRecord;
 import java.util.UUID;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static io.simplesource.saga.saga.dsl.SagaDsl.inParallel;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -53,4 +55,23 @@ public class SagaTestUtils {
         return sagaBuildResult.getOrElse(null);
     }
 
+    static <A> void validataSaga(Saga<A> actual, Saga<A>  expected) {
+        assertThat(actual.status).isEqualTo(expected.status);
+        assertThat(actual.sequence.getSeq()).isEqualTo(expected.sequence.getSeq());
+        assertThat(actual.sagaId).isEqualTo(expected.sagaId);
+        assertThat(actual.sagaError.size()).isEqualTo(expected.sagaError.size());
+        for (int i = 0; i < actual.sagaError.size(); i++) {
+            SagaError ae = actual.sagaError.get(i);
+            SagaError ee = actual.sagaError.get(i);
+            assertThat(ae.getMessage()).isEqualTo(ee.getMessage());
+            assertThat(ae.getReason()).isEqualTo(ee.getReason());
+        }
+        assertThat(actual.actions).hasSameSizeAs(expected.actions);
+        actual.actions.forEach((k, a) -> {
+            SagaAction<A> e = expected.actions.get(k);
+            assertThat(a).isEqualToIgnoringGivenFields(e, "command", "undoCommand");
+            assertThat(e.command.toString()).isEqualTo(a.command.toString());
+            assertThat(e.undoCommand.toString()).isEqualTo(a.undoCommand.toString());
+        });
+    }
 }
