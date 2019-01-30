@@ -1,4 +1,4 @@
-package io.simplesource.saga.serialization.utils;
+package io.simplesource.saga.testutils;
 
 import lombok.Value;
 import org.apache.kafka.streams.TopologyTestDriver;

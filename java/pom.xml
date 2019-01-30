@@ -49,6 +49,7 @@
         <module>simplesaga-http</module>
         <module>simplesaga-saga</module>
         <module>simplesaga-serialization</module>
+        <module>simplesaga-testutils</module>
     </modules>
 
     <repositories>
@@ -298,6 +299,7 @@
                 <version>${junit.jupiter.version}</version>
                 <scope>test</scope>
             </dependency>
+
             <!-- To avoid compiler warnings about @API annotations in JUnit code -->
             <dependency>
                 <groupId>org.apiguardian</groupId>

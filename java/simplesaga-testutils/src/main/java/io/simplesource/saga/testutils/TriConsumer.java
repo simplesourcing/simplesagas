@@ -1,4 +1,4 @@
-package io.simplesource.saga.serialization.utils;
+package io.simplesource.saga.testutils;
 
 @FunctionalInterface
 public interface TriConsumer<T, U, V> {

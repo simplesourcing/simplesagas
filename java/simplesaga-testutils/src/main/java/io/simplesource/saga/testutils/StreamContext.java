@@ -1,4 +1,4 @@
-package io.simplesource.saga.serialization.utils;
+package io.simplesource.saga.testutils;
 
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.streams.StreamsBuilder;
