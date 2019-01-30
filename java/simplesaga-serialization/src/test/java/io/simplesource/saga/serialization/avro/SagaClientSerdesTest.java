@@ -7,7 +7,6 @@ import io.simplesource.saga.model.messages.SagaResponse;
 import io.simplesource.saga.model.saga.Saga;
 import io.simplesource.saga.model.saga.SagaError;
 import io.simplesource.saga.model.serdes.SagaClientSerdes;
-import io.simplesource.saga.model.serdes.SagaSerdes;
 import org.apache.avro.generic.GenericRecord;
 import org.junit.jupiter.api.Test;
 

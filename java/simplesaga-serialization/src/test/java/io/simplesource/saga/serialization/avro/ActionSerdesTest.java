@@ -10,6 +10,8 @@ import io.simplesource.saga.model.serdes.ActionSerdes;
 import io.simplesource.saga.serialization.avro.generated.test.User;
 import org.apache.kafka.common.serialization.Serde;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.UUID;
@@ -18,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 
 class ActionSerdesTest {
+    private static Logger logger = LoggerFactory.getLogger(ActionSerdesTest.class);
 
     private static String SCHEMA_URL = "http://localhost:8081/";
     private static String FAKE_TOPIC = "topic";
