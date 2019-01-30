@@ -43,7 +43,9 @@ class SagaInternalSerdesTest {
         String originalAsString = transition.toString();
         assertThat(deserialized.toString()).hasSameSizeAs(originalAsString);
 
-        return (A)deserialized;
+        A aDes = (A)deserialized;
+        assertThat(aDes).isNotNull();
+        return aDes;
     }
 
     @Test
@@ -64,7 +66,8 @@ class SagaInternalSerdesTest {
                 ActionStatus.Completed,
                 Collections.emptyList());
 
-        testTransition(original);
+        SagaStateTransition.SagaActionStatusChanged deserialized = testTransition(original);
+        assertThat(deserialized).isEqualToComparingFieldByField(original);
     }
 
     @Test
@@ -78,6 +81,9 @@ class SagaInternalSerdesTest {
                         SagaError.of(SagaError.Reason.Timeout, "timeout")));
 
         testTransition(original);
+
+        SagaStateTransition.SagaActionStatusChanged deserialized = testTransition(original);
+        assertThat(deserialized).isEqualToComparingFieldByField(original);
     }
 
     @Test
@@ -88,6 +94,9 @@ class SagaInternalSerdesTest {
                 Collections.emptyList());
 
         testTransition(original);
+
+        SagaStateTransition.SagaStatusChanged deserialized = testTransition(original);
+        assertThat(deserialized).isEqualToComparingFieldByField(original);
     }
 
     @Test
@@ -100,6 +109,9 @@ class SagaInternalSerdesTest {
                         SagaError.of(SagaError.Reason.Timeout, "timeout")));
 
         testTransition(original);
+
+        SagaStateTransition.SagaStatusChanged deserialized = testTransition(original);
+        assertThat(deserialized).isEqualToComparingFieldByField(original);
     }
 
     @Test
