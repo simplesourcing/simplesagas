@@ -127,7 +127,7 @@ object JsonSerdes {
                                                  Optional[ActionCommand[A]],
                                                  java.util.Set[UUID],
                                                  String,
-                                                 Optional[SagaError],
+                                                  java.util.List[SagaError],
                                                  SagaAction[A]]("actionId",
                                                                 "actionType",
                                                                 "command",
@@ -169,23 +169,23 @@ object JsonSerdes {
         new SagaStateTransition.SetInitialState[A](_))
 
     implicit val (ascEnc, ascDec) =
-      productCodecs4[UUID, UUID, String, Optional[SagaError], SagaStateTransition.SagaActionStatusChanged](
+      productCodecs4[UUID, UUID, String, java.util.List[SagaError], SagaStateTransition.SagaActionStatusChanged](
         "sagaId",
         "actionId",
         "actionStatus",
         "error"
       )(
-        x => (x.sagaId, x.actionId, x.actionStatus.toString, x.actionError),
+        x => (x.sagaId, x.actionId, x.actionStatus.toString, x.actionErrors),
         (sid, aid, st, e) =>
           new SagaStateTransition.SagaActionStatusChanged(sid, aid, ActionStatus.valueOf(st), e)
       )
 
     implicit val (sscEnc, sscDec) =
-      productCodecs3[UUID, String, Optional[NonEmptyList[SagaError]], SagaStateTransition.SagaStatusChanged](
+      productCodecs3[UUID, String, java.util.List[SagaError], SagaStateTransition.SagaStatusChanged](
         "sagaId",
         "sagaStatus",
         "errors"
-      )(x => (x.sagaId, x.sagaStatus.toString, x.actionErrors),
+      )(x => (x.sagaId, x.sagaStatus.toString, x.sagaErrors),
         (sid, ss, es) => new SagaStateTransition.SagaStatusChanged(sid, SagaStatus.valueOf(ss), es))
 
     implicit val (tlEnc, tlDec) =
