@@ -172,7 +172,7 @@ class SourcingStreamTests {
         CommandResponse commandResponse = new CommandResponse(commandId, Sequence.position(201L), Result.success(Sequence.position(202L)));
         acc.commandResponsePublisher().publish(new AccountId(createAccount.getId()), commandResponse);
 
-        // 
+        //
 
 //         acc.actionResponseVerifier().verifySingle((sagaId, actionResponse) -> {
 //             // it shouldn't need to do this
