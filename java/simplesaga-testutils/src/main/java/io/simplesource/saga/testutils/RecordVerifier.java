@@ -42,7 +42,9 @@ public class RecordVerifier<K, V> {
     }
 
     public V verifySingle(BiConsumer<K, V> verifier) {
-        return verifyAndReturn(verifier::accept);
+        V result = verifyAndReturn(verifier::accept);
+        assertThat(result).isNotNull();
+        return result;
     }
 
     public List<V> verifyMultiple(int count, TriConsumer<Integer, K, V> verifier) {

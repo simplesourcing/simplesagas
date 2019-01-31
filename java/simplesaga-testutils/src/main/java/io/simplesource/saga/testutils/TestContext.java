@@ -9,7 +9,7 @@ import org.apache.kafka.streams.TopologyTestDriver;
 public class TestContext {
     private final TopologyTestDriver testDriver;
 
-    public <K, V> RecordPublisher<K, V> topicPublisher(String topicName, Serde<K> keySerde, Serde<V> valueSerde) {
+    public <K, V> RecordPublisher<K, V> publisher(String topicName, Serde<K> keySerde, Serde<V> valueSerde) {
         return new TestRecordPublisher<>(testDriver, keySerde, valueSerde, topicName);
     }
 
