@@ -7,7 +7,7 @@ import io.simplesource.saga.model.saga.SagaError;
 import io.simplesource.saga.model.saga.SagaStatus;
 import io.simplesource.saga.model.serdes.SagaSerdes;
 import io.simplesource.saga.shared.utils.Lists;
-import org.apache.avro.generic.GenericRecord;
+import org.apache.avro.specific.SpecificRecord;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
@@ -22,12 +22,12 @@ class SagaInternalSerdesTest {
 
     @Test
     void sagaStateTest() {
-        SagaSerdes<GenericRecord> serdes = AvroSerdes.sagaSerdes(SCHEMA_URL, true);
+        SagaSerdes<SpecificRecord> serdes = AvroSerdes.sagaSerdes(SCHEMA_URL, true);
 
-        Saga<GenericRecord> original = SagaTestUtils.getTestSaga();
+        Saga<SpecificRecord> original = SagaTestUtils.getTestSaga();
 
         byte[] serialized = serdes.state().serializer().serialize(FAKE_TOPIC, original);
-        Saga<GenericRecord> deserialized = serdes.state().deserializer().deserialize(FAKE_TOPIC, serialized);
+        Saga<SpecificRecord> deserialized = serdes.state().deserializer().deserialize(FAKE_TOPIC, serialized);
 
         String originalAsString = original.toString();
         assertThat(deserialized.toString()).hasSameSizeAs(originalAsString);
@@ -35,7 +35,7 @@ class SagaInternalSerdesTest {
     }
 
     <A extends SagaStateTransition> A testTransition(SagaStateTransition transition) {
-        SagaSerdes<GenericRecord> serdes = AvroSerdes.sagaSerdes(SCHEMA_URL, true);
+        SagaSerdes<SpecificRecord> serdes = AvroSerdes.sagaSerdes(SCHEMA_URL, true);
 
         byte[] serialized = serdes.transition().serializer().serialize(FAKE_TOPIC, transition);
         SagaStateTransition deserialized = serdes.transition().deserializer().deserialize(FAKE_TOPIC, serialized);
@@ -50,8 +50,8 @@ class SagaInternalSerdesTest {
 
     @Test
     void sagaTransitionInitialTest() {
-        Saga<GenericRecord> testSaga = SagaTestUtils.getTestSaga();
-        SagaStateTransition.SetInitialState<GenericRecord> original = new SagaStateTransition.SetInitialState<>(testSaga);
+        Saga<SpecificRecord> testSaga = SagaTestUtils.getTestSaga();
+        SagaStateTransition.SetInitialState<SpecificRecord> original = new SagaStateTransition.SetInitialState<>(testSaga);
 
         SagaStateTransition.SetInitialState deserialized = testTransition(original);
         SagaTestUtils.validataSaga(deserialized.sagaState, original.sagaState);
