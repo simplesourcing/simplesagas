@@ -8,18 +8,20 @@ import io.simplesource.saga.model.serdes.SagaSerdes;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.kafka.common.serialization.Serde;
 
-
+/**
+ * Factory methods for Avro Serdes.
+ */
 public class AvroSerdes {
     public static String PAYLOAD_TOPIC_SUFFIX = "-payload";
 
-    static <A> ActionSerdes<A> actionSerdes(
+    public static <A> ActionSerdes<A> actionSerdes(
             final Serde<A> payloadSerde,
             final String schemaRegistryUrl,
             final boolean useMockSchemaRegistry) {
         return new AvroActionSerdes<>(payloadSerde, schemaRegistryUrl, useMockSchemaRegistry);
     }
 
-    static <A extends GenericRecord> ActionSerdes<A> actionSerdes(
+    public static <A extends GenericRecord> ActionSerdes<A> actionSerdes(
             final String schemaRegistryUrl,
             final boolean useMockSchemaRegistry) {
         SchemaRegistryClient regClient = useMockSchemaRegistry ? new MockSchemaRegistryClient() : null;
@@ -29,14 +31,14 @@ public class AvroSerdes {
                 useMockSchemaRegistry);
     }
 
-    static <A> SagaClientSerdes<A> sagaClientSerdes(
+    public static <A> SagaClientSerdes<A> sagaClientSerdes(
             final Serde<A> payloadSerde,
             final String schemaRegistryUrl,
             final boolean useMockSchemaRegistry) {
         return new AvroSagaClientSerdes<>(payloadSerde, schemaRegistryUrl, useMockSchemaRegistry);
     }
 
-    static <A extends GenericRecord> SagaClientSerdes<A> sagaClientSerdes(
+    public static <A extends GenericRecord> SagaClientSerdes<A> sagaClientSerdes(
             final String schemaRegistryUrl,
             final boolean useMockSchemaRegistry) {
         SchemaRegistryClient regClient = useMockSchemaRegistry ? new MockSchemaRegistryClient() : null;
@@ -46,16 +48,14 @@ public class AvroSerdes {
                 useMockSchemaRegistry);
     }
 
-    static <A extends GenericRecord> SagaSerdes<A> sagaSerdes(
+    public static <A extends GenericRecord> SagaSerdes<A> sagaSerdes(
             final Serde<A> payloadSerde,
             final String schemaRegistryUrl,
             final boolean useMockSchemaRegistry) {
-        SchemaRegistryClient regClient = useMockSchemaRegistry ? new MockSchemaRegistryClient() : null;
-        AvroSagaSerdes<A> serdes = new AvroSagaSerdes<>(payloadSerde, schemaRegistryUrl, useMockSchemaRegistry);
-        return serdes;
+        return new AvroSagaSerdes<>(payloadSerde, schemaRegistryUrl, useMockSchemaRegistry);
     }
 
-    static <A extends GenericRecord> SagaSerdes<A> sagaSerdes(
+    public static <A extends GenericRecord> SagaSerdes<A> sagaSerdes(
             final String schemaRegistryUrl,
             final boolean useMockSchemaRegistry) {
         SchemaRegistryClient regClient = useMockSchemaRegistry ? new MockSchemaRegistryClient() : null;
