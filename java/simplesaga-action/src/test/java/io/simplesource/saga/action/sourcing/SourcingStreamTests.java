@@ -172,25 +172,20 @@ class SourcingStreamTests {
         CommandResponse commandResponse = new CommandResponse(commandId, Sequence.position(201L), Result.success(Sequence.position(202L)));
         acc.commandResponsePublisher().publish(new AccountId(createAccount.getId()), commandResponse);
 
-        //
+        acc.actionResponseVerifier().verifySingle((sagaId, actionResponse) -> {});
+        acc.actionResponseVerifier().verifyNoRecords();
 
-//         acc.actionResponseVerifier().verifySingle((sagaId, actionResponse) -> {
-//             // it shouldn't need to do this
-//             acc.actionResponsePublisher.publish(sagaId, actionResponse);
-//         });
-//         acc.actionResponseVerifier().verifyNoRecords();
+        acc.actionRequestPublisher().publish(actionRequest.sagaId, actionRequest);
+        // does not generate a command request
+        acc.commandRequestVerifier().verifyNoRecords();
+        // regenerates an action response
 
-//        acc.actionRequestPublisher().publish(actionRequest.sagaId, actionRequest);
-//        // does not generate a command request
-//        acc.commandRequestVerifier().verifyNoRecords();
-//        // regenerates an action response
-//
-//        acc.actionResponseVerifier().verifySingle((sagaId, actionResponse) -> {
-//            assertThat(sagaId).isEqualTo(actionRequest.sagaId);
-//            assertThat(actionResponse.actionId).isEqualTo(actionRequest.actionId);
-//            assertThat(actionResponse.result.isSuccess()).isEqualTo(true);
-//        });
-//        acc.actionResponseVerifier().verifyNoRecords();
+        acc.actionResponseVerifier().verifySingle((sagaId, actionResponse) -> {
+            assertThat(sagaId).isEqualTo(actionRequest.sagaId);
+            assertThat(actionResponse.actionId).isEqualTo(actionRequest.actionId);
+            assertThat(actionResponse.result.isSuccess()).isEqualTo(true);
+        });
+        acc.actionResponseVerifier().verifyNoRecords();
 
     }
 }
