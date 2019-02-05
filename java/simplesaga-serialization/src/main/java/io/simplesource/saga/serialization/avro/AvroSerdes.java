@@ -12,8 +12,6 @@ import org.apache.kafka.common.serialization.Serde;
  * Factory methods for Avro Serdes.
  */
 public class AvroSerdes {
-    public static String PAYLOAD_TOPIC_SUFFIX = "-payload";
-
     public static <A> ActionSerdes<A> actionSerdes(
             final Serde<A> payloadSerde,
             final String schemaRegistryUrl,

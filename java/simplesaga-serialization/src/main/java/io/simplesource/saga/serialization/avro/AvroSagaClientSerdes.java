@@ -88,8 +88,8 @@ public class AvroSagaClientSerdes<A> implements SagaClientSerdes<A> {
             SagaAction<A> action = new SagaAction<>(
                     actionId,
                     aa.getActionType(),
-                    SagaSerdeUtils.actionCommandFromAvro(payloadSerde, topic + AvroSerdes.PAYLOAD_TOPIC_SUFFIX, aa.getActionCommand()),
-                    Optional.ofNullable(SagaSerdeUtils.actionCommandFromAvro(payloadSerde, topic + AvroSerdes.PAYLOAD_TOPIC_SUFFIX, aa.getUndoCommand())),
+                    SagaSerdeUtils.actionCommandFromAvro(payloadSerde, topic, aa.getActionType(), aa.getActionCommand()),
+                    Optional.ofNullable(SagaSerdeUtils.actionCommandFromAvro(payloadSerde, topic, aa.getActionType() + "-undo", aa.getUndoCommand())),
                     aa.getDependencies().stream().map(UUID::fromString).collect(Collectors.toSet()),
                     ActionStatus.valueOf(aa.getActionStatus()),
                     SagaSerdeUtils.sagaErrorListFromAvro(aa.getActionErrors()));
@@ -113,11 +113,13 @@ public class AvroSagaClientSerdes<A> implements SagaClientSerdes<A> {
                     .setActionErrors(SagaSerdeUtils.sagaErrorListToAvro(act.error))
                     .setActionCommand(SagaSerdeUtils.actionCommandToAvro(
                             payloadSerde,
-                            topic + AvroSerdes.PAYLOAD_TOPIC_SUFFIX,
+                            topic,
+                            act.actionType,
                             act.command))
                     .setUndoCommand(act.undoCommand.map(uc -> SagaSerdeUtils.actionCommandToAvro(
                             payloadSerde,
-                            topic + AvroSerdes.PAYLOAD_TOPIC_SUFFIX,
+                            topic,
+                            act.actionType + "-undo",
                             uc)).orElse(null))
                     .setActionStatus(act.status.toString())
                     .setActionType(act.actionType)

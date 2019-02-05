@@ -2,27 +2,23 @@ package io.simplesource.saga.serialization.avro;
 
 import io.simplesource.data.NonEmptyList;
 import io.simplesource.data.Result;
-import io.simplesource.data.Sequence;
 import io.simplesource.saga.model.action.ActionCommand;
-import io.simplesource.saga.model.action.ActionStatus;
-import io.simplesource.saga.model.action.SagaAction;
-import io.simplesource.saga.model.saga.Saga;
 import io.simplesource.saga.model.saga.SagaError;
-import io.simplesource.saga.model.saga.SagaStatus;
 import io.simplesource.saga.serialization.avro.generated.AvroActionCommand;
-import io.simplesource.saga.serialization.avro.generated.AvroSaga;
-import io.simplesource.saga.serialization.avro.generated.AvroSagaAction;
 import io.simplesource.saga.serialization.avro.generated.AvroSagaError;
 import org.apache.avro.generic.GenericArray;
 import org.apache.kafka.common.serialization.Serde;
 
 import java.nio.ByteBuffer;
-import java.util.*;
+import java.util.List;
+import java.util.Objects;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class SagaSerdeUtils {
+    public static String PAYLOAD_TOPIC_SUFFIX = "-payload";
 
     static <R, T> Result<SagaError, T> sagaResultFromAvro(Object aRes, Function<R, T> successTransformer) {
         // TODO: remove the casting
@@ -81,8 +77,8 @@ public class SagaSerdeUtils {
                 .collect(Collectors.toList());
     }
 
-    static <A> AvroActionCommand actionCommandToAvro(Serde<A> payloadSerde, String payloadTopic, ActionCommand<A> ac) {
-        byte[] serializedPayload = payloadSerde.serializer().serialize(payloadTopic, ac.command);
+    static <A> AvroActionCommand actionCommandToAvro(Serde<A> payloadSerde, String payloadTopic, String actionType, ActionCommand<A> ac) {
+        byte[] serializedPayload = payloadSerde.serializer().serialize(getSubjectName(payloadTopic, actionType), ac.command);
         return AvroActionCommand
                 .newBuilder()
                 .setCommandId(ac.commandId.toString())
@@ -90,9 +86,13 @@ public class SagaSerdeUtils {
                 .build();
     }
 
-    static <A> ActionCommand<A> actionCommandFromAvro(Serde<A> payloadSerde, String payloadTopic, AvroActionCommand ac) {
+    static <A> ActionCommand<A> actionCommandFromAvro(Serde<A> payloadSerde, String payloadTopic, String actionType, AvroActionCommand ac) {
         if (ac == null) return null;
-        A command = payloadSerde.deserializer().deserialize(payloadTopic, ac.getCommand().array());
+        A command = payloadSerde.deserializer().deserialize(getSubjectName(payloadTopic, actionType), ac.getCommand().array());
         return new ActionCommand<>(UUID.fromString(ac.getCommandId()), command);
+    }
+
+    static String getSubjectName(String topic, String actionType) {
+        return topic + "-" + actionType + PAYLOAD_TOPIC_SUFFIX;
     }
 }

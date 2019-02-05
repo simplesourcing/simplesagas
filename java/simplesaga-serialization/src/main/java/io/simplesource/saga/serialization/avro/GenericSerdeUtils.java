@@ -11,13 +11,13 @@ import java.util.Map;
 
 public class GenericSerdeUtils {
 
-    public static <T extends GenericRecord> Serde<T> genericAvroSerde(String hostName, Boolean isSerdeForRecordKeys) {
-        return genericAvroSerde(hostName, isSerdeForRecordKeys, null);
+    public static <T extends GenericRecord> Serde<T> genericAvroSerde(String schemaRegistryUrl, Boolean isSerdeForRecordKeys) {
+        return genericAvroSerde(schemaRegistryUrl, isSerdeForRecordKeys, null);
     }
 
-    public static <T extends GenericRecord> Serde<T> genericAvroSerde(String hostName, Boolean isSerdeForRecordKeys, SchemaRegistryClient registryClient) {
+    public static <T extends GenericRecord> Serde<T> genericAvroSerde(String schemaRegistryUrl, Boolean isSerdeForRecordKeys, SchemaRegistryClient registryClient) {
         final Map<String, Object> configMap = new HashMap<>();
-        configMap.put(AbstractKafkaAvroSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG, "http://"+hostName+":8081");
+        configMap.put(AbstractKafkaAvroSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG, schemaRegistryUrl);
         final Serde<T> serde = (Serde<T>)(registryClient != null ? new GenericAvroSerde(registryClient) : new GenericAvroSerde());
         serde.configure(configMap, isSerdeForRecordKeys);
         return serde;

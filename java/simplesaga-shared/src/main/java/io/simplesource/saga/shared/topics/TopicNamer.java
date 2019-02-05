@@ -3,8 +3,6 @@ package io.simplesource.saga.shared.topics;
 import io.simplesource.kafka.api.ResourceNamingStrategy;
 import io.simplesource.kafka.util.PrefixResourceNamingStrategy;
 
-import java.util.List;
-
 public interface TopicNamer {
     String apply(String topicType);
 
