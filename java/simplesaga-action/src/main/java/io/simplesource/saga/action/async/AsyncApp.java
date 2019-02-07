@@ -1,18 +1,9 @@
 package io.simplesource.saga.action.async;
 
-import java.util.*;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-
 import io.simplesource.saga.action.common.ActionConsumer;
 import io.simplesource.saga.model.messages.ActionRequest;
 import io.simplesource.saga.model.messages.ActionResponse;
 import io.simplesource.saga.model.serdes.ActionSerdes;
-import io.simplesource.saga.model.specs.ActionProcessorSpec;
 import io.simplesource.saga.shared.topics.TopicConfig;
 import io.simplesource.saga.shared.topics.TopicConfigBuilder;
 import io.simplesource.saga.shared.topics.TopicCreation;
@@ -27,6 +18,14 @@ import org.apache.kafka.streams.kstream.KStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+
 public final class AsyncApp<A> {
 
     private final Logger logger = LoggerFactory.getLogger(AsyncApp.class);
@@ -35,7 +34,7 @@ public final class AsyncApp<A> {
 
     private final List<TopicCreation> expectedTopics;
     private final TopicConfig actionTopicConfig;
-    private final ActionProcessorSpec<A> actionSpec;
+    private final ActionSerdes<A> actionSerdes;
     private ScheduledExecutorService executor;
 
     @Value
@@ -55,14 +54,14 @@ public final class AsyncApp<A> {
         expectedTopicList.add(TopicTypes.ActionTopic.requestUnprocessed);
 
         actionTopicConfig = TopicConfigBuilder.buildTopics(expectedTopicList, new HashMap<>(), new HashMap<>(), topicBuildFn);
-        actionSpec = new ActionProcessorSpec<A>(actionSerdes);
+        this.actionSerdes = actionSerdes;
         expectedTopics = TopicCreation.allTopics(actionTopicConfig);
 
     }
 
     public <I, K, O, R> AsyncApp<A> addAsync(AsyncSpec<A, I, K, O, R> spec) {
         AsyncTransformer<A> transformer = input -> {
-            AsyncContext<A, I, K, O, R> ctx = new AsyncContext<>(actionSpec, actionTopicConfig.namer, spec, input.executor);
+            AsyncContext<A, I, K, O, R> ctx = new AsyncContext<>(actionSerdes, actionTopicConfig.namer, spec, input.executor);
             // join the action request with corresponding prior command responses
             AsyncStream.addSubTopology(ctx, input.actionRequests, input.actionResponses);
 
@@ -97,9 +96,9 @@ public final class AsyncApp<A> {
 
         StreamsBuilder builder = new StreamsBuilder();
         KStream<UUID, ActionRequest<A>> actionRequests =
-                ActionConsumer.actionRequestStream(actionSpec, actionTopicConfig.namer, builder);
+                ActionConsumer.actionRequestStream(actionSerdes, actionTopicConfig.namer, builder);
         KStream<UUID, ActionResponse> actionResponses =
-                ActionConsumer.actionResponseStream(actionSpec, actionTopicConfig.namer, builder);
+                ActionConsumer.actionResponseStream(actionSerdes, actionTopicConfig.namer, builder);
 
         ScheduledExecutorService usedExecutor = executor != null ? executor : Executors.newScheduledThreadPool(1);
         AsyncTransformerInput<A> commandInput = new AsyncTransformerInput<>(builder, actionRequests, actionResponses, usedExecutor);

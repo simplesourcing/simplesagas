@@ -23,15 +23,14 @@ final public class AsyncStream {
                                     KStream<UUID, ActionRequest<A>> actionRequest,
                                     KStream<UUID, ActionResponse> actionResponse) {
     // join the action request with corresponding prior command responses
-    IdempotentStream.IdempotentAction<A> idempotentAction = IdempotentStream.getActionRequestsWithResponse(ctx.actionSpec,
+    IdempotentStream.IdempotentAction<A> idempotentAction = IdempotentStream.getActionRequestsWithResponse(ctx.actionSerdes,
             actionRequest,
             actionResponse,
             ctx.asyncSpec.actionType);
 
     // publish to output topics
-    ActionProducer.actionResponse(ctx.actionSpec, ctx.actionTopicNamer, idempotentAction.priorResponses);
-    ActionProducer.actionRequest(ctx.actionSpec,
-                                 ctx.actionTopicNamer,
+    ActionProducer.actionResponse(ctx.actionSerdes, ctx.actionTopicNamer, idempotentAction.processedResponses);
+    ActionProducer.actionRequest(ctx.actionSerdes, ctx.actionTopicNamer,
                                  idempotentAction.unprocessedRequests,
                                  true);
   }

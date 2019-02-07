@@ -1,11 +1,10 @@
 package io.simplesource.saga.action.async;
-import io.simplesource.saga.model.specs.ActionProcessorSpec;
+
+import io.simplesource.saga.model.serdes.ActionSerdes;
 import io.simplesource.saga.shared.topics.TopicNamer;
 import lombok.Value;
 
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
-
 
 /**
   * @param <A> - common representation form for all action commands (typically Json / or GenericRecord for Avro)
@@ -16,7 +15,7 @@ import java.util.concurrent.ScheduledExecutorService;
   */
 @Value
 public final class AsyncContext<A, I, K, O, R> {
-    public final ActionProcessorSpec<A> actionSpec;
+    public final ActionSerdes<A> actionSerdes;
     public final TopicNamer actionTopicNamer;
     public final AsyncSpec<A, I, K, O, R> asyncSpec;
     public final ScheduledExecutorService executor;

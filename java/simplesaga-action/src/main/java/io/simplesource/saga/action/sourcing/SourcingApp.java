@@ -6,7 +6,6 @@ import io.simplesource.saga.action.common.ActionConsumer;
 import io.simplesource.saga.model.messages.ActionRequest;
 import io.simplesource.saga.model.messages.ActionResponse;
 import io.simplesource.saga.model.serdes.ActionSerdes;
-import io.simplesource.saga.model.specs.ActionProcessorSpec;
 import io.simplesource.saga.shared.topics.TopicConfig;
 import io.simplesource.saga.shared.topics.TopicConfigBuilder;
 import io.simplesource.saga.shared.topics.TopicCreation;
@@ -25,9 +24,11 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 public final class SourcingApp<A> {
+
+    private final Logger logger = LoggerFactory.getLogger(SourcingApp.class);
+
     private final TopicConfig actionTopicConfig;
-    private final ActionProcessorSpec<A> actionSpec;
-    private final Logger logger;
+    private final ActionSerdes<A> actionSerdes;
 
     private final List<Command<A>> commands = new ArrayList<>();
     private final List<TopicCreation> topicCreations;
@@ -35,32 +36,32 @@ public final class SourcingApp<A> {
     @Value
     private static final class CommandInput<A> {
         final StreamsBuilder builder;
-        final KStream<UUID, ActionRequest<A>> actionRequests;
-        final KStream<UUID, ActionResponse> actionResponses;
+        final KStream<UUID, ActionRequest<A>> actionRequestKStream;
+        final KStream<UUID, ActionResponse> actionResponseKStream;
     }
 
     interface Command<A> {
         void applyCommandInput(CommandInput<A> input);
     }
 
-    public SourcingApp(ActionSerdes<A> actionSerdes , TopicConfigBuilder.BuildSteps topicBuildFn) {
+    public SourcingApp(ActionSerdes<A> actionSerdes, TopicConfigBuilder.BuildSteps topicBuildFn) {
         actionTopicConfig =
                 TopicConfigBuilder.buildTopics(TopicTypes.ActionTopic.all, new HashMap<>(), new HashMap<>(), topicBuildFn);
-        actionSpec = new ActionProcessorSpec<>(actionSerdes);
-        logger = LoggerFactory.getLogger(SourcingApp.class);
+        this.actionSerdes = actionSerdes;
         topicCreations = TopicCreation.allTopics(actionTopicConfig);
     }
 
-    public <I, K, C>  SourcingApp<A> addCommand(CommandSpec<A, I, K, C> cSpec, TopicConfigBuilder.BuildSteps topicBuildSteps) {
+    public <K, C> SourcingApp<A> addCommand(CommandSpec<A, K, C> cSpec, TopicConfigBuilder.BuildSteps topicBuildSteps) {
         TopicConfig commandTopicConfig = TopicConfigBuilder.buildTopics(TopicTypes.CommandTopic.all, new HashMap<>(), new HashMap<>(), topicBuildSteps);
-        SourcingContext<A, I, K, C> actionContext = new SourcingContext<>(actionSpec, cSpec, actionTopicConfig.namer, commandTopicConfig.namer);
+        ActionContext<A> actionContext = new ActionContext<>(actionSerdes, actionTopicConfig.namer);
 
         Command<A> command = input -> {
-            KStream<K, CommandResponse> commandResponses = CommandConsumer.commandResponseStream(cSpec, commandTopicConfig.namer, input.builder);
-      SourcingStream.addSubTopology(actionContext,
-                                    input.actionRequests,
-                                    input.actionResponses,
-                                    commandResponses);
+            KStream<K, CommandResponse> commandResponseKStream = CommandResponseConsumer.commandResponseStream(cSpec.commandSerdes(), commandTopicConfig.namer, input.builder);
+            SourcingStream.addSubTopology(actionContext,
+                    cSpec,
+                    input.actionRequestKStream,
+                    input.actionResponseKStream,
+                    commandResponseKStream);
         };
 
         commands.add(command);
@@ -74,29 +75,29 @@ public final class SourcingApp<A> {
 
         try {
             StreamAppUtils
-              .addMissingTopics(AdminClient.create(config), topicCreations)
-              .all()
-              .get(30L, TimeUnit.SECONDS);
+                    .addMissingTopics(AdminClient.create(config), topicCreations)
+                    .all()
+                    .get(30L, TimeUnit.SECONDS);
         } catch (Exception e) {
             throw new RuntimeException("Unable to create all the topics");
         }
 
         StreamsBuilder builder = new StreamsBuilder();
 
-        KStream<UUID, ActionRequest<A>> actionRequests  =
-      ActionConsumer.actionRequestStream(actionSpec, actionTopicConfig.namer, builder);
-        KStream<UUID, ActionResponse> actionResponses  =
-      ActionConsumer.actionResponseStream(actionSpec, actionTopicConfig.namer, builder);
+        KStream<UUID, ActionRequest<A>> actionRequests =
+                ActionConsumer.actionRequestStream(actionSerdes, actionTopicConfig.namer, builder);
+        KStream<UUID, ActionResponse> actionResponses =
+                ActionConsumer.actionResponseStream(actionSerdes, actionTopicConfig.namer, builder);
 
-    CommandInput<A> commandInput = new CommandInput<>(builder, actionRequests, actionResponses);
+        CommandInput<A> commandInput = new CommandInput<>(builder, actionRequests, actionResponses);
 
 
-    for (Command<A> c: commands) {
-        c.applyCommandInput(commandInput);
+        for (Command<A> c : commands) {
+            c.applyCommandInput(commandInput);
+        }
+
+        Topology topology = builder.build();
+        logger.info("Topology description {}", topology.describe());
+        StreamAppUtils.runStreamApp(config, topology);
     }
-
-    Topology topology = builder.build();
-    logger.info("Topology description {}", topology.describe());
-    StreamAppUtils.runStreamApp(config, topology);
-  }
 }

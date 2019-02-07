@@ -5,7 +5,6 @@ import io.simplesource.kafka.internal.util.Tuple2;
 import io.simplesource.saga.model.messages.ActionRequest;
 import io.simplesource.saga.model.messages.ActionResponse;
 import io.simplesource.saga.model.saga.SagaError;
-import io.simplesource.saga.model.specs.ActionProcessorSpec;
 import io.simplesource.saga.shared.topics.TopicTypes;
 import lombok.Value;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -29,12 +28,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import static io.simplesource.saga.action.async.AsyncTransform.*;
+import static io.simplesource.saga.action.async.AsyncTransform.useTransactions;
 
 class ConsumerRunner<A, I, K, O, R> implements Runnable {
 
     private final AsyncSpec<A, I, K, O, R> asyncSpec;
-    private final ActionProcessorSpec<A> actionSpec;
     private final AtomicBoolean closed;
     private Optional<KafkaConsumer<UUID, ActionRequest<A>>> consumer = Optional.empty();
     private final Logger logger = LoggerFactory.getLogger(ConsumerRunner.class);
@@ -48,7 +46,6 @@ class ConsumerRunner<A, I, K, O, R> implements Runnable {
             Properties consumerConfig,
             Properties producerProps) {
         asyncSpec = asyncContext.asyncSpec;
-        actionSpec = asyncContext.actionSpec;
         closed = new AtomicBoolean(false);
         this.asyncContext = asyncContext;
         this.consumerConfig = consumerConfig;
@@ -66,8 +63,8 @@ class ConsumerRunner<A, I, K, O, R> implements Runnable {
             producer.initTransactions();
 
         KafkaConsumer<UUID, ActionRequest<A>> consumer = new KafkaConsumer<>(consumerConfig,
-                actionSpec.serdes.uuid().deserializer(),
-                actionSpec.serdes.request().deserializer());
+                asyncContext.actionSerdes().uuid().deserializer(),
+                asyncContext.actionSerdes().request().deserializer());
         consumer.subscribe(Collections.singletonList(asyncContext.actionTopicNamer.apply(TopicTypes.ActionTopic.requestUnprocessed)));
 
         this.consumer = Optional.of(consumer);
@@ -142,7 +139,7 @@ class ConsumerRunner<A, I, K, O, R> implements Runnable {
                 actionResponse);
 
         ProducerRecord<byte[], byte[]> byteRecord =
-                AsyncTransform.toBytes(responseRecord, actionSpec.serdes.uuid(), actionSpec.serdes.response());
+                AsyncTransform.toBytes(responseRecord, asyncContext.actionSerdes().uuid(), asyncContext.actionSerdes().response());
         producer.send(byteRecord);
     }
 
