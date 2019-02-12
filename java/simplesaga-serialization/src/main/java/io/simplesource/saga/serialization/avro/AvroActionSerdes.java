@@ -10,7 +10,6 @@ import io.simplesource.saga.serialization.avro.generated.*;
 import io.simplesource.saga.serialization.utils.SerdeUtils;
 import org.apache.kafka.common.serialization.Serde;
 
-import java.nio.ByteBuffer;
 import java.util.UUID;
 
 public class AvroActionSerdes<A> implements ActionSerdes<A> {
@@ -46,14 +45,13 @@ public class AvroActionSerdes<A> implements ActionSerdes<A> {
                         .setActionType(r.actionType())
                         .setActionCommand(SagaSerdeUtils.actionCommandToAvro(
                                 payloadSerde,
-                                topic + AvroSerdes.PAYLOAD_TOPIC_SUFFIX,
+                                topic,
+                                r.actionType(),
                                 r.actionCommand))
                         .build(),
                 (topic, ar) -> {
                     AvroActionCommand aac = ar.getActionCommand();
-                    ByteBuffer spf = aac.getCommand();
-                    A payload = payloadSerde.deserializer().deserialize(topic + AvroSerdes.PAYLOAD_TOPIC_SUFFIX, spf.array());
-                    ActionCommand<A> ac = new ActionCommand<>(UUID.fromString(aac.getCommandId()), payload);
+                    ActionCommand<A> ac = SagaSerdeUtils.actionCommandFromAvro(payloadSerde, topic, ar.getActionType(), aac);
                     return ActionRequest.<A>builder()
                             .sagaId(UUID.fromString(ar.getSagaId()))
                             .actionId(UUID.fromString(ar.getActionId()))
