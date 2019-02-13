@@ -1,5 +1,5 @@
 @namespace("io.simplesource.saga.serialization.avro.generated.test")
-protocol TestSchemas {
+protocol Schemas {
   record User {
     string firstName;
     string lastName;

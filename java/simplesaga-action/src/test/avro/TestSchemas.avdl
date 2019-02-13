@@ -1,0 +1,31 @@
+@namespace("io.simplesource.saga.avro.avro.generated.test")
+protocol Schemas {
+  record CreateAccount {
+    string id;
+    string userName;
+  }
+
+  record AddFunds {
+    string id;
+    double amount;
+  }
+
+  record TransferFunds {
+    string fromId;
+    string toId;
+    double amount;
+  }
+
+  record AccountId {
+    string id;
+  }
+
+  record AccountCommand {
+    AccountId id;
+    union {
+      CreateAccount,
+      AddFunds,
+      TransferFunds
+    } command;
+  }
+}

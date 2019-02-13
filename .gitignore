@@ -168,4 +168,6 @@ Temporary Items
 .apdisk
 
 *.sublime-*
+.jqwik-database
+
 

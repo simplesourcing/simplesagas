@@ -1,3 +1,4 @@
+
 package io.simplesource.saga.serialization.avro;
 
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
@@ -23,4 +24,3 @@ public class GenericSerdeUtils {
         return serde;
     }
 }
-

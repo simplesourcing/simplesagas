@@ -34,14 +34,12 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.version>8</java.version>
-        <simplesource.version>0.2.2</simplesource.version>
+        <simplesource.version>0.2.3-SNAPSHOT</simplesource.version>
         <kafka.version>2.0.0</kafka.version>
         <avro.version>1.8.2</avro.version>
         <confluent.version>5.0.0</confluent.version>
-        <junit.version>4.12</junit.version>
-        <junit.jupiter.version>5.0.2</junit.jupiter.version>
+        <junit.jupiter.version>5.3.2</junit.jupiter.version>
         <junit.platform.version>1.0.2</junit.platform.version>
-        <quicktheories.version>0.25</quicktheories.version>
     </properties>
 
     <modules>
@@ -51,6 +49,7 @@
         <module>simplesaga-http</module>
         <module>simplesaga-saga</module>
         <module>simplesaga-serialization</module>
+        <module>simplesaga-testutils</module>
     </modules>
 
     <repositories>
@@ -131,15 +130,9 @@
                         <include>**/*Tests.java</include>
                         <include>**/*TestCase.java</include>
                     </includes>
-                    <useSystemClassLoader>false</useSystemClassLoader>
+                    <!--useSystemClassLoader>false</useSystemClassLoader-->
                     <properties>
-                        <!-- <includeTags>fast</includeTags> -->
                         <excludeTags>slow</excludeTags>
-                        <!--
-                        <configurationParameters>
-                            junit.jupiter.conditions.deactivate = *
-                        </configurationParameters>
-                        -->
                     </properties>
                 </configuration>
                 <dependencies>
@@ -147,6 +140,11 @@
                         <groupId>org.junit.platform</groupId>
                         <artifactId>junit-platform-surefire-provider</artifactId>
                         <version>${junit.platform.version}</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.junit.jupiter</groupId>
+                        <artifactId>junit-jupiter-engine</artifactId>
+                        <version>5.3.2</version>
                     </dependency>
                 </dependencies>
             </plugin>
@@ -287,9 +285,13 @@
                 <artifactId>simplesaga-saga</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <dependency>
+                <groupId>io.simplesource</groupId>
+                <artifactId>simplesaga-testutils</artifactId>
+                <version>${project.version}</version>
+            </dependency>
 
             <!-- Test -->
-
             <dependency>
                 <groupId>org.junit.jupiter</groupId>
                 <artifactId>junit-jupiter-api</artifactId>
@@ -302,6 +304,7 @@
                 <version>${junit.jupiter.version}</version>
                 <scope>test</scope>
             </dependency>
+
             <!-- To avoid compiler warnings about @API annotations in JUnit code -->
             <dependency>
                 <groupId>org.apiguardian</groupId>
@@ -315,20 +318,24 @@
                 <version>${junit.platform.version}</version>
                 <scope>test</scope>
             </dependency>
-            <!-- Old JUnit used by Kafka Streams KStreamTestDriver -->
-            <dependency>
-                <groupId>junit</groupId>
-                <artifactId>junit</artifactId>
-                <version>${junit.version}</version>
-                <scope>test</scope>
-            </dependency>
             <dependency>
                 <groupId>org.assertj</groupId>
-                <artifactId>assertj-core-java8</artifactId>
-                <version>1.0.0m1</version>
+                <artifactId>assertj-core</artifactId>
+                <version>3.11.1</version>
                 <scope>test</scope>
             </dependency>
-
+            <dependency>
+                <groupId>net.jqwik</groupId>
+                <artifactId>jqwik</artifactId>
+                <version>0.9.3</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-classic</artifactId>
+                <version>1.2.3</version>
+                <scope>test</scope>
+            </dependency>
 
         </dependencies>
     </dependencyManagement>

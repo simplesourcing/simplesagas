@@ -38,15 +38,18 @@ public class IdempotentStream {
 
         KStream<UUID, Tuple2<ActionRequest<A>, ActionResponse>> actionRequestWithResponse = actionRequests
                 .filter((k, aReq) -> aReq.actionType.equals(actionType))
+                .selectKey((k, v) -> v.actionCommand.commandId)
                 .leftJoin(actionByCommandId,
-                        Tuple2::of,
-                        Joined.with(aSpec.serdes.uuid(), aSpec.serdes.request(), aSpec.serdes.response()));
+                        (k, v) -> Tuple2.of(k, v),
+                        Joined.with(aSpec.serdes.uuid(), aSpec.serdes.request(), aSpec.serdes.response()))
+                .selectKey(((k, v) -> v.v1().sagaId));
 
         // split between unprocessed and prior-processed actions
         KStream<UUID, Tuple2<ActionRequest<A>, ActionResponse>>[] branches = actionRequestWithResponse
                 .branch((k, v) -> v.v2() != null, (k, v) -> v.v2() == null);
 
-        KStream<UUID, ActionResponse> processedResponses = branches[0].mapValues((k, v) -> v.v2());
+        // TODO: remove the processedResponses stream, as the handleCommandResponse already returns an action response if a command response has already been published - suppressed for now
+        KStream<UUID, ActionResponse> processedResponses = branches[0].mapValues((k, v) -> v.v2()).filter((k, v) -> false);
         KStream<UUID, ActionRequest<A>> unprocessedRequests = branches[1].mapValues((k, v) -> v.v1());
         return new IdempotentAction<>(processedResponses, unprocessedRequests);
     }

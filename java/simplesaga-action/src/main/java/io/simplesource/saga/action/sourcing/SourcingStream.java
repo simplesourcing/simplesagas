@@ -146,7 +146,7 @@ public class SourcingStream {
                                 JoinWindows.of(timeOutMillis).until(timeOutMillis * 2 + 1),
                                 Joined.with(ctx.aSerdes().uuid(), ctx.aSerdes().request(), ctx.cSerdes().commandResponse())
                         )
-                        .peek(logValues("handleCommandResponse"));
+                        .peek(logValues("joinActionRequestAndCommandResponse"));
 
 
         // turn the pair into an ActionResponse

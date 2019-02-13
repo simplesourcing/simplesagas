@@ -19,6 +19,7 @@ public class TopicConfigBuilder {
     private Function<String, TopicSpec> defaultSpec = topicType -> defaultMap(1, 1, 7, topicType);
     private TopicNamer topicNamer = name -> name;
 
+    @FunctionalInterface
     public interface BuildSteps {
         TopicConfigBuilder applyStep(TopicConfigBuilder builder);
     }

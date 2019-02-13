@@ -7,8 +7,7 @@ import io.simplesource.saga.model.messages.SagaResponse;
 import io.simplesource.saga.model.saga.Saga;
 import io.simplesource.saga.model.saga.SagaError;
 import io.simplesource.saga.model.serdes.SagaClientSerdes;
-import io.simplesource.saga.model.serdes.SagaSerdes;
-import org.apache.avro.generic.GenericRecord;
+import org.apache.avro.specific.SpecificRecord;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -61,15 +60,15 @@ class SagaClientSerdesTest {
 
     @Test
     void sagaRequestTest() {
-        SagaClientSerdes<GenericRecord> serdes = AvroSerdes.sagaClientSerdes(SCHEMA_URL, true);
+        SagaClientSerdes<SpecificRecord> serdes = AvroSerdes.sagaClientSerdes(SCHEMA_URL, true);
 
-        Saga<GenericRecord> saga = SagaTestUtils.getTestSaga();
+        Saga<SpecificRecord> saga = SagaTestUtils.getTestSaga();
 
-        // SagaRequest<GenericRecord> original = new SagaRequest<>(UUID.randomUUID(), saga);
-        SagaRequest<GenericRecord> original = new SagaRequest<>(saga.sagaId(), saga);
+        // SagaRequest<SpecificRecord> original = new SagaRequest<>(UUID.randomUUID(), saga);
+        SagaRequest<SpecificRecord> original = new SagaRequest<>(saga.sagaId(), saga);
 
         byte[] serialized = serdes.request().serializer().serialize(FAKE_TOPIC, original);
-        SagaRequest<GenericRecord> deserialized = serdes.request().deserializer().deserialize(FAKE_TOPIC, serialized);
+        SagaRequest<SpecificRecord> deserialized = serdes.request().deserializer().deserialize(FAKE_TOPIC, serialized);
 
         String originalAsString = original.toString();
 
