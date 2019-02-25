@@ -22,7 +22,7 @@ class SagaInternalSerdesTest {
 
     @Test
     void sagaStateTest() {
-        SagaSerdes<SpecificRecord> serdes = AvroSerdes.sagaSerdes(SCHEMA_URL, true);
+        SagaSerdes<SpecificRecord> serdes = AvroSerdes.Specific.sagaSerdes(SCHEMA_URL, true);
 
         Saga<SpecificRecord> original = SagaTestUtils.getTestSaga();
 
@@ -35,7 +35,7 @@ class SagaInternalSerdesTest {
     }
 
     <A extends SagaStateTransition> A testTransition(SagaStateTransition transition) {
-        SagaSerdes<SpecificRecord> serdes = AvroSerdes.sagaSerdes(SCHEMA_URL, true);
+        SagaSerdes<SpecificRecord> serdes = AvroSerdes.Specific.sagaSerdes(SCHEMA_URL, true);
 
         byte[] serialized = serdes.transition().serializer().serialize(FAKE_TOPIC, transition);
         SagaStateTransition deserialized = serdes.transition().deserializer().deserialize(FAKE_TOPIC, serialized);

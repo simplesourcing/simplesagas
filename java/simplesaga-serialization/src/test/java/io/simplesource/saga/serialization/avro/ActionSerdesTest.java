@@ -27,7 +27,7 @@ class ActionSerdesTest {
 
     @Test
     void uuidTest() {
-        ActionSerdes<?> serdes = AvroSerdes.actionSerdes(SCHEMA_URL, true);
+        ActionSerdes<?> serdes = AvroSerdes.Specific.actionSerdes(SCHEMA_URL, true);
         UUID original = UUID.randomUUID();
         byte[] serialized = serdes.uuid().serializer().serialize(FAKE_TOPIC, original);
         UUID deserialized = serdes.uuid().deserializer().deserialize(FAKE_TOPIC, serialized);
@@ -64,7 +64,7 @@ class ActionSerdesTest {
 
     @Test
     void actionRequestGenericTest() {
-        ActionSerdes<User> serdes = AvroSerdes.actionSerdes(SCHEMA_URL, true);
+        ActionSerdes<User> serdes = AvroSerdes.Specific.actionSerdes(SCHEMA_URL, true);
         User testUser = new User("Albus", "Dumbledore", 1732);
 
         ActionCommand<User> actionCommand = new ActionCommand<>(UUID.randomUUID(), testUser);
@@ -86,7 +86,7 @@ class ActionSerdesTest {
 
     @Test
     void responseTestSuccess() {
-        ActionSerdes<?> serdes = AvroSerdes.actionSerdes(SCHEMA_URL, true);
+        ActionSerdes<?> serdes = AvroSerdes.Specific.actionSerdes(SCHEMA_URL, true);
         ActionResponse original = new ActionResponse(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), Result.success(true));
         byte[] serialized = serdes.response().serializer().serialize(FAKE_TOPIC, original);
         ActionResponse deserialized = serdes.response().deserializer().deserialize(FAKE_TOPIC, serialized);
@@ -96,7 +96,7 @@ class ActionSerdesTest {
 
     @Test
     void responseTestFailure() {
-        ActionSerdes<?> serdes = AvroSerdes.actionSerdes(SCHEMA_URL, true);
+        ActionSerdes<?> serdes = AvroSerdes.Specific.actionSerdes(SCHEMA_URL, true);
         SagaError sagaError1 = SagaError.of(SagaError.Reason.InternalError, "There was an error");
         SagaError sagaError2 = SagaError.of(SagaError.Reason.CommandError, "Invalid command");
         ActionResponse original = new ActionResponse(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),

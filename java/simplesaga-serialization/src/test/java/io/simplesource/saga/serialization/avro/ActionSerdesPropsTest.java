@@ -16,7 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ActionSerdesPropsTest {
     private static String SCHEMA_URL = "http://localhost:8081/";
     private static String FAKE_TOPIC = "topic";
-    ActionSerdes<User> serdes = AvroSerdes.actionSerdes(SCHEMA_URL, true);
+    ActionSerdes<User> serdes = AvroSerdes.Specific.actionSerdes(SCHEMA_URL, true);
 
     @Property
     boolean ActionRequest_serialises_and_deserialises(@ForAll("userActionRequest") ActionRequest<User> original) {
