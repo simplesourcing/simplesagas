@@ -37,7 +37,7 @@ class SourcingStreamTests {
         final TestContext testContext;
 
         // serdes
-        final ActionSerdes<SpecificRecord> actionSerdes = AvroSerdes.actionSerdes(SCHEMA_URL, true);
+        final ActionSerdes<SpecificRecord> actionSerdes = AvroSerdes.Specific.actionSerdes(SCHEMA_URL, true);
         final CommandSerdes<AccountId, AccountCommand> commandSerdes = AvroCommandSerdes.of(SCHEMA_URL, true);
 
         // publishers

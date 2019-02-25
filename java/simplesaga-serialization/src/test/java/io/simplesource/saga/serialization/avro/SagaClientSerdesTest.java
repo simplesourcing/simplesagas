@@ -22,7 +22,7 @@ class SagaClientSerdesTest {
 
     @Test
     void uuidTest() {
-        SagaClientSerdes<?> serdes = AvroSerdes.sagaClientSerdes(SCHEMA_URL, true);
+        SagaClientSerdes<?> serdes = AvroSerdes.Specific.sagaClientSerdes(SCHEMA_URL, true);
         UUID original = UUID.randomUUID();
         byte[] serialized = serdes.uuid().serializer().serialize(FAKE_TOPIC, original);
         UUID deserialized = serdes.uuid().deserializer().deserialize(FAKE_TOPIC, serialized);
@@ -31,7 +31,7 @@ class SagaClientSerdesTest {
 
     @Test
     void responseTestSuccess() {
-        SagaClientSerdes<?> serdes = AvroSerdes.sagaClientSerdes(SCHEMA_URL, true);
+        SagaClientSerdes<?> serdes = AvroSerdes.Specific.sagaClientSerdes(SCHEMA_URL, true);
         SagaResponse original = new SagaResponse(UUID.randomUUID(), Result.success(Sequence.first().next().next()));
         byte[] serialized = serdes.response().serializer().serialize(FAKE_TOPIC, original);
         SagaResponse deserialized = serdes.response().deserializer().deserialize(FAKE_TOPIC, serialized);
@@ -42,7 +42,7 @@ class SagaClientSerdesTest {
 
     @Test
     void responseTestFailure() {
-        SagaClientSerdes<?> serdes = AvroSerdes.sagaClientSerdes(SCHEMA_URL, true);
+        SagaClientSerdes<?> serdes = AvroSerdes.Specific.sagaClientSerdes(SCHEMA_URL, true);
         SagaError sagaError1 = SagaError.of(SagaError.Reason.InternalError, "There was an error");
         SagaError sagaError2 = SagaError.of(SagaError.Reason.CommandError, "Invalid command");
         SagaResponse original = new SagaResponse(UUID.randomUUID(), Result.failure(sagaError1, sagaError2));
@@ -60,7 +60,7 @@ class SagaClientSerdesTest {
 
     @Test
     void sagaRequestTest() {
-        SagaClientSerdes<SpecificRecord> serdes = AvroSerdes.sagaClientSerdes(SCHEMA_URL, true);
+        SagaClientSerdes<SpecificRecord> serdes = AvroSerdes.Specific.sagaClientSerdes(SCHEMA_URL, true);
 
         Saga<SpecificRecord> saga = SagaTestUtils.getTestSaga();
 
