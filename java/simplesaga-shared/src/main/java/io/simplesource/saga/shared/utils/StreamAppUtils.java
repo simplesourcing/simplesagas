@@ -6,7 +6,6 @@ import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.CreateTopicsResult;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.streams.KafkaStreams;
-import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.Topology;
 
 import java.util.List;
@@ -23,7 +22,7 @@ public final class StreamAppUtils {
         void shutDown();
     }
 
-    public static CreateTopicsResult addMissingTopics(AdminClient adminClient, List<TopicCreation> topics){
+    public static CreateTopicsResult createMissingTopics(AdminClient adminClient, List<TopicCreation> topics){
         try {
             Set<String> existingTopics = adminClient.listTopics().names().get();
             Stream<NewTopic> newTopics = topics.stream()
@@ -34,12 +33,12 @@ public final class StreamAppUtils {
                     });
             return adminClient.createTopics(newTopics.collect(Collectors.toList()));
         } catch (Exception e) {
-            throw new RuntimeException("Unable to add missing topics");
+            throw new RuntimeException("Unable to create missing topics");
         }
     }
 
     public static void runStreamApp(Properties config, Topology topology) {
-        KafkaStreams streams = new KafkaStreams(topology, new StreamsConfig(config));
+        KafkaStreams streams = new KafkaStreams(topology, config);
 
         streams.cleanUp();
         streams.start();

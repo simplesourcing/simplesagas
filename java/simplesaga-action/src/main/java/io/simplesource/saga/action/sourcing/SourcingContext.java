@@ -1,6 +1,7 @@
 package io.simplesource.saga.action.sourcing;
 
 import io.simplesource.kafka.api.CommandSerdes;
+import io.simplesource.saga.action.internal.ActionContext;
 import io.simplesource.saga.model.serdes.ActionSerdes;
 import io.simplesource.saga.model.specs.ActionProcessorSpec;
 import io.simplesource.saga.shared.topics.TopicNamer;
@@ -19,6 +20,10 @@ public class SourcingContext<A, I, K, C> {
     public final CommandSpec<A, I, K, C> commandSpec;
     public final TopicNamer actionTopicNamer;
     public final TopicNamer commandTopicNamer;
+
+    public ActionContext<A> getActionContext() {
+        return new ActionContext<>(actionSpec, actionTopicNamer);
+    }
 
     public final CommandSerdes<K, C> cSerdes() { return commandSpec.commandSerdes; }
     public final ActionSerdes<A> aSerdes() { return actionSpec.serdes; }

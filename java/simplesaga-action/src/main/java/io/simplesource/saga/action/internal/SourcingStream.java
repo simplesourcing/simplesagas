@@ -1,4 +1,4 @@
-package io.simplesource.saga.action.sourcing;
+package io.simplesource.saga.action.internal;
 
 import io.simplesource.api.CommandError;
 import io.simplesource.data.NonEmptyList;
@@ -7,8 +7,7 @@ import io.simplesource.data.Sequence;
 import io.simplesource.kafka.internal.util.Tuple2;
 import io.simplesource.kafka.model.CommandRequest;
 import io.simplesource.kafka.model.CommandResponse;
-import io.simplesource.saga.action.common.ActionProducer;
-import io.simplesource.saga.action.common.IdempotentStream;
+import io.simplesource.saga.action.sourcing.SourcingContext;
 import io.simplesource.saga.model.messages.ActionRequest;
 import io.simplesource.saga.model.messages.ActionResponse;
 import io.simplesource.saga.model.saga.SagaError;
@@ -22,14 +21,18 @@ import org.slf4j.LoggerFactory;
 import java.util.UUID;
 import java.util.function.Function;
 
+final class SourcingStream {
 
-public class SourcingStream {
-    static Logger logger = LoggerFactory.getLogger(SourcingStream.class);
+    private static Logger logger = LoggerFactory.getLogger(SourcingStream.class);
 
-    static <K, V> ForeachAction<K, V> logValues(String prefix) {
-        return (k, v) -> logger.info("{}: {}={}", prefix, k.toString().substring(0, 6), v.toString());
-    }
-
+    /**
+     * Ad a sub-topology for a simple sourcing command topic, including all the saga actions that map to that topic.
+     *
+     * @param ctx                        sourcing context.
+     * @param actionRequest              action request KStream.
+     * @param actionResponse             action response KStream.
+     * @param commandResponseByAggregate command response KStream.
+     */
     static <A, I, K, C> void addSubTopology(SourcingContext<A, I, K, C> ctx,
                                             KStream<UUID, ActionRequest<A>> actionRequest,
                                             KStream<UUID, ActionResponse> actionResponse,
@@ -48,17 +51,18 @@ public class SourcingStream {
         // handle incoming command responses
         KStream<UUID, ActionResponse> newActionResponses = handleCommandResponse(ctx, actionRequest, commandResponseByCommandId);
 
-        // publish to output topics
-        CommandProducer.commandRequest(ctx.commandSpec, ctx.commandTopicNamer, commandRequests);
-        ActionProducer.actionResponse(ctx.actionSpec,
-                ctx.actionTopicNamer,
-                idempotentAction.priorResponses,
-                newActionResponses,
-                requestErrorResponses);
+        ActionContext<A> actionCtx = ctx.getActionContext();
+
+        CommandPublisher.publishCommandRequest(ctx, commandRequests);
+        ActionPublisher.publishActionResponse(actionCtx, idempotentAction.priorResponses());
+        ActionPublisher.publishActionResponse(actionCtx, newActionResponses);
+        ActionPublisher.publishActionResponse(actionCtx, requestErrorResponses);
     }
 
-    static <A, I, K, C>
-    Tuple2<KStream<UUID, ActionResponse>, KStream<K, CommandRequest<K, C>>> handleActionRequest(
+    /**
+     * Translate simplesaga action requests to simplesourcing command requests.
+     */
+    private static <A, I, K, C> Tuple2<KStream<UUID, ActionResponse>, KStream<K, CommandRequest<K, C>>> handleActionRequest(
             SourcingContext<A, I, K, C> ctx,
             KStream<UUID, ActionRequest<A>> actionRequests,
             KStream<K, CommandResponse> commandResponseByAggregate) {
@@ -69,7 +73,7 @@ public class SourcingStream {
         KStream<UUID, Tuple2<ActionRequest<A>, Result<Throwable, I>>> reqsWithDecoded =
                 actionRequests
                         .mapValues((k, ar) -> Tuple2.of(ar, ctx.commandSpec.decode.apply(ar.actionCommand.command)))
-                        .peek(logValues("reqsWithDecoded"));
+                        .peek(Utils.logValues(logger, "reqsWithDecoded"));
 
         KStream<UUID, Tuple2<ActionRequest<A>, Result<Throwable, I>>>[] branchSuccessFailure = reqsWithDecoded.branch((k, v) -> v.v2().isSuccess(), (k, v) -> v.v2().isFailure());
 
@@ -85,7 +89,7 @@ public class SourcingStream {
         // Sort incoming request by the aggregate key
         KStream<K, ActionRequest<A>> requestByAggregateKey = allGood
                 .map((k, v) -> KeyValue.pair(ctx.commandSpec.keyMapper.apply(v.v2()), v.v1()))
-                .peek(logValues("requestByAggregateKey"));
+                .peek(Utils.logValues(logger, "requestByAggregateKey"));
 
         Materialized<K, CommandResponse, KeyValueStore<Bytes, byte[]>> materializer =
                 Materialized
@@ -122,13 +126,16 @@ public class SourcingStream {
                         Joined.with(ctx.cSerdes().aggregateKey(),
                                 ctx.aSerdes().request(),
                                 ctx.cSerdes().commandResponse()))
-                .peek(logValues("commandRequestByAggregate"));
+                .peek(Utils.logValues(logger, "commandRequestByAggregate"));
 
         return Tuple2.of(errorActionResponses, commandRequestByAggregate);
     }
 
 
-    static <A, I, K, C> KStream<UUID, ActionResponse> handleCommandResponse(
+    /**
+     * Receives command response from simplesourcing, and convert to simplesaga action response.
+     */
+    private static <A, I, K, C> KStream<UUID, ActionResponse> handleCommandResponse(
             SourcingContext<A, I, K, C> ctx,
             KStream<UUID, ActionRequest<A>> actionRequests,
             KStream<UUID, CommandResponse> responseByCommandId) {
@@ -146,17 +153,9 @@ public class SourcingStream {
                                 JoinWindows.of(timeOutMillis).until(timeOutMillis * 2 + 1),
                                 Joined.with(ctx.aSerdes().uuid(), ctx.aSerdes().request(), ctx.cSerdes().commandResponse())
                         )
-                        .peek(logValues("joinActionRequestAndCommandResponse"));
-
+                        .peek(Utils.logValues(logger, "joinActionRequestAndCommandResponse"));
 
         // turn the pair into an ActionResponse
-        return getActionResponse(ctx, actionRequestWithResponse);
-    }
-
-    static <A, I, K, C> KStream<UUID, ActionResponse> getActionResponse(
-            SourcingContext<A, I, K, C> ctx,
-            KStream<UUID, Tuple2<ActionRequest<A>, CommandResponse>> actionRequestWithResponse) {
-
         return actionRequestWithResponse
                 .mapValues((k, v) -> {
                             ActionRequest<A> aReq = v.v1();
@@ -168,7 +167,7 @@ public class SourcingStream {
                                             cResp.sequenceResult();
                             Result<SagaError, Boolean> result =
                                     sequenceResult.fold(errors -> {
-                                        String message = String.join(",", errors.map(CommandError::getMessage));
+                                                String message = String.join(",", errors.map(CommandError::getMessage));
                                                 return Result.failure(SagaError.of(SagaError.Reason.CommandError, message));
                                             },
                                             seq -> Result.success(true));
@@ -180,7 +179,7 @@ public class SourcingStream {
                         }
                 )
                 .selectKey((k, resp) -> resp.sagaId)
-                .peek(logValues("resultStream"));
+                .peek(Utils.logValues(logger, "resultStream"));
     }
 
 }
