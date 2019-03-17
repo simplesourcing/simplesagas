@@ -1,4 +1,4 @@
-package io.simplesource.saga.action.common;
+package io.simplesource.saga.action.internal;
 
 import java.util.UUID;
 
@@ -11,7 +11,7 @@ import org.apache.kafka.streams.kstream.*;
 import org.apache.kafka.streams.state.KeyValueStore;
 import org.apache.kafka.common.utils.Bytes;
 
-public class IdempotentStream {
+class IdempotentStream {
 
     @Value
     public static class IdempotentAction<A> {
@@ -19,7 +19,7 @@ public class IdempotentStream {
         public final KStream<UUID, ActionRequest<A>> unprocessedRequests;
     }
 
-    public static <A> IdempotentAction<A> getActionRequestsWithResponse
+    static <A> IdempotentAction<A> getActionRequestsWithResponse
             (ActionProcessorSpec<A> aSpec,
              KStream<UUID, ActionRequest<A>> actionRequests,
              KStream<UUID, ActionResponse> actionResponse,

@@ -16,6 +16,7 @@ import io.simplesource.saga.model.serdes.ActionSerdes;
 import io.simplesource.saga.serialization.avro.AvroSerdes;
 import io.simplesource.saga.shared.topics.TopicNamer;
 import io.simplesource.saga.shared.topics.TopicTypes;
+import io.simplesource.saga.shared.utils.StreamAppConfig;
 import io.simplesource.saga.testutils.*;
 import lombok.Value;
 import org.apache.avro.specific.SpecificRecord;
@@ -62,7 +63,7 @@ class SourcingStreamTests {
             SourcingApp<SpecificRecord> sourcingApp = new SourcingApp<>(actionSerdes,
                     TopicUtils.buildSteps(Constants.actionTopicPrefix, TOPIC_BASE_NAME));
             sourcingApp.addCommand(commandSpec, TopicUtils.buildSteps(Constants.commandTopicPrefix, Constants.accountAggregateName));
-            Topology topology = sourcingApp.buildTopology();
+            Topology topology = sourcingApp.buildTopology(new StreamAppConfig("app-id", "http://localhost:9092"));
             testContext = TestContextBuilder.of(topology).build();
 
             // get actionRequestPublisher

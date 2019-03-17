@@ -1,12 +1,12 @@
 package io.simplesource.saga.shared.topics;
 
+import io.simplesource.kafka.spec.TopicSpec;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-
-import io.simplesource.kafka.spec.TopicSpec;
 
 import static org.apache.kafka.common.config.TopicConfig.*;
 
@@ -38,15 +38,15 @@ public class TopicConfigBuilder {
         return this;
     }
 
-    public  TopicConfigBuilder withConfig(String topicType, TopicSpec tSpec) {
+    public TopicConfigBuilder withConfig(String topicType, TopicSpec tSpec) {
         configMap.put(topicType, tSpec);
         return this;
     }
 
     public TopicConfigBuilder withDefaultConfig(int partitions, int replication, int retentionInDays) {
-      defaultSpec = topicType -> defaultMap(partitions, replication, retentionInDays, topicType);
-     return this;
-  }
+        defaultSpec = topicType -> defaultMap(partitions, replication, retentionInDays, topicType);
+        return this;
+    }
 
     public TopicConfig build() {
         Map<String, TopicSpec> topicSpecs = new HashMap<>();
@@ -55,7 +55,7 @@ public class TopicConfigBuilder {
         return new TopicConfig(topicNamer, topicTypes, topicSpecs);
     }
 
-    public TopicSpec defaultMap(int partitions, int replication, long retentionInDays, String  topicType) {
+    public TopicSpec defaultMap(int partitions, int replication, long retentionInDays, String topicType) {
         Map<String, String> configMap = defaultOverrides.getOrDefault(topicType, defaultConfigs);
         // configure retention if it is not already set
 
@@ -71,12 +71,12 @@ public class TopicConfigBuilder {
 
         Map<String, String> usedMap = defaultOverrides.getOrDefault(topicType, defaultConfigs);
         usedMap.forEach(dMap::put);
-        return new TopicSpec(partitions, (short)replication, dMap);
+        return new TopicSpec(partitions, (short) replication, dMap);
     }
 
     public static TopicConfig buildTopics(List<String> topicTypes,
-                                   Map<String, String> defaultConfigs,
-                                   Map<String, Map<String, String>> defaultOverrides,
+                                          Map<String, String> defaultConfigs,
+                                          Map<String, Map<String, String>> defaultOverrides,
                                           BuildSteps buildSteps) {
         TopicConfigBuilder topicBuilder = new TopicConfigBuilder(topicTypes, defaultConfigs, defaultOverrides);
         buildSteps.applyStep(topicBuilder);
