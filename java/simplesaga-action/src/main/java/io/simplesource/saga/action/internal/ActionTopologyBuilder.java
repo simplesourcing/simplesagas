@@ -14,12 +14,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 import java.util.UUID;
+import java.util.function.Consumer;
 
-public class AbstractActionTopologyBuilder<A> implements TopologyBuilder {
+public class ActionTopologyBuilder<A> implements TopologyBuilder {
 
     private final ActionProcessorSpec<A> actionSpec;
     private final TopicConfig actionTopicConfig;
-    private List<TopologyBuildListener<A>> buildListeners = new ArrayList<>();
+    private final List<Consumer<ActionTopologyContext<A>>> onBuildConsumers = new ArrayList<>();
 
     /**
      * Topology being built.
@@ -32,25 +33,17 @@ public class AbstractActionTopologyBuilder<A> implements TopologyBuilder {
         Properties properties;
     }
 
-    /**
-     * Called when the topology is built, ie. to allow sub-topologies to be added.
-     */
-    public interface TopologyBuildListener<A> {
-
-        void onBuildTopology(ActionTopologyContext<A> topologyContext);
-    }
-
-    AbstractActionTopologyBuilder(ActionProcessorSpec<A> actionSpec, TopicConfig actionTopicConfig) {
+    public ActionTopologyBuilder(ActionProcessorSpec<A> actionSpec, TopicConfig actionTopicConfig) {
         this.actionSpec = actionSpec;
         this.actionTopicConfig = actionTopicConfig;
     }
 
     /**
-     * Register a listener to be called when the topology is built, ie. to allow sub-topologies to be added.
-     * @param listener to register.
+     * Register a consumer to be called when the topology is built, ie. to allow sub-topologies to be added.
+     * @param consumer to register.
      */
-    public void onBuildTopology(TopologyBuildListener<A> listener) {
-        buildListeners.add(listener);
+    public void onBuildTopology(Consumer<ActionTopologyContext<A>> consumer) {
+        onBuildConsumers.add(consumer);
     }
 
     /**
@@ -67,8 +60,8 @@ public class AbstractActionTopologyBuilder<A> implements TopologyBuilder {
                 ActionConsumer.actionResponseStream(actionSpec, actionTopicConfig.namer, builder);
 
         ActionTopologyContext<A> topologyContext = new ActionTopologyContext<>(builder, actionRequests, actionResponses, properties);
-        for (TopologyBuildListener<A> listener : buildListeners) {
-            listener.onBuildTopology(topologyContext);
+        for (Consumer<ActionTopologyContext<A>> consumer : onBuildConsumers) {
+            consumer.accept(topologyContext);
         }
 
         return builder.build();

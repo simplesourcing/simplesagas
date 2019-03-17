@@ -1,5 +1,6 @@
 package io.simplesource.saga.action.internal;
 
+import java.io.Closeable;
 import java.util.Properties;
 import java.util.function.Function;
 
@@ -10,10 +11,13 @@ import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.Serde;
 
-final class AsyncTransform {
+public final class AsyncTransform {
     static final boolean useTransactions = false;
 
-    public interface AsyncPipe {
+    /**
+     * AsyncPipe should be closed when the application shuts down.
+     */
+    public interface AsyncPipe extends Closeable {
         void close();
     }
 

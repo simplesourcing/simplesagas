@@ -21,22 +21,27 @@ import org.slf4j.LoggerFactory;
 import java.util.UUID;
 import java.util.function.Function;
 
-final class SourcingStream {
+public final class SourcingStream {
 
     private static Logger logger = LoggerFactory.getLogger(SourcingStream.class);
 
     /**
-     * Ad a sub-topology for a simple sourcing command topic, including all the saga actions that map to that topic.
+     * Add a sub-topology for a simple sourcing command topic, including all the saga actions that map to that topic.
      *
-     * @param ctx                        sourcing context.
-     * @param actionRequest              action request KStream.
-     * @param actionResponse             action response KStream.
-     * @param commandResponseByAggregate command response KStream.
+     * @param topologyContext topology context.
+     * @param sourcing        sourcing context.
      */
-    static <A, I, K, C> void addSubTopology(SourcingContext<A, I, K, C> ctx,
-                                            KStream<UUID, ActionRequest<A>> actionRequest,
-                                            KStream<UUID, ActionResponse> actionResponse,
-                                            KStream<K, CommandResponse> commandResponseByAggregate) {
+    public static <A, I, K, C> void addSubTopology(ActionTopologyBuilder.ActionTopologyContext<A> topologyContext,
+                                                   SourcingContext<A, I, K, C> sourcing) {
+        KStream<K, CommandResponse> commandResponseStream = CommandConsumer.commandResponseStream(
+                sourcing.commandSpec(), sourcing.commandTopicNamer(), topologyContext.builder());
+        addSubTopology(sourcing, topologyContext.actionRequests(), topologyContext.actionResponses(), commandResponseStream);
+    }
+
+    private static <A, I, K, C> void addSubTopology(SourcingContext<A, I, K, C> ctx,
+                                                    KStream<UUID, ActionRequest<A>> actionRequest,
+                                                    KStream<UUID, ActionResponse> actionResponse,
+                                                    KStream<K, CommandResponse> commandResponseByAggregate) {
         KStream<UUID, CommandResponse> commandResponseByCommandId = commandResponseByAggregate.selectKey((k, v) -> v.commandId());
 
         IdempotentStream.IdempotentAction<A> idempotentAction = IdempotentStream.getActionRequestsWithResponse(ctx.actionSpec,

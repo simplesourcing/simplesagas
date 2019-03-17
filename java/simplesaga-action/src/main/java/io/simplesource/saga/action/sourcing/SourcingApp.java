@@ -1,6 +1,7 @@
 package io.simplesource.saga.action.sourcing;
 
-import io.simplesource.saga.action.internal.SourcingTopologyBuilder;
+import io.simplesource.saga.action.internal.ActionTopologyBuilder;
+import io.simplesource.saga.action.internal.SourcingStream;
 import io.simplesource.saga.model.serdes.ActionSerdes;
 import io.simplesource.saga.model.specs.ActionProcessorSpec;
 import io.simplesource.saga.shared.topics.TopicConfig;
@@ -33,7 +34,7 @@ public final class SourcingApp<A> {
     private final TopicConfig actionTopicConfig;
     private final ActionProcessorSpec<A> actionSpec;
     private final List<TopicCreation> topicCreations;
-    private final SourcingTopologyBuilder<A> topologyBuilder;
+    private final ActionTopologyBuilder<A> topologyBuilder;
 
     /**
      * Constructor.
@@ -45,7 +46,7 @@ public final class SourcingApp<A> {
                 TopicConfigBuilder.buildTopics(TopicTypes.ActionTopic.all, Collections.emptyMap(), Collections.emptyMap(), actionTopicBuildSteps);
         actionSpec = new ActionProcessorSpec<>(actionSerdes);
         topicCreations = TopicCreation.allTopics(actionTopicConfig);
-        topologyBuilder = new SourcingTopologyBuilder<>(actionSpec, actionTopicConfig);
+        topologyBuilder = new ActionTopologyBuilder<>(actionSpec, actionTopicConfig);
     }
 
     /**
@@ -62,7 +63,7 @@ public final class SourcingApp<A> {
 
         topologyBuilder.onBuildTopology((topologyContext) -> {
             SourcingContext<A, I, K, C> sourcing = new SourcingContext<>(actionSpec, cSpec, actionTopicConfig.namer, commandTopicConfig.namer);
-            topologyBuilder.addSubTopology(topologyContext, sourcing);
+            SourcingStream.addSubTopology(topologyContext, sourcing);
         });
 
         return this;

@@ -1,6 +1,8 @@
 package io.simplesource.saga.action.async;
 
-import io.simplesource.saga.action.internal.AsyncTopologyBuilder;
+import io.simplesource.saga.action.internal.ActionTopologyBuilder;
+import io.simplesource.saga.action.internal.AsyncStream;
+import io.simplesource.saga.action.internal.AsyncTransform;
 import io.simplesource.saga.model.serdes.ActionSerdes;
 import io.simplesource.saga.model.specs.ActionProcessorSpec;
 import io.simplesource.saga.shared.topics.TopicConfig;
@@ -35,7 +37,7 @@ public final class AsyncApp<A> {
     private final TopicConfig actionTopicConfig;
     private final ActionProcessorSpec<A> actionSpec;
     private ScheduledExecutorService executor;
-    private AsyncTopologyBuilder<A> topologyBuilder;
+    private ActionTopologyBuilder<A> topologyBuilder;
     private Set<ExecutorService> executorServices = new HashSet<>();
 
     public AsyncApp(ActionSerdes<A> actionSerdes, TopicConfigBuilder.BuildSteps topicBuildFn) {
@@ -44,7 +46,7 @@ public final class AsyncApp<A> {
 
         actionTopicConfig = TopicConfigBuilder.buildTopics(expectedTopicList, new HashMap<>(), new HashMap<>(), topicBuildFn);
         actionSpec = new ActionProcessorSpec<>(actionSerdes);
-        topologyBuilder = new AsyncTopologyBuilder<>(actionSpec, actionTopicConfig);
+        topologyBuilder = new ActionTopologyBuilder<>(actionSpec, actionTopicConfig);
         expectedTopics = TopicCreation.allTopics(actionTopicConfig);
 
     }
@@ -56,7 +58,11 @@ public final class AsyncApp<A> {
             ScheduledExecutorService usedExecutor = executor != null ? executor : Executors.newScheduledThreadPool(1);
             executorServices.add(usedExecutor);
             AsyncContext<A, I, K, O, R> async = new AsyncContext<>(actionSpec, actionTopicConfig.namer, spec, usedExecutor);
-            topologyBuilder.addSubTopology(topologyContext, async);
+            AsyncTransform.AsyncPipe pipe = AsyncStream.addSubTopology(topologyContext, async);
+            addCloseHandler(() -> {
+                pipe.close();
+                return 0;
+            });
         });
 
         return this;
@@ -91,7 +97,6 @@ public final class AsyncApp<A> {
 
         StreamAppUtils.addShutdownHook(() -> {
             logger.info("Shutting down async app resources");
-            topologyBuilder.shutdownResources();
             closeHandlers.forEach(Supplier::get);
             executorServices.forEach(StreamAppUtils::shutdownExecutorService);
         });
