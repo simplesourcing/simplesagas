@@ -17,39 +17,39 @@ import org.slf4j.LoggerFactory;
 
 import java.util.UUID;
 
-public final class SagaConsumer {
+final class SagaConsumer {
 
-    public static <A> KStream<UUID, SagaRequest<A>> sagaRequest(SagaSpec<A> spec,
-                                                                TopicNamer sagaTopicNamer,
-                                                                StreamsBuilder builder) {
+    static <A> KStream<UUID, SagaRequest<A>> sagaRequest(SagaSpec<A> spec,
+                                                         TopicNamer sagaTopicNamer,
+                                                         StreamsBuilder builder) {
         return builder.stream(sagaTopicNamer.apply(TopicTypes.SagaTopic.request),
                 Consumed.with(spec.serdes.uuid(), spec.serdes.request()));
     }
 
-    public static <A> KStream<UUID, SagaResponse> sagaResponse(SagaSpec<A> spec,
-                                                               TopicNamer sagaTopicNamer,
-                                                               StreamsBuilder builder) {
+    static <A> KStream<UUID, SagaResponse> sagaResponse(SagaSpec<A> spec,
+                                                        TopicNamer sagaTopicNamer,
+                                                        StreamsBuilder builder) {
         return builder.stream(sagaTopicNamer.apply(TopicTypes.SagaTopic.response),
                 Consumed.with(spec.serdes.uuid(), spec.serdes.response()));
     }
 
-    public static <A> KStream<UUID, SagaStateTransition> stateTransition(SagaSpec<A> spec,
-                                                                            TopicNamer sagaTopicNamer,
-                                                                            StreamsBuilder builder) {
+    static <A> KStream<UUID, SagaStateTransition> stateTransition(SagaSpec<A> spec,
+                                                                  TopicNamer sagaTopicNamer,
+                                                                  StreamsBuilder builder) {
         return builder.stream(sagaTopicNamer.apply(TopicTypes.SagaTopic.stateTransition),
                 Consumed.with(spec.serdes.uuid(), spec.serdes.transition()));
     }
 
-    public static <A> KStream<UUID, Saga<A>> state(SagaSpec<A> spec,
-                                                   TopicNamer sagaTopicNamer,
-                                                   StreamsBuilder builder) {
+    static <A> KStream<UUID, Saga<A>> state(SagaSpec<A> spec,
+                                            TopicNamer sagaTopicNamer,
+                                            StreamsBuilder builder) {
         return builder.stream(sagaTopicNamer.apply(TopicTypes.SagaTopic.state),
                 Consumed.with(spec.serdes.uuid(), spec.serdes.state()));
     }
 
-    public static <A> KStream<UUID, ActionResponse> actionResponse(ActionProcessorSpec<A> actionSpec,
-                                                                   TopicNamer topicNamer,
-                                                                   StreamsBuilder builder) {
+    static <A> KStream<UUID, ActionResponse> actionResponse(ActionProcessorSpec<A> actionSpec,
+                                                            TopicNamer topicNamer,
+                                                            StreamsBuilder builder) {
         return builder.stream(topicNamer.apply(TopicTypes.ActionTopic.response),
                 Consumed.with(actionSpec.serdes.uuid(), actionSpec.serdes.response()));
     }

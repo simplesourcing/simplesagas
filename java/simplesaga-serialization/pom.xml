@@ -26,12 +26,13 @@
 
         <dependency>
             <groupId>io.simplesource</groupId>
-            <artifactId>simplesaga-saga</artifactId>
+            <artifactId>simplesaga-testutils</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
         </dependency>
-
         <dependency>
             <groupId>io.simplesource</groupId>
-            <artifactId>simplesaga-testutils</artifactId>
+            <artifactId>simplesaga-dsl</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>

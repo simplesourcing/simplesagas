@@ -45,6 +45,7 @@
     <modules>
         <module>simplesaga-model</module>
         <module>simplesaga-shared</module>
+        <module>simplesaga-dsl</module>
         <module>simplesaga-action</module>
         <module>simplesaga-http</module>
         <module>simplesaga-saga</module>
