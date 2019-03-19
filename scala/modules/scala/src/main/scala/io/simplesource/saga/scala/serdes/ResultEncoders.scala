@@ -38,7 +38,7 @@ object ResultEncoders {
           Result.failure[E, A](e)
       })
 
-  def cr: Serde[CommandResponse] = {
+  def cr[K: Encoder: Decoder]: Serde[CommandResponse[K]] = {
     implicit val cee: Encoder[CommandError] =
       implicitly[Encoder[(String, String)]]
         .contramap[CommandError](ce => (ce.getReason.toString, ce.getMessage))
@@ -46,11 +46,12 @@ object ResultEncoders {
       implicitly[Decoder[(String, String)]]
         .map(s => CommandError.of(CommandError.Reason.valueOf(s._1), s._2))
 
-    productCodecs3[UUID, Long, Result[CommandError, Sequence], CommandResponse]("commandId",
-                                                                                "readSequence",
-                                                                                "sequenceResult")(
-      x => (x.commandId(), x.readSequence().getSeq, x.sequenceResult()),
-      (id, seq, ur) => new CommandResponse(id, Sequence.position(seq), ur))
+    productCodecs4[K, UUID, Long, Result[CommandError, Sequence], CommandResponse[K]]("key",
+                                                                                      "commandId",
+                                                                                      "readSequence",
+                                                                                      "sequenceResult")(
+      x => (x.aggregateKey(), x.commandId(), x.readSequence().getSeq, x.sequenceResult()),
+      (key, id, seq, ur) => new CommandResponse(key, id, Sequence.position(seq), ur))
   }.asSerde
 
   implicit val cee: Encoder[SagaError] =
