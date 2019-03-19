@@ -18,6 +18,8 @@ public class Constants {
     public static final String accountAggregateName = "account";
     public static final String accountActionType    = "sourcing_action_account";
 
+    public static final String asyncTestActionType    = "async_action_test";
+
     public static final String kafkaBootstrap = "localhost:9092";
 
     public static final int partitions    = 6;

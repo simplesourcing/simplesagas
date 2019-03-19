@@ -9,7 +9,7 @@ import java.util.UUID;
 
 public final class AsyncStream {
 
-    public static <A, I, K, O, R> AsyncTransform.AsyncPipe addSubTopology(ActionTopologyBuilder.ActionTopologyContext<A> topologyContext,
+    public static <A, I, K, O, R> AsyncPipe addSubTopology(ActionTopologyBuilder.ActionTopologyContext<A> topologyContext,
                                                                           AsyncContext<A, I, K, O, R> async) {
         addSubTopology(async, topologyContext.actionRequests(), topologyContext.actionResponses());
         // create a Kafka consumer that processes action requests
