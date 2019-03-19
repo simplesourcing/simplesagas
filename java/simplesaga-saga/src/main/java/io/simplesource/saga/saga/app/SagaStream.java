@@ -6,7 +6,10 @@ import io.simplesource.data.Sequence;
 import io.simplesource.kafka.internal.util.Tuple2;
 import io.simplesource.saga.model.action.ActionStatus;
 import io.simplesource.saga.model.messages.*;
-import io.simplesource.saga.model.saga.*;
+import io.simplesource.saga.model.saga.Saga;
+import io.simplesource.saga.model.saga.SagaActionExecution;
+import io.simplesource.saga.model.saga.SagaError;
+import io.simplesource.saga.model.saga.SagaStatus;
 import io.simplesource.saga.model.serdes.SagaSerdes;
 import lombok.Value;
 import org.apache.kafka.common.utils.Bytes;
@@ -19,17 +22,27 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 final public class SagaStream {
-    static Logger logger = LoggerFactory.getLogger(SagaStream.class);
+    private static Logger logger = LoggerFactory.getLogger(SagaStream.class);
 
     static <K, V> ForeachAction<K, V> logValues(String prefix) {
         return (k, v) -> logger.info("{}: {}={}", prefix, k.toString().substring(0, 6), v.toString());
     }
 
-    public static <A> void addSubTopology(SagaContext<A> ctx,
-                                          KStream<UUID, SagaRequest<A>> sagaRequestStream,
-                                          KStream<UUID, SagaStateTransition> stateTransitionStream,
-                                          KStream<UUID, Saga<A>> stateStream,
-                                          KStream<UUID, ActionResponse> actionResponseStream) {
+    public static <A> void addSubTopology(SagaCoordinatorTopologyBuilder.SagaTopologyContext<A> topologyContext,
+                                          SagaContext<A> sagaContext) {
+        KStream<UUID, ActionResponse> actionResponse = SagaConsumer.actionResponse(sagaContext.aSpec(), sagaContext.actionTopicNamer(), topologyContext.builder);
+        SagaStream.addSubTopology(sagaContext,
+                topologyContext.sagaRequest,
+                topologyContext.sagaStateTransition,
+                topologyContext.sagaState,
+                actionResponse);
+    }
+
+    static <A> void addSubTopology(SagaContext<A> ctx,
+                                   KStream<UUID, SagaRequest<A>> sagaRequestStream,
+                                   KStream<UUID, SagaStateTransition> stateTransitionStream,
+                                   KStream<UUID, Saga<A>> stateStream,
+                                   KStream<UUID, ActionResponse> actionResponseStream) {
 
         // create the state table from the state stream
         KTable<UUID, Saga<A>> stateTable = createStateTable(ctx, stateStream);
@@ -42,14 +55,13 @@ final public class SagaStream {
         KStream<UUID, Saga<A>> sagaState = applyStateTransitions(ctx, stateTransitionStream);
 
         // publish to all the output topics
-        SagaProducer.actionRequests(ctx, rtar.v2());
-        SagaProducer.sagaStateTransitions(ctx,
-                inputStateTransitions,
-                rtar.v1(),
-                responseTransitions,
-                stsr.v1());
-        SagaProducer.sagaState(ctx, sagaState);
-        SagaProducer.sagaResponses(ctx, stsr.v2());
+        SagaProducer.publishActionRequests(ctx, rtar.v2());
+        SagaProducer.publishSagaStateTransitions(ctx, inputStateTransitions);
+        SagaProducer.publishSagaStateTransitions(ctx, rtar.v1());
+        SagaProducer.publishSagaStateTransitions(ctx, responseTransitions);
+        SagaProducer.publishSagaStateTransitions(ctx, stsr.v1());
+        SagaProducer.publishSagaState(ctx, sagaState);
+        SagaProducer.publishSagaResponses(ctx, stsr.v2());
     }
 
     static <A> KTable<UUID, Saga<A>> createStateTable(SagaContext<A> ctx, KStream<UUID, Saga<A>> stateStream) {
@@ -77,8 +89,8 @@ final public class SagaStream {
     }
 
     static <A> KStream<UUID, SagaStateTransition> addInitialState(SagaContext<A> ctx,
-                                                                     KStream<UUID, SagaRequest<A>> sagaRequestStream,
-                                                                     KTable<UUID, Saga<A>> stateTable) {
+                                                                  KStream<UUID, SagaRequest<A>> sagaRequestStream,
+                                                                  KTable<UUID, Saga<A>> stateTable) {
         SagaSerdes<A> sSerdes = ctx.sSerdes;
         KStream<UUID, Tuple2<SagaRequest<A>, Boolean>> newRequestStream = sagaRequestStream.leftJoin(
                 stateTable,
@@ -105,7 +117,7 @@ final public class SagaStream {
     }
 
     static <A> Tuple2<KStream<UUID, SagaStateTransition>, KStream<UUID, SagaResponse>> addSagaResponse(SagaContext<A> ctx,
-                                                                                                          KStream<UUID, Saga<A>> sagaState) {
+                                                                                                       KStream<UUID, Saga<A>> sagaState) {
         KStream<UUID, StatusWithError> statusWithError = sagaState
                 .mapValues((k, state) -> {
                     if (state.status == SagaStatus.InProgress && SagaUtils.sagaCompleted(state))
@@ -174,7 +186,7 @@ final public class SagaStream {
                                         .actionCommand(ae.command.get())
                                         .actionType(ae.actionType)
                                         .build())
-                        .peek(logValues("actionRequests"));
+                        .peek(logValues("publishActionRequests"));
 
         return Tuple2.of(stateUpdateNewActions, actionRequests);
     }

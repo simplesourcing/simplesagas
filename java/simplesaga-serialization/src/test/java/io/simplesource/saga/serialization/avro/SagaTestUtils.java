@@ -5,7 +5,7 @@ import io.simplesource.saga.model.action.ActionCommand;
 import io.simplesource.saga.model.action.SagaAction;
 import io.simplesource.saga.model.saga.Saga;
 import io.simplesource.saga.model.saga.SagaError;
-import io.simplesource.saga.saga.dsl.SagaDsl;
+import io.simplesource.saga.dsl.SagaDsl;
 import io.simplesource.saga.serialization.avro.generated.test.AddFunds;
 import io.simplesource.saga.serialization.avro.generated.test.CreateAccount;
 import io.simplesource.saga.serialization.avro.generated.test.TransferFunds;
@@ -16,7 +16,7 @@ import java.util.UUID;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-import static io.simplesource.saga.saga.dsl.SagaDsl.inParallel;
+import static io.simplesource.saga.dsl.SagaDsl.inParallel;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class SagaTestUtils {

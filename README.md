@@ -1,5 +1,7 @@
 # Simple Sagas
 
+[![Build Status](https://travis-ci.com/simplesourcing/simplesagas.svg?branch=master)](https://travis-ci.com/simplesourcing/simplesagas)
+
 ## Caveat
 
 ***Please note:** This repo is **experimental***.

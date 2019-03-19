@@ -25,6 +25,7 @@ lazy val baseDeps = Seq(
     "io.simplesource"  % "simplesaga-model"                   % simpleSagaV,
     "io.simplesource"  % "simplesaga-action"                  % simpleSagaV,
     "io.simplesource"  % "simplesaga-http"                    % simpleSagaV,
+    "io.simplesource"  % "simplesaga-dsl"                     % simpleSagaV,
     "io.simplesource"  % "simplesaga-saga"                    % simpleSagaV,
   )
 )

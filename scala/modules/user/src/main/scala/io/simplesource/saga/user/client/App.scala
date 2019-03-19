@@ -25,7 +25,7 @@ import io.simplesource.saga.user.shared.TopicUtils
 import io.simplesource.saga.scala.serdes.JsonSerdes
 
 import scala.collection.JavaConverters._
-import io.simplesource.saga.saga.dsl.SagaDsl._
+import io.simplesource.saga.dsl.SagaDsl._
 import io.simplesource.saga.user.action.HttpClient
 
 object App {

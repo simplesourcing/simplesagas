@@ -1,7 +1,7 @@
 package io.simplesource.saga.scala.dsl
 
-import io.simplesource.saga.saga.dsl.SagaDsl
-import io.simplesource.saga.saga.dsl.SagaDsl.SubSaga
+import io.simplesource.saga.dsl.SagaDsl
+import io.simplesource.saga.dsl.SagaDsl.SubSaga
 
 import scala.collection.JavaConverters._
 

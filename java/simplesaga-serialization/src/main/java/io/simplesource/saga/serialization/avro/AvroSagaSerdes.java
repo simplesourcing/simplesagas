@@ -9,7 +9,6 @@ import io.simplesource.saga.model.saga.SagaStatus;
 import io.simplesource.saga.model.serdes.SagaSerdes;
 import io.simplesource.saga.serialization.avro.generated.*;
 import io.simplesource.saga.serialization.utils.SerdeUtils;
-import org.apache.kafka.common.errors.SerializationException;
 import org.apache.kafka.common.serialization.Serde;
 
 import java.util.List;
