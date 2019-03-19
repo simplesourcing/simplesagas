@@ -33,7 +33,7 @@ public final class SourcingStream {
      */
     public static <A, I, K, C> void addSubTopology(ActionTopologyBuilder.ActionTopologyContext<A> topologyContext,
                                                    SourcingContext<A, I, K, C> sourcing) {
-        KStream<K, CommandResponse> commandResponseStream = CommandConsumer.commandResponseStream(
+        KStream<K, CommandResponse<K>> commandResponseStream = CommandConsumer.commandResponseStream(
                 sourcing.commandSpec(), sourcing.commandTopicNamer(), topologyContext.builder());
         addSubTopology(sourcing, topologyContext.actionRequests(), topologyContext.actionResponses(), commandResponseStream);
     }
@@ -41,8 +41,8 @@ public final class SourcingStream {
     private static <A, I, K, C> void addSubTopology(SourcingContext<A, I, K, C> ctx,
                                                     KStream<UUID, ActionRequest<A>> actionRequest,
                                                     KStream<UUID, ActionResponse> actionResponse,
-                                                    KStream<K, CommandResponse> commandResponseByAggregate) {
-        KStream<UUID, CommandResponse> commandResponseByCommandId = commandResponseByAggregate.selectKey((k, v) -> v.commandId());
+                                                    KStream<K, CommandResponse<K>> commandResponseByAggregate) {
+        KStream<UUID, CommandResponse<K>> commandResponseByCommandId = commandResponseByAggregate.selectKey((k, v) -> v.commandId());
 
         IdempotentStream.IdempotentAction<A> idempotentAction = IdempotentStream.getActionRequestsWithResponse(ctx.actionSpec,
                 actionRequest,
@@ -70,9 +70,9 @@ public final class SourcingStream {
     private static <A, I, K, C> Tuple2<KStream<UUID, ActionResponse>, KStream<K, CommandRequest<K, C>>> handleActionRequest(
             SourcingContext<A, I, K, C> ctx,
             KStream<UUID, ActionRequest<A>> actionRequests,
-            KStream<K, CommandResponse> commandResponseByAggregate) {
+            KStream<K, CommandResponse<K>> commandResponseByAggregate) {
 
-        Function<CommandResponse, Sequence> getAggregateSequence = cResp ->
+        Function<CommandResponse<K>, Sequence> getAggregateSequence = cResp ->
                 cResp.sequenceResult().getOrElse(cResp.readSequence());
 
         KStream<UUID, Tuple2<ActionRequest<A>, Result<Throwable, I>>> reqsWithDecoded =
@@ -96,22 +96,22 @@ public final class SourcingStream {
                 .map((k, v) -> KeyValue.pair(ctx.commandSpec.keyMapper.apply(v.v2()), v.v1()))
                 .peek(Utils.logValues(logger, "requestByAggregateKey"));
 
-        Materialized<K, CommandResponse, KeyValueStore<Bytes, byte[]>> materializer =
+        Materialized<K, CommandResponse<K>, KeyValueStore<Bytes, byte[]>> materializer =
                 Materialized
-                        .<K, CommandResponse, KeyValueStore<Bytes, byte[]>>as(
+                        .<K, CommandResponse<K>, KeyValueStore<Bytes, byte[]>>as(
                                 "last_command_by_aggregate_" + ctx.commandSpec.aggregateName)
                         .withKeySerde(ctx.cSerdes().aggregateKey())
                         .withValueSerde(ctx.cSerdes().commandResponse());
 
         // Get the most recent command response for the aggregate
-        KTable<K, CommandResponse> lastCommandByAggregate =
+        KTable<K, CommandResponse<K>> lastCommandByAggregate =
                 commandResponseByAggregate
                         .groupByKey()
                         .reduce((cr1, cr2) ->
                                         getAggregateSequence.apply(cr2).isGreaterThan(getAggregateSequence.apply(cr1)) ? cr2 : cr1,
                                 materializer);
 
-        ValueJoiner<ActionRequest<A>, CommandResponse, CommandRequest<K, C>> valueJoiner =
+        ValueJoiner<ActionRequest<A>, CommandResponse<K>, CommandRequest<K, C>> valueJoiner =
                 (aReq, cResp) -> {
                     Sequence sequence = (cResp == null) ? Sequence.first() : getAggregateSequence.apply(cResp);
 
@@ -143,10 +143,10 @@ public final class SourcingStream {
     private static <A, I, K, C> KStream<UUID, ActionResponse> handleCommandResponse(
             SourcingContext<A, I, K, C> ctx,
             KStream<UUID, ActionRequest<A>> actionRequests,
-            KStream<UUID, CommandResponse> responseByCommandId) {
+            KStream<UUID, CommandResponse<K>> responseByCommandId) {
         long timeOutMillis = ctx.commandSpec.timeOutMillis;
         // find the response for the request
-        KStream<UUID, Tuple2<ActionRequest<A>, CommandResponse>> actionRequestWithResponse =
+        KStream<UUID, Tuple2<ActionRequest<A>, CommandResponse<K>>> actionRequestWithResponse =
 
                 // join command response to action request by the command / action ID
                 // TODO: timeouts - will be easy to do timeouts with a left join once https://issues.apache.org/jira/browse/KAFKA-6556 has been released
@@ -164,7 +164,7 @@ public final class SourcingStream {
         return actionRequestWithResponse
                 .mapValues((k, v) -> {
                             ActionRequest<A> aReq = v.v1();
-                            CommandResponse cResp = v.v2();
+                            CommandResponse<K> cResp = v.v2();
                             Result<CommandError, Sequence> sequenceResult =
                                     (cResp == null) ?
                                             Result.failure(CommandError.of(CommandError.Reason.Timeout,

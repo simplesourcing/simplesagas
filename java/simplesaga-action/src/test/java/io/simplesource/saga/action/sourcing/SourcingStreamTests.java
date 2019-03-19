@@ -43,7 +43,7 @@ class SourcingStreamTests {
 
         // publishers
         final RecordPublisher<UUID, ActionRequest<SpecificRecord>> actionRequestPublisher;
-        final RecordPublisher<AccountId, CommandResponse> commandResponsePublisher;
+        final RecordPublisher<AccountId, CommandResponse<AccountId>> commandResponsePublisher;
         final RecordPublisher<UUID, ActionResponse> actionResponsePublisher;
 
         // verifiers
@@ -144,7 +144,7 @@ class SourcingStreamTests {
         acc.actionRequestPublisher().publish(actionRequest.sagaId, actionRequest);
         acc.commandRequestVerifier().drainAll();
 
-        CommandResponse commandResponse = new CommandResponse(commandId, Sequence.position(201L), Result.success(Sequence.position(202L)));
+        CommandResponse<AccountId> commandResponse = new CommandResponse<>(accountCommand.getId(), commandId, Sequence.position(201L), Result.success(Sequence.position(202L)));
         acc.commandResponsePublisher().publish(new AccountId(createAccount.getId()), commandResponse);
 
         acc.actionResponseVerifier().verifySingle((sagaId, actionResponse) -> {
@@ -170,7 +170,7 @@ class SourcingStreamTests {
         acc.actionRequestPublisher().publish(actionRequest.sagaId, actionRequest);
         acc.commandRequestVerifier().drainAll();
 
-        CommandResponse commandResponse = new CommandResponse(commandId, Sequence.position(201L), Result.success(Sequence.position(202L)));
+        CommandResponse commandResponse = new CommandResponse<>(accountCommand.getId(), commandId, Sequence.position(201L), Result.success(Sequence.position(202L)));
         acc.commandResponsePublisher().publish(new AccountId(createAccount.getId()), commandResponse);
 
         acc.actionResponseVerifier().verifySingle((sagaId, actionResponse) -> {});
