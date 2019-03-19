@@ -46,7 +46,7 @@
 
         <dependency>
             <groupId>io.simplesource</groupId>
-            <artifactId>simplesaga-dsl</artifactId>
+            <artifactId>simplesaga-client</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
