@@ -2,7 +2,7 @@ package io.simplesource.saga.action.async;
 
 import io.simplesource.saga.action.internal.ActionTopologyBuilder;
 import io.simplesource.saga.action.internal.AsyncStream;
-import io.simplesource.saga.action.internal.AsyncTransform;
+import io.simplesource.saga.action.internal.AsyncPipe;
 import io.simplesource.saga.model.serdes.ActionSerdes;
 import io.simplesource.saga.model.specs.ActionProcessorSpec;
 import io.simplesource.saga.shared.topics.TopicConfig;
@@ -58,7 +58,7 @@ public final class AsyncApp<A> {
             ScheduledExecutorService usedExecutor = executor != null ? executor : Executors.newScheduledThreadPool(1);
             executorServices.add(usedExecutor);
             AsyncContext<A, I, K, O, R> async = new AsyncContext<>(actionSpec, actionTopicConfig.namer, spec, usedExecutor);
-            AsyncTransform.AsyncPipe pipe = AsyncStream.addSubTopology(topologyContext, async);
+            AsyncPipe pipe = AsyncStream.addSubTopology(topologyContext, async);
             addCloseHandler(() -> {
                 pipe.close();
                 return 0;
@@ -90,7 +90,7 @@ public final class AsyncApp<A> {
             throw new RuntimeException("Unable to create missing topics");
         }
 
-        Topology topology = topologyBuilder.build(appConfig);
+        Topology topology = buildTopology(appConfig);
         logger.info("Topology description {}", topology.describe());
 
         StreamAppUtils.runStreamApp(config, topology);
@@ -101,4 +101,9 @@ public final class AsyncApp<A> {
             executorServices.forEach(StreamAppUtils::shutdownExecutorService);
         });
     }
+
+    public Topology buildTopology(StreamAppConfig appConfig) {
+        return topologyBuilder.build(appConfig);
+    }
+
 }

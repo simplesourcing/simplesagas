@@ -28,4 +28,17 @@ protocol Schemas {
       TransferFunds
     } command;
   }
+
+  record AsyncTestId {
+    string id;
+  }
+
+  record AsyncTestCommand {
+    AsyncTestId id;
+    int value;
+  }
+
+  record AsyncTestOutput {
+    int value;
+  }
 }

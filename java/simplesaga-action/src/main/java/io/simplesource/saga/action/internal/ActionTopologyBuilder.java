@@ -16,7 +16,7 @@ import java.util.Properties;
 import java.util.UUID;
 import java.util.function.Consumer;
 
-public class ActionTopologyBuilder<A> implements TopologyBuilder {
+public final class ActionTopologyBuilder<A> implements TopologyBuilder {
 
     private final ActionProcessorSpec<A> actionSpec;
     private final TopicConfig actionTopicConfig;

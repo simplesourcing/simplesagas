@@ -187,6 +187,5 @@ class SourcingStreamTests {
             assertThat(actionResponse.result.isSuccess()).isEqualTo(true);
         });
         acc.actionResponseVerifier().verifyNoRecords();
-
     }
 }
