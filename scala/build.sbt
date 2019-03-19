@@ -7,7 +7,7 @@ organization := "io.simplesource"
 version := "0.1.0"
 
 val circeV          = "0.10.0"
-val simpleSourcingV = "0.2.4-SNAPSHOT"
+val simpleSourcingV = "0.2.4"
 val simpleSagaV     = "0.2.3-SNAPSHOT"
 val kafkaVersion    = "2.0.0"
 val catsV           = "1.4.0"
