@@ -3,7 +3,7 @@ package io.simplesource.saga.saga;
 import io.simplesource.data.NonEmptyList;
 import io.simplesource.data.Result;
 import io.simplesource.kafka.spec.WindowSpec;
-import io.simplesource.saga.dsl.SagaDsl;
+import io.simplesource.saga.client.dsl.SagaDsl;
 import io.simplesource.saga.model.action.ActionCommand;
 import io.simplesource.saga.model.action.ActionStatus;
 import io.simplesource.saga.model.messages.*;
@@ -28,7 +28,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 
-import static io.simplesource.saga.dsl.SagaDsl.inParallel;
+import static io.simplesource.saga.client.dsl.SagaDsl.inParallel;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class SagaStreamTests {

@@ -1,12 +1,12 @@
-package io.simplesource.saga.saga.builder;
+package io.simplesource.saga.client.builder;
 
 import io.simplesource.kafka.dsl.KafkaConfig;
 import io.simplesource.kafka.internal.util.NamedThreadFactory;
 import io.simplesource.kafka.spec.WindowSpec;
+import io.simplesource.saga.client.api.KafkaSagaAPI;
 import io.simplesource.saga.model.api.SagaAPI;
 import io.simplesource.saga.model.serdes.SagaSerdes;
 import io.simplesource.saga.model.specs.SagaSpec;
-import io.simplesource.saga.saga.api.KafkaSagaAPI;
 import io.simplesource.saga.shared.topics.TopicConfig;
 import io.simplesource.saga.shared.topics.TopicConfigBuilder;
 import io.simplesource.saga.shared.topics.TopicTypes;

@@ -1,4 +1,4 @@
-package io.simplesource.saga.dsl;
+package io.simplesource.saga.client.dsl;
 
 import java.util.Collections;
 import java.util.Set;
@@ -8,7 +8,7 @@ import java.util.stream.Collectors;
 import io.simplesource.data.NonEmptyList;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static io.simplesource.saga.dsl.SagaDsl.*;
+import static io.simplesource.saga.client.dsl.SagaDsl.*;
 
 import io.simplesource.saga.model.action.ActionCommand;
 import io.simplesource.saga.model.saga.Saga;

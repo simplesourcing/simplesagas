@@ -1,4 +1,4 @@
-package io.simplesource.saga.dsl;
+package io.simplesource.saga.client.dsl;
 
 import io.simplesource.data.NonEmptyList;
 import io.simplesource.data.Result;

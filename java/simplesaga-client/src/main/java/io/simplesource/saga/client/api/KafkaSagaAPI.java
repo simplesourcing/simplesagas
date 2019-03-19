@@ -1,4 +1,4 @@
-package io.simplesource.saga.saga.api;
+package io.simplesource.saga.client.api;
 
 import io.simplesource.data.FutureResult;
 import io.simplesource.data.Result;
