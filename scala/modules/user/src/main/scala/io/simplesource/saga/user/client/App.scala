@@ -1,32 +1,33 @@
 package io.simplesource.saga.user.client
 
-import java.time.{Duration, LocalDateTime}
 import java.time.format.DateTimeFormatter
+import java.time.{Duration, LocalDateTime}
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 
-import io.simplesource.saga.user.action.App.Key
-import io.simplesource.saga.user.command.model.auction.AccountCommand
-import io.simplesource.saga.user.command.model.user.UserCommand
-import io.circe.{Encoder, Json}
 import io.circe.generic.auto._
 import io.circe.syntax._
+import io.circe.{Encoder, Json}
 import io.simplesource.data.Result
 import io.simplesource.kafka.dsl.KafkaConfig
 import io.simplesource.saga.action.http.HttpRequest
 import io.simplesource.saga.action.http.HttpRequest.HttpVerb
+import io.simplesource.saga.client.builder.SagaClientBuilder
+import io.simplesource.saga.client.dsl.SagaDsl._
 import io.simplesource.saga.model.action.ActionCommand
 import io.simplesource.saga.model.api.SagaAPI
 import io.simplesource.saga.model.messages.SagaRequest
 import io.simplesource.saga.model.saga.SagaError
-import io.simplesource.saga.saga.builder.SagaClientBuilder
-import org.slf4j.LoggerFactory
-import io.simplesource.saga.user.shared.TopicUtils
 import io.simplesource.saga.scala.serdes.JsonSerdes
+import io.simplesource.saga.user.action.App.Key
+import io.simplesource.saga.user.action.HttpClient
+import io.simplesource.saga.user.command.model.auction.AccountCommand
+import io.simplesource.saga.user.command.model.user.UserCommand
+import io.simplesource.saga.user.shared.TopicUtils
+import org.slf4j.LoggerFactory
 
 import scala.collection.JavaConverters._
-import io.simplesource.saga.dsl.SagaDsl._
-import io.simplesource.saga.user.action.HttpClient
+
 
 object App {
   private val logger                       = LoggerFactory.getLogger(classOf[App])
