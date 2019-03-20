@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
 class CommandConsumer {
     private static Logger logger = LoggerFactory.getLogger(CommandConsumer.class);
 
-    static <A, I, K, C> KStream<K, CommandResponse> commandResponseStream(
+    static <A, I, K, C> KStream<K, CommandResponse<K>> commandResponseStream(
             CommandSpec<A, I, K, C> spec, TopicNamer commandTopicNamer, StreamsBuilder builder) {
         return builder
                 .stream(commandTopicNamer.apply(TopicTypes.CommandTopic.response),
