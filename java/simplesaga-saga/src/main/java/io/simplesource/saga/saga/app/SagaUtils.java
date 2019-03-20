@@ -13,7 +13,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 final class SagaUtils {
-    static Logger logger = LoggerFactory.getLogger(SagaUtils.class);
+    private static Logger logger = LoggerFactory.getLogger(SagaUtils.class);
 
     private static <A> boolean sagaUndoesPending(Saga<A> sagaState) {
         return sagaState.actions.values()
@@ -28,12 +28,22 @@ final class SagaUtils {
                 .anyMatch(a -> a.status.equals(ActionStatus.Failed));
     }
 
+    static <A> boolean actionInProgress(Saga<A> sagaState) {
+        return sagaState.actions.values()
+                .stream()
+                .anyMatch(a -> a.status.equals(ActionStatus.InProgress));
+    }
+
+    static <A> boolean sagaFailurePending(Saga<A> sagaState) {
+        return failedAction(sagaState) && actionInProgress(sagaState);
+    }
+
     static <A> boolean sagaInFailure(Saga<A> sagaState) {
-        return failedAction(sagaState) && sagaUndoesPending(sagaState);
+        return failedAction(sagaState) && !actionInProgress(sagaState) && sagaUndoesPending(sagaState);
     }
 
     static <A> boolean sagaFailed(Saga<A> sagaState) {
-        return failedAction(sagaState) && !sagaUndoesPending(sagaState);
+        return failedAction(sagaState) && !actionInProgress(sagaState) && !sagaUndoesPending(sagaState);
     }
 
     static <A> boolean sagaCompleted(Saga<A> sagaState) {
@@ -57,7 +67,7 @@ final class SagaUtils {
                     .values()
                     .stream()
                     .filter(action -> action.status == ActionStatus.Pending && doneKeys.containsAll(action.dependencies))
-                    .map(a -> new SagaActionExecution<A>(a.actionId, a.actionType, Optional.of(a.command), ActionStatus.InProgress))
+                    .map(a -> new SagaActionExecution<>(a.actionId, a.actionType, Optional.of(a.command), ActionStatus.InProgress))
                     .collect(Collectors.toList());
             return pendingActions;
         } else if (sagaState.status == SagaStatus.InFailure) {
