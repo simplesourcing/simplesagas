@@ -1,6 +1,5 @@
 package io.simplesource.saga.model.messages;
 
-import io.simplesource.data.NonEmptyList;
 import io.simplesource.saga.model.action.ActionStatus;
 import io.simplesource.saga.model.saga.Saga;
 import io.simplesource.saga.model.saga.SagaError;
@@ -8,7 +7,6 @@ import io.simplesource.saga.model.saga.SagaStatus;
 import lombok.Value;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
 

@@ -51,7 +51,7 @@ final public class SagaStream {
         KStream<UUID, SagaStateTransition> inputStateTransitions = addInitialState(ctx, sagaRequestStream, stateTable);
         Tuple2<KStream<UUID, SagaStateTransition>, KStream<UUID, ActionRequest<A>>> rtar = addNextActions(stateStream);
         KStream<UUID, SagaStateTransition> responseTransitions = addActionResponses(actionResponseStream);
-        Tuple2<KStream<UUID, SagaStateTransition>, KStream<UUID, SagaResponse>> stsr = addSagaResponse(ctx, stateStream);
+        Tuple2<KStream<UUID, SagaStateTransition>, KStream<UUID, SagaResponse>> stsr = addSagaResponse(stateStream);
         KStream<UUID, Saga<A>> sagaState = applyStateTransitions(ctx, stateTransitionStream);
 
         // publish to all the output topics
@@ -116,13 +116,15 @@ final public class SagaStream {
         }
     }
 
-    static <A> Tuple2<KStream<UUID, SagaStateTransition>, KStream<UUID, SagaResponse>> addSagaResponse(SagaContext<A> ctx,
-                                                                                                       KStream<UUID, Saga<A>> sagaState) {
+    static <A> Tuple2<KStream<UUID, SagaStateTransition>, KStream<UUID, SagaResponse>> addSagaResponse(KStream<UUID, Saga<A>> sagaState) {
         KStream<UUID, StatusWithError> statusWithError = sagaState
                 .mapValues((k, state) -> {
                     if (state.status == SagaStatus.InProgress && SagaUtils.sagaCompleted(state))
                         return StatusWithError.of(state.sequence, SagaStatus.Completed);
-                    if (state.status == SagaStatus.InProgress && SagaUtils.sagaInFailure(state))
+                    if (state.status == SagaStatus.InProgress && SagaUtils.sagaFailurePending(state))
+                        return StatusWithError.of(state.sequence, SagaStatus.FailurePending);
+                    if ((state.status == SagaStatus.InProgress || state.status == SagaStatus.FailurePending) &&
+                            SagaUtils.sagaInFailure(state))
                         return StatusWithError.of(state.sequence, SagaStatus.InFailure);
                     if ((state.status == SagaStatus.InFailure || state.status == SagaStatus.InProgress) &&
                             SagaUtils.sagaFailed(state)) {

@@ -4,6 +4,7 @@ public enum SagaStatus {
     NotStarted,
     InProgress,
     Completed,
+    FailurePending,
     InFailure,
     Failed
 }
