@@ -5,9 +5,9 @@ object auction {
   final case class Reservation(reservationId: UUID, description: String, amount: BigDecimal)
   final case class Account(name: String, funds: BigDecimal, reservations: List[Reservation] = List.empty)
 
-  sealed trait AccountCommand {
-    def accountId: UUID
-  }
+  final case class AccountCommandInfo(accountId: UUID, sequence: Long, command: AccountCommand)
+
+  sealed trait AccountCommand
 
   object AccountCommand {
     final case class CreateAccount(accountId: UUID, userName: String, funds: BigDecimal)

@@ -1,0 +1,8 @@
+@namespace("io.simplesource.saga.shared.avro.generated.test")
+protocol Schemas {
+  record User {
+    string firstName;
+    string lastName;
+    int yearOfBirth;
+  }
+}

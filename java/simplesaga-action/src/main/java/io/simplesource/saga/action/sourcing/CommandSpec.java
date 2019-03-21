@@ -1,6 +1,7 @@
 package io.simplesource.saga.action.sourcing;
 
 import io.simplesource.data.Result;
+import io.simplesource.data.Sequence;
 import io.simplesource.kafka.api.CommandSerdes;
 import lombok.Value;
 
@@ -18,8 +19,7 @@ public final class CommandSpec<A, I, K, C> {
     public final Function<A, Result<Throwable, I>> decode;
     public final Function<I, C> commandMapper;
     public final Function<I, K> keyMapper;
+    public final Function<I, Sequence> sequenceMapper;
     public final CommandSerdes<K, C> commandSerdes;
-    public final String aggregateName;
     public final long timeOutMillis;
-
 }

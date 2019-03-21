@@ -1,0 +1,7 @@
+@namespace("io.simplesource.saga.shared.avro.generated")
+protocol SagaSchemas {
+  record AvroTuple2 {
+    bytes v1;
+    bytes v2;
+  }
+}

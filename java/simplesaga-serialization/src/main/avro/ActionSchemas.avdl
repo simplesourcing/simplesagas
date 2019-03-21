@@ -89,4 +89,9 @@ protocol SagaSchemas {
       AvroSagaTransitionList
     } transition;
   }
+
+  record AvroTuple2 {
+    bytes v1;
+    bytes v2;
+  }
 }

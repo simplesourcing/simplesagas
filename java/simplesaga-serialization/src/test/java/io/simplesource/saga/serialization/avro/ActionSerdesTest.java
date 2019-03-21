@@ -2,12 +2,14 @@ package io.simplesource.saga.serialization.avro;
 
 import io.confluent.kafka.schemaregistry.client.MockSchemaRegistryClient;
 import io.simplesource.data.Result;
+import io.simplesource.kafka.internal.util.Tuple2;
 import io.simplesource.saga.model.action.ActionCommand;
 import io.simplesource.saga.model.messages.ActionRequest;
 import io.simplesource.saga.model.messages.ActionResponse;
 import io.simplesource.saga.model.saga.SagaError;
 import io.simplesource.saga.model.serdes.ActionSerdes;
 import io.simplesource.saga.serialization.avro.generated.test.User;
+import io.simplesource.saga.shared.serialization.TupleSerdes;
 import org.apache.kafka.common.serialization.Serde;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -112,4 +114,39 @@ class ActionSerdesTest {
             assertThat(el.get(1)).isEqualToComparingFieldByField(sagaError2);
         });
     }
+
+    @Test
+    void tuple2Test() {
+        UUID uuid = UUID.randomUUID();
+        Serde<User> payloadSerde = SpecificSerdeUtils.specificAvroSerde(SCHEMA_URL, false, new MockSchemaRegistryClient());
+        ActionSerdes<User> serdes = AvroSerdes.actionSerdes(payloadSerde, SCHEMA_URL, true);
+        User testUser = new User("Albus", "Dumbledore", 1732);
+
+        ActionCommand<User> actionCommand = new ActionCommand<>(UUID.randomUUID(), testUser);
+
+        ActionRequest<User> request = ActionRequest.<User>builder()
+                .sagaId(UUID.randomUUID())
+                .actionId(UUID.randomUUID())
+                .actionCommand(actionCommand)
+                .actionType("actionType")
+                .build();
+
+        Tuple2<UUID, ActionRequest<User>> tuple2 = Tuple2.of(uuid, request);
+
+        Serde<Tuple2<UUID, ActionRequest<User>>> tupleSerde = TupleSerdes.tuple2(serdes.uuid(), serdes.request());
+
+        byte[] serialized =tupleSerde.serializer().serialize(FAKE_TOPIC, tuple2);
+        Tuple2<UUID, ActionRequest<User>> deserialized = tupleSerde.deserializer().deserialize(FAKE_TOPIC, serialized);
+        assertThat(deserialized.v2()).isEqualToIgnoringGivenFields(request, "actionCommand");
+
+        User uo = request.actionCommand.command;
+        User ud = deserialized.v2().actionCommand.command;
+
+        assertThat(deserialized.v1()).isEqualTo(uuid);
+        assertThat(deserialized.v2().actionCommand).isEqualToIgnoringGivenFields(request.actionCommand, "command");
+        assertThat(ud.getFirstName()).isEqualTo(uo.getFirstName());
+        assertThat(ud.getLastName()).isEqualTo(uo.getLastName());
+        assertThat(ud.getYearOfBirth()).isEqualTo(uo.getYearOfBirth());
+    }
+
 }
