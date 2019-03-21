@@ -82,7 +82,6 @@ object App {
       val decoded = a.as[String]
       decoded.toResult.errorMap(e => e)
     },
-    i => i.toLowerCase.take(3),
     (i: String, callBack: Callback[String]) => {
       callBack.complete(Result.success(s"${i.length.toString}: $i"))
     }, //i => Future.successful(s"${i.length.toString}: $i"),
@@ -91,6 +90,7 @@ object App {
       new AsyncOutput(
         o => Optional.of(Result.success(o)),
         new AsyncSerdes(Serdes.String(), Serdes.String()),
+        i => i.toLowerCase.take(3),
         _ => Optional.of("async_test_topic"),
         List(new TopicCreation("async_test_topic", new TopicSpec(6, 1, Map.empty[String, String].asJava))).asJava
       )),
