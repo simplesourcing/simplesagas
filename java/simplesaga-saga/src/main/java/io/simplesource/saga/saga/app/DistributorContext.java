@@ -12,14 +12,4 @@ public final class DistributorContext<V> {
     public final String topicNameMapTopic;
     public final WindowSpec responseWindowSpec;
     public final Function<V, UUID> idMapper;
-
-    public DistributorContext(DistributorSerdes<V> serdes,
-                              String topicNameMapTopic,
-                              WindowSpec responseWindowSpec,
-                              Function<V, UUID> idMapper) {
-        this.serdes = serdes;
-        this.topicNameMapTopic = topicNameMapTopic;
-        this.responseWindowSpec = responseWindowSpec;
-        this.idMapper = idMapper;
-    }
 }

@@ -24,9 +24,10 @@ final class AsyncActionProcessor {
 
     @Value
     private static class ResultGeneration<K, R> {
-        final String topicName;
-        final AsyncSerdes<K, R> outputSerdes;
-        final R result;
+        public final K key;
+        public final String topicName;
+        public final AsyncSerdes<K, R> outputSerdes;
+        public final R result;
     }
 
     public static <A, I, K, O, R> void processRecord(
@@ -35,23 +36,21 @@ final class AsyncActionProcessor {
             AsyncPublisher<UUID, ActionResponse> responsePublisher,
             Function<AsyncSerdes<K, R>, AsyncPublisher<K, R>> outputPublisher) {
         AsyncSpec<A, I, K, O, R> asyncSpec = asyncContext.asyncSpec;
-        Result<Throwable, Tuple2<I, K>> decodedWithKey = tryWrap(() ->
-                asyncSpec.inputDecoder.apply(request.actionCommand.command))
-                .flatMap(decoded ->
-                        tryPure(() ->
-                                asyncSpec.keyMapper.apply(decoded)).map(k -> Tuple2.of(decoded, k)));
+        Result<Throwable, I> decodedInput = tryWrap(() ->
+                asyncSpec.inputDecoder.apply(request.actionCommand.command));
 
         AtomicBoolean completed = new AtomicBoolean(false);
-        Function<Tuple2<I, K>, Callback<O>> cpb = tuple -> result -> {
+        Function<I, Callback<O>> cpb = input -> result -> {
             if (completed.compareAndSet(false, true)) {
                 Result<Throwable, Optional<ResultGeneration<K, R>>> resultWithOutput = tryWrap(() ->
                         result.flatMap(output -> {
                             Optional<Result<Throwable, ResultGeneration<K, R>>> x =
                                     asyncSpec.outputSpec.flatMap(oSpec -> {
-                                        Optional<String> topicNameOpt = oSpec.topicName().apply(tuple.v1());
+                                        K outputKey = oSpec.keyMapper.apply(input);
+                                        Optional<String> topicNameOpt = oSpec.topicName.apply(input);
                                         return topicNameOpt.flatMap(tName ->
-                                                oSpec.outputDecoder().apply(output)).map(t ->
-                                                t.map(r -> new ResultGeneration<>(topicNameOpt.get(), oSpec.serdes(), r)));
+                                                oSpec.outputDecoder.apply(output)).map(t ->
+                                                t.map(r -> new ResultGeneration<>(outputKey, topicNameOpt.get(), oSpec.serdes, r)));
                                     });
 
                             // this is just `sequence` in FP - swapping Result and Option
@@ -62,17 +61,17 @@ final class AsyncActionProcessor {
                 resultWithOutput.ifSuccessful(resultGenOpt ->
                         resultGenOpt.ifPresent(rg -> {
                             AsyncPublisher<K, R> publisher = outputPublisher.apply(rg.outputSerdes);
-                            publisher.send(rg.topicName, tuple.v2(), rg.result);
+                            publisher.send(rg.topicName, rg.key, rg.result);
                         }));
 
                 publishActionResult(asyncContext, sagaId, request, responsePublisher, resultWithOutput);
             }
         };
 
-        if (decodedWithKey.isFailure()) {
-            publishActionResult(asyncContext, sagaId, request, responsePublisher, decodedWithKey);
+        if (decodedInput.isFailure()) {
+            publishActionResult(asyncContext, sagaId, request, responsePublisher, decodedInput);
         } else {
-            Tuple2<I, K> inputWithKey = decodedWithKey.getOrElse(null);
+            I inputWithKey = decodedInput.getOrElse(null);
 
             Callback<O> callback;
             try {
@@ -82,7 +81,7 @@ final class AsyncActionProcessor {
                 throw e;
             }
             asyncSpec.timeout.ifPresent(tmOut -> {
-                        asyncContext.executor().schedule(() -> {
+                        asyncContext.executor.schedule(() -> {
                             if (completed.compareAndSet(false, true)) {
                                 Result<Throwable, O> timeoutResult = Result.failure(new TimeoutException("Timeout after " + tmOut.toString()));
                                 callback.complete(timeoutResult);
@@ -91,9 +90,9 @@ final class AsyncActionProcessor {
                         }, tmOut.toMillis(), TimeUnit.MILLISECONDS);
                     }
             );
-            asyncContext.executor().execute(() -> {
+            asyncContext.executor.execute(() -> {
                 try {
-                    asyncSpec.asyncFunction.accept(inputWithKey.v1(), callback);
+                    asyncSpec.asyncFunction.accept(inputWithKey, callback);
                 } catch (Throwable e) {
                     Result<Throwable, O> failure = Result.failure(e);
                     publishActionResult(asyncContext, sagaId, request, responsePublisher, failure);

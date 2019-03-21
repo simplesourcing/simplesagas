@@ -12,12 +12,12 @@ final class ActionPublisher {
 
     static <A> void publishActionResponse(ActionContext<A> ctx, KStream<UUID, ActionResponse> actionResponseStream) {
         actionResponseStream.to(
-                ctx.actionTopicNamer().apply(TopicTypes.ActionTopic.response),
-                Produced.with(ctx.actionSpec().serdes().uuid(), ctx.actionSpec().serdes().response()));
+                ctx.actionTopicNamer.apply(TopicTypes.ActionTopic.response),
+                Produced.with(ctx.actionSpec.serdes.uuid(), ctx.actionSpec.serdes.response()));
     }
 
     static <A> void publishActionRequest(ActionContext<A> ctx, KStream<UUID, ActionRequest<A>> request, boolean unprocessed) {
-        request.to(ctx.actionTopicNamer().apply(unprocessed ? TopicTypes.ActionTopic.requestUnprocessed : TopicTypes.ActionTopic.request),
-                Produced.with(ctx.actionSpec().serdes().uuid(), ctx.actionSpec().serdes().request()));
+        request.to(ctx.actionTopicNamer.apply(unprocessed ? TopicTypes.ActionTopic.requestUnprocessed : TopicTypes.ActionTopic.request),
+                Produced.with(ctx.actionSpec.serdes.uuid(), ctx.actionSpec.serdes.request()));
     }
 }

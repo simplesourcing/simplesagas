@@ -17,9 +17,9 @@ import java.util.stream.Stream;
 public final class SagaDsl {
     @Value
     public static final class SubSaga<A> {
-        List<UUID> input;
-        List<UUID> output;
-        Optional<SagaBuilder<A>> sagaBuilder;
+        public final List<UUID> input;
+        public final List<UUID> output;
+        public final Optional<SagaBuilder<A>> sagaBuilder;
 
         public SubSaga<A> andThen(SubSaga<A> next) {
             Optional<SagaBuilder<A>> sbO = this.sagaBuilder;

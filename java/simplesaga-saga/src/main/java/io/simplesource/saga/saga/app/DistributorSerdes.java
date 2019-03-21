@@ -9,9 +9,4 @@ import java.util.UUID;
 public final class DistributorSerdes<V> {
     public final Serde<UUID> uuid;
     public final Serde<V> value;
-
-    public DistributorSerdes(Serde<UUID> uuid, Serde<V> value) {
-        this.uuid = uuid;
-        this.value = value;
-    }
 }

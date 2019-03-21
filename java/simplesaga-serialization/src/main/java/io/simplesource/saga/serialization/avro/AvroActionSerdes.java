@@ -40,13 +40,13 @@ public class AvroActionSerdes<A> implements ActionSerdes<A> {
     public Serde<ActionRequest<A>> request() {
         return SerdeUtils.iMap(avroActionRequestSerde,
                 (topic, r) -> AvroActionRequest.newBuilder()
-                        .setActionId(r.actionId().toString())
-                        .setSagaId(r.sagaId().toString())
-                        .setActionType(r.actionType())
+                        .setActionId(r.actionId.toString())
+                        .setSagaId(r.sagaId.toString())
+                        .setActionType(r.actionType)
                         .setActionCommand(SagaSerdeUtils.actionCommandToAvro(
                                 payloadSerde,
                                 topic,
-                                r.actionType(),
+                                r.actionType,
                                 r.actionCommand))
                         .build(),
                 (topic, ar) -> {

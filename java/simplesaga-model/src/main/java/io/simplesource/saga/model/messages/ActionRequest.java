@@ -1,7 +1,9 @@
 package io.simplesource.saga.model.messages;
 
 import io.simplesource.saga.model.action.ActionCommand;
+import lombok.AccessLevel;
 import lombok.Builder;
+import lombok.Getter;
 import lombok.Value;
 
 import java.util.UUID;

@@ -15,7 +15,7 @@ import lombok.Value;
   */
 
 @Value
-public class SourcingContext<A, I, K, C> {
+public final class SourcingContext<A, I, K, C> {
     public final ActionProcessorSpec<A> actionSpec;
     public final CommandSpec<A, I, K, C> commandSpec;
     public final TopicNamer actionTopicNamer;

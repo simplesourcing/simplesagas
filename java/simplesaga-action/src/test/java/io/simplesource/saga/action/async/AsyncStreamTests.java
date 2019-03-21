@@ -80,12 +80,12 @@ class AsyncStreamTests {
 
             AsyncSpec<SpecificRecord, AsyncTestCommand, AsyncTestId, Integer, AsyncTestOutput> asyncSpec = new AsyncSpec<>(Constants.asyncTestActionType,
                     a -> Result.success((AsyncTestCommand) a),
-                    AsyncTestCommand::getId,
                     asyncFunction,
                     "group_id",
                     Optional.of(new AsyncOutput<>(
                             o -> Optional.of(Result.success(new AsyncTestOutput(o))),
                             asyncSerdes,
+                            AsyncTestCommand::getId,
                             x -> Optional.of(ASYNC_TEST_OUTPUT_TOPIC),
                             Collections.singletonList(new TopicCreation(ASYNC_TEST_OUTPUT_TOPIC, new TopicSpec(6, (short) 1, Collections.emptyMap()))
                             ))),
@@ -205,10 +205,10 @@ class AsyncStreamTests {
 
         ActionRequest<SpecificRecord> actionRequest = createRequest(accountCommand, UUID.randomUUID());
 
-        acc.actionRequestPublisher().publish(actionRequest.sagaId, actionRequest);
+        acc.actionRequestPublisher.publish(actionRequest.sagaId, actionRequest);
 
         acc.actionUnprocessedRequestVerifier.verifySingle((id, req) -> {
-            assertThat(id).isEqualTo(actionRequest.sagaId());
+            assertThat(id).isEqualTo(actionRequest.sagaId);
             assertThat(req).isEqualToComparingFieldByField(actionRequest);
         });
     }
@@ -220,7 +220,7 @@ class AsyncStreamTests {
 
         AsyncTestCommand accountCommand = new AsyncTestCommand(new AsyncTestId("id"), 12);
         ActionRequest<SpecificRecord> actionRequest = createRequest(new AsyncTestCommand(new AsyncTestId("id"), 12), UUID.randomUUID());
-        acc.actionRequestPublisher().publish(actionRequest.sagaId, actionRequest);
+        acc.actionRequestPublisher.publish(actionRequest.sagaId, actionRequest);
 
         AsyncActionProcessorProxy.processRecord(acc.asyncContext, actionRequest.sagaId, actionRequest, validation.responseProducer, validation.outputProducer);
 
@@ -242,7 +242,7 @@ class AsyncStreamTests {
         AsyncTestCommand accountCommand = new AsyncTestCommand(testId, 12);
 
         ActionRequest<SpecificRecord> actionRequest = createRequest(accountCommand, UUID.randomUUID());
-        acc.actionRequestPublisher().publish(actionRequest.sagaId, actionRequest);
+        acc.actionRequestPublisher.publish(actionRequest.sagaId, actionRequest);
 
         AsyncValidation validation = AsyncValidation.create();
         AsyncActionProcessorProxy.processRecord(acc.asyncContext, actionRequest.sagaId, actionRequest, validation.responseProducer, validation.outputProducer);
@@ -259,7 +259,7 @@ class AsyncStreamTests {
         AsyncTestCommand accountCommand = new AsyncTestCommand(testId, 12);
 
         ActionRequest<SpecificRecord> actionRequest = createRequest(accountCommand, UUID.randomUUID());
-        acc.actionRequestPublisher().publish(actionRequest.sagaId, actionRequest);
+        acc.actionRequestPublisher.publish(actionRequest.sagaId, actionRequest);
 
         AsyncValidation validation = AsyncValidation.create();
         AsyncActionProcessorProxy.processRecord(acc.asyncContext, actionRequest.sagaId, actionRequest, validation.responseProducer, validation.outputProducer);
@@ -279,7 +279,7 @@ class AsyncStreamTests {
         AsyncTestCommand accountCommand = new AsyncTestCommand(testId, 12);
 
         ActionRequest<SpecificRecord> actionRequest = createRequest(accountCommand, UUID.randomUUID());
-        acc.actionRequestPublisher().publish(actionRequest.sagaId, actionRequest);
+        acc.actionRequestPublisher.publish(actionRequest.sagaId, actionRequest);
 
         AsyncValidation validation = AsyncValidation.create();
         AsyncActionProcessorProxy.processRecord(acc.asyncContext, actionRequest.sagaId, actionRequest, validation.responseProducer, validation.outputProducer);
@@ -300,7 +300,7 @@ class AsyncStreamTests {
         AsyncTestCommand accountCommand = new AsyncTestCommand(testId, 12);
 
         ActionRequest<SpecificRecord> actionRequest = createRequest(accountCommand, UUID.randomUUID());
-        acc.actionRequestPublisher().publish(actionRequest.sagaId, actionRequest);
+        acc.actionRequestPublisher.publish(actionRequest.sagaId, actionRequest);
 
         AsyncValidation validation = AsyncValidation.create();
         AsyncActionProcessorProxy.processRecord(acc.asyncContext, actionRequest.sagaId, actionRequest, validation.responseProducer, validation.outputProducer);
@@ -326,7 +326,7 @@ class AsyncStreamTests {
         AsyncTestCommand accountCommand = new AsyncTestCommand(testId, 12);
 
         ActionRequest<SpecificRecord> actionRequest = createRequest(accountCommand, UUID.randomUUID());
-        acc.actionRequestPublisher().publish(actionRequest.sagaId, actionRequest);
+        acc.actionRequestPublisher.publish(actionRequest.sagaId, actionRequest);
 
         AsyncValidation validation = AsyncValidation.create();
         AsyncActionProcessorProxy.processRecord(acc.asyncContext, actionRequest.sagaId, actionRequest, validation.responseProducer, validation.outputProducer);
@@ -346,7 +346,7 @@ class AsyncStreamTests {
         AsyncValidation validation = AsyncValidation.create(acc.actionResponsePublisher);
 
         ActionRequest<SpecificRecord> actionRequest = createRequest(new AsyncTestCommand(new AsyncTestId("id"), 12), UUID.randomUUID());
-        acc.actionRequestPublisher().publish(actionRequest.sagaId, actionRequest);
+        acc.actionRequestPublisher.publish(actionRequest.sagaId, actionRequest);
 
         acc.actionUnprocessedRequestVerifier.verifySingle((id, req) -> { });
 
@@ -355,10 +355,10 @@ class AsyncStreamTests {
         delayMillis(200);
         assertThat(validation.responseRecords).hasSize(1);
 
-        acc.actionRequestPublisher().publish(actionRequest.sagaId, actionRequest);
+        acc.actionRequestPublisher.publish(actionRequest.sagaId, actionRequest);
 
         // does not generate an additional request
-        acc.actionUnprocessedRequestVerifier().verifyNoRecords();
+        acc.actionUnprocessedRequestVerifier.verifyNoRecords();
     }
 
 }

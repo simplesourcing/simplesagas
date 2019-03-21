@@ -25,7 +25,7 @@ public class SagaCoordinatorTopologyBuilder<A> {
     private final List<Consumer<SagaTopologyContext<A>>> onBuildConsumers = new ArrayList<>();
 
     @Value
-    public static final class SagaTopologyContext<A> {
+    public final static class SagaTopologyContext<A> {
         public final StreamsBuilder builder;
         public final KStream<UUID, SagaRequest<A>> sagaRequest;
         public final KStream<UUID, Saga<A>> sagaState;
@@ -56,7 +56,7 @@ public class SagaCoordinatorTopologyBuilder<A> {
         onBuildConsumers.forEach(p -> p.accept(topologyContext));
 
         DistributorContext<SagaResponse> distCtx = new DistributorContext<>(
-                new DistributorSerdes<>(sagaSpec.serdes().uuid(), sagaSpec.serdes().response()),
+                new DistributorSerdes<>(sagaSpec.serdes.uuid(), sagaSpec.serdes.response()),
                 sagaTopicConfig.namer.apply(TopicTypes.SagaTopic.responseTopicMap),
                 sagaSpec.responseWindow,
                 response -> response.sagaId);

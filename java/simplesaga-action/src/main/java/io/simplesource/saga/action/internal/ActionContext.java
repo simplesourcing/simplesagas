@@ -6,6 +6,6 @@ import lombok.Value;
 
 @Value
 final public class ActionContext<A> {
-    final ActionProcessorSpec<A> actionSpec;
-    final TopicNamer actionTopicNamer;
+    public final ActionProcessorSpec<A> actionSpec;
+    public final TopicNamer actionTopicNamer;
 }

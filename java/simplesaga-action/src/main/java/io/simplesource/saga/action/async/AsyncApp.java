@@ -52,7 +52,7 @@ public final class AsyncApp<A> {
     }
 
     public <I, K, O, R> AsyncApp<A> addAsync(AsyncSpec<A, I, K, O, R> spec) {
-        spec.outputSpec.ifPresent(oSpec -> expectedTopics.addAll(oSpec.topicCreations()));
+        spec.outputSpec.ifPresent(oSpec -> expectedTopics.addAll(oSpec.topicCreations));
 
         topologyBuilder.onBuildTopology((topologyContext) -> {
             ScheduledExecutorService usedExecutor = executor != null ? executor : Executors.newScheduledThreadPool(1);

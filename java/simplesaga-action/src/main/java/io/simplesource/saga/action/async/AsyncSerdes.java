@@ -4,7 +4,7 @@ import lombok.Value;
 import org.apache.kafka.common.serialization.Serde;
 
 @Value
-final public class AsyncSerdes<K, R>{
-    final public Serde<K> key;
-    final public Serde<R> output;
+public final class AsyncSerdes<K, R>{
+    public final Serde<K> key;
+    public final Serde<R> output;
 }

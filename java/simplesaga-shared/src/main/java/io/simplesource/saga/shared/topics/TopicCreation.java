@@ -8,8 +8,8 @@ import java.util.stream.Collectors;
 
 @Value
 public class TopicCreation {
-    public String topicName;
-    public TopicSpec topicSpec;
+    public final String topicName;
+    public final TopicSpec topicSpec;
 
     public static TopicCreation apply(TopicConfig topicConfig, String topicType) {
         String name = topicConfig.namer.apply(topicType);
