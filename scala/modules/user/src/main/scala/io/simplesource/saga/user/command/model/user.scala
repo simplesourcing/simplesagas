@@ -4,6 +4,8 @@ import java.util.UUID
 object user {
   final case class User(firstName: String, lastName: String, yearOfBirth: Int)
 
+  final case class UserCommandInfo(userId: UUID, sequence: Long, command: UserCommand)
+
   sealed trait UserCommand {
     def userId: UUID
   }

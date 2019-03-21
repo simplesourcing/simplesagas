@@ -32,7 +32,7 @@ object App {
           .withResourceNamingStrategy(new PrefixResourceNamingStrategy(constants.commandTopicPrefix))
           .withName(constants.userAggregateName)
           .withInitialValue(_ => None)
-          .withInvalidSequenceStrategy(InvalidSequenceStrategy.Strict)
+          .withInvalidSequenceStrategy(InvalidSequenceStrategy.LastWriteWins) // TODO: re-enable sequence checking
           .withDefaultTopicSpec(constants.partitions, constants.replication, constants.retentionDays)
           .build())
       .addAggregate(
@@ -45,7 +45,7 @@ object App {
           .withResourceNamingStrategy(new PrefixResourceNamingStrategy(constants.commandTopicPrefix))
           .withName(constants.accountAggregateName)
           .withInitialValue(_ => None)
-          .withInvalidSequenceStrategy(InvalidSequenceStrategy.Strict)
+          .withInvalidSequenceStrategy(InvalidSequenceStrategy.LastWriteWins) // TODO: re-enable sequence checking
           .withDefaultTopicSpec(constants.partitions, constants.replication, constants.retentionDays)
           .build())
       .start()

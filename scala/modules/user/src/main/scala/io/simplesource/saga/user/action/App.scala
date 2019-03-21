@@ -6,7 +6,7 @@ import java.util.{Optional, UUID}
 
 import io.circe.Json
 import io.circe.generic.auto._
-import io.simplesource.data.Result
+import io.simplesource.data.{Result, Sequence}
 import io.simplesource.kafka.spec.TopicSpec
 import io.simplesource.saga.action.async.{AsyncOutput, AsyncSerdes, AsyncSpec, Callback}
 import io.simplesource.saga.action.http.{HttpApp, HttpOutput, HttpRequest, HttpSpec}
@@ -14,8 +14,8 @@ import io.simplesource.saga.action.sourcing.{CommandSpec, SourcingApp}
 import io.simplesource.saga.scala.serdes.{JsonSerdes, ProductCodecs}
 import io.simplesource.saga.shared.topics.TopicCreation
 import io.simplesource.saga.shared.utils.StreamAppConfig
-import io.simplesource.saga.user.command.model.auction.AccountCommand
-import io.simplesource.saga.user.command.model.user.UserCommand
+import io.simplesource.saga.user.command.model.auction.{AccountCommand, AccountCommandInfo}
+import io.simplesource.saga.user.command.model.user.{UserCommand, UserCommandInfo}
 import io.simplesource.saga.user.shared.TopicUtils
 import org.apache.kafka.common.serialization.Serdes
 
@@ -55,24 +55,24 @@ object App {
       eea.fold(e => Result.failure(e), a => Result.success(a))
   }
 
-  lazy val userSpec = new CommandSpec[Json, UserCommand, UUID, UserCommand](
+  lazy val userSpec = new CommandSpec[Json, UserCommandInfo, UUID, UserCommand](
     constants.userActionType,
-    json => json.as[UserCommand].toResult.errorMap(e => e),
-    (a: UserCommand) => a,
+    json => json.as[UserCommandInfo].toResult.errorMap(e => e),
+    _.command,
     _.userId,
+    i => Sequence.position(i.sequence),
     JsonSerdes.commandSerdes[UUID, UserCommand],
-    constants.userAggregateName,
     30000L
   )
 
   lazy val accountSpec =
-    new CommandSpec[Json, AccountCommand, UUID, AccountCommand](
+    new CommandSpec[Json, AccountCommandInfo, UUID, AccountCommand](
       constants.accountActionType,
-      json => json.as[AccountCommand].toResult.errorMap(e => e),
-      (a: AccountCommand) => a,
+      json => json.as[AccountCommandInfo].toResult.errorMap(e => e),
+      _.command,
       _.accountId,
+      i => Sequence.position(i.sequence),
       JsonSerdes.commandSerdes[UUID, AccountCommand],
-      constants.accountAggregateName,
       30000L
     )
 

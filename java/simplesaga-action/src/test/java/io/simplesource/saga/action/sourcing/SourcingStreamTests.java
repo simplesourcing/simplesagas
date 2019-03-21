@@ -6,9 +6,7 @@ import io.simplesource.kafka.api.CommandSerdes;
 import io.simplesource.kafka.model.CommandRequest;
 import io.simplesource.kafka.model.CommandResponse;
 import io.simplesource.kafka.serialization.avro.AvroCommandSerdes;
-import io.simplesource.saga.avro.avro.generated.test.AccountCommand;
-import io.simplesource.saga.avro.avro.generated.test.AccountId;
-import io.simplesource.saga.avro.avro.generated.test.CreateAccount;
+import io.simplesource.saga.avro.avro.generated.test.*;
 import io.simplesource.saga.model.action.ActionCommand;
 import io.simplesource.saga.model.messages.ActionRequest;
 import io.simplesource.saga.model.messages.ActionResponse;
@@ -32,9 +30,10 @@ class SourcingStreamTests {
     private static String SCHEMA_URL = "http://localhost:8081/";
     private static String TOPIC_BASE_NAME = "topic-base-name";
     private static String ACCOUNT_ID = "account id";
+    private static String ACCOUNT_ID_2 = "account id 2";
 
     @Value
-    private static class AccountCreateContext {
+    private static class AccountContext {
         final TestContext testContext;
 
         // serdes
@@ -50,14 +49,14 @@ class SourcingStreamTests {
         final RecordVerifier<AccountId, CommandRequest<AccountId, AccountCommand>> commandRequestVerifier;
         final RecordVerifier<UUID, ActionResponse> actionResponseVerifier;
 
-        AccountCreateContext() {
+        AccountContext() {
             CommandSpec<SpecificRecord, AccountCommand, AccountId, AccountCommand> commandSpec = new CommandSpec<>(
                     Constants.accountActionType,
                     a -> Result.success((AccountCommand) a),
                     c -> c,
                     AccountCommand::getId,
+                    c -> Sequence.position(c.getSequence()),
                     commandSerdes,
-                    Constants.accountAggregateName,
                     2000);
 
             SourcingApp<SpecificRecord> sourcingApp = new SourcingApp<>(actionSerdes,
@@ -101,10 +100,10 @@ class SourcingStreamTests {
         }
     }
 
-    private static ActionRequest<SpecificRecord> createRequest(AccountCommand accountCommand, UUID commandId) {
+    private static ActionRequest<SpecificRecord> createRequest(UUID sagaId, AccountCommand accountCommand, UUID commandId) {
         ActionCommand<SpecificRecord> actionCommand = new ActionCommand<>(commandId, accountCommand);
         return ActionRequest.<SpecificRecord>builder()
-                .sagaId(UUID.randomUUID())
+                .sagaId(sagaId)
                 .actionId(UUID.randomUUID())
                 .actionCommand(actionCommand)
                 .actionType(Constants.accountActionType)
@@ -114,16 +113,17 @@ class SourcingStreamTests {
     @Test
     void actionRequestGeneratesCommandRequest() {
 
-        AccountCreateContext acc = new AccountCreateContext();
+        AccountContext acc = new AccountContext();
 
         CreateAccount createAccount = new CreateAccount(ACCOUNT_ID, "user name");
-        AccountCommand accountCommand = new AccountCommand(new AccountId(createAccount.getId()), createAccount);
+        AccountCommand accountCommand = new AccountCommand(new AccountId(createAccount.getId()), 200L, createAccount);
 
-        ActionRequest<SpecificRecord> actionRequest = createRequest(accountCommand, UUID.randomUUID());
+        ActionRequest<SpecificRecord> actionRequest = createRequest(UUID.randomUUID(), accountCommand, UUID.randomUUID());
 
         acc.actionRequestPublisher().publish(actionRequest.sagaId, actionRequest);
 
         acc.commandRequestVerifier().verifySingle((accountId, commandRequest) -> {
+            assertThat(commandRequest.readSequence().getSeq()).isEqualTo(200L);
             assertThat(accountId.getId()).isEqualTo(ACCOUNT_ID);
             assertThat(commandRequest.command()).isEqualToComparingFieldByField(accountCommand);
         });
@@ -133,13 +133,13 @@ class SourcingStreamTests {
     @Test
     void commandResponseGeneratesActionResponse() {
 
-        AccountCreateContext acc = new AccountCreateContext();
+        AccountContext acc = new AccountContext();
 
         CreateAccount createAccount = new CreateAccount(ACCOUNT_ID, "user name");
-        AccountCommand accountCommand = new AccountCommand(new AccountId(createAccount.getId()), createAccount);
+        AccountCommand accountCommand = new AccountCommand(new AccountId(createAccount.getId()), 200L, createAccount);
 
         UUID commandId = UUID.randomUUID();
-        ActionRequest<SpecificRecord> actionRequest = createRequest(accountCommand, commandId);
+        ActionRequest<SpecificRecord> actionRequest = createRequest(UUID.randomUUID(), accountCommand, commandId);
 
         acc.actionRequestPublisher().publish(actionRequest.sagaId, actionRequest);
         acc.commandRequestVerifier().drainAll();
@@ -159,13 +159,13 @@ class SourcingStreamTests {
     @Test
     void actionIndempotence() {
 
-        AccountCreateContext acc = new AccountCreateContext();
+        AccountContext acc = new AccountContext();
 
         CreateAccount createAccount = new CreateAccount(ACCOUNT_ID, "user name");
-        AccountCommand accountCommand = new AccountCommand(new AccountId(createAccount.getId()), createAccount);
+        AccountCommand accountCommand = new AccountCommand(new AccountId(createAccount.getId()), 200L, createAccount);
 
         UUID commandId = UUID.randomUUID();
-        ActionRequest<SpecificRecord> actionRequest = createRequest(accountCommand, commandId);
+        ActionRequest<SpecificRecord> actionRequest = createRequest(UUID.randomUUID(), accountCommand, commandId);
 
         acc.actionRequestPublisher().publish(actionRequest.sagaId, actionRequest);
         acc.commandRequestVerifier().drainAll();
@@ -187,5 +187,60 @@ class SourcingStreamTests {
             assertThat(actionResponse.result.isSuccess()).isEqualTo(true);
         });
         acc.actionResponseVerifier().verifyNoRecords();
+    }
+
+    @Test
+    void validSequenceIdsForAggregateSameSaga() {
+        validateSequenceIdsForAggregate(true);
+    }
+
+    @Test
+    void validSequenceIdsForAggregateDifferentSaga() {
+        validateSequenceIdsForAggregate(false);
+    }
+
+    private void validateSequenceIdsForAggregate(boolean isSameSaga) {
+        AccountContext acc = new AccountContext();
+
+        CreateAccount createAccount = new CreateAccount(ACCOUNT_ID, "user name");
+        AccountCommand createCommand = new AccountCommand(new AccountId(createAccount.getId()), 100L, createAccount);
+
+        UUID createCommandId = UUID.randomUUID();
+        UUID sagaId = UUID.randomUUID();
+        ActionRequest<SpecificRecord> createActionRequest = createRequest(sagaId, createCommand, createCommandId);
+
+        acc.actionRequestPublisher.publish(sagaId, createActionRequest);
+        acc.commandRequestVerifier.drainAll();
+
+        CommandResponse<AccountId> createCommandResponse = new CommandResponse<>(createCommand.getId(), createCommandId, Sequence.position(185L), Result.success(Sequence.position(186L)));
+        acc.commandResponsePublisher.publish(new AccountId(createAccount.getId()), createCommandResponse);
+
+        // let another saga try (or the same saga if isSameSaga = true)
+        UUID transferCommandId = UUID.randomUUID();
+        UUID sagaId2 = isSameSaga? sagaId : UUID.randomUUID();
+        AccountCommand transferCommand = new AccountCommand(createCommand.getId(), 186L, new TransferFunds(ACCOUNT_ID, ACCOUNT_ID_2, 50.0));
+        ActionRequest<SpecificRecord> transferRequest = createRequest(sagaId2, transferCommand, transferCommandId);
+        acc.actionRequestPublisher.publish(sagaId2, transferRequest);
+
+        acc.commandRequestVerifier.verifySingle((aId, cr) -> {
+            assertThat(cr.readSequence().getSeq()).isEqualTo(186L); // get that from the previous response
+        });
+
+        acc.commandRequestVerifier.verifyNoRecords();
+        CommandResponse<AccountId> transferCommandResponse = new CommandResponse<>(transferCommand.getId(), transferCommandId, Sequence.position(186L), Result.success(Sequence.position(187L)));
+        acc.commandResponsePublisher.publish(new AccountId(createAccount.getId()), transferCommandResponse);
+
+        // add another request, but don't know about the saga, so use the previous sequence number
+        AccountCommand addCommand = new AccountCommand(createCommand.getId(), 0L, new AddFunds(ACCOUNT_ID, 100.0));
+        ActionRequest<SpecificRecord> addRequest = createRequest(sagaId, addCommand, UUID.randomUUID());
+        acc.actionRequestPublisher.publish(sagaId, addRequest);
+
+        acc.commandRequestVerifier.verifySingle((aId, cr) -> {
+            assertThat(cr.readSequence().getSeq()).isEqualTo(isSameSaga ? 187L : 186L);
+            assertThat(aId.getId()).isEqualTo(ACCOUNT_ID);
+            assertThat(cr.command()).isEqualToComparingFieldByField(addCommand);
+        });
+
+        acc.commandRequestVerifier.verifyNoRecords();
     }
 }

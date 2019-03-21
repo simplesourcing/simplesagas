@@ -4,6 +4,7 @@ import io.simplesource.api.CommandError;
 import io.simplesource.data.NonEmptyList;
 import io.simplesource.data.Result;
 import io.simplesource.data.Sequence;
+import io.simplesource.kafka.api.CommandSerdes;
 import io.simplesource.kafka.internal.util.Tuple2;
 import io.simplesource.kafka.model.CommandRequest;
 import io.simplesource.kafka.model.CommandResponse;
@@ -11,15 +12,16 @@ import io.simplesource.saga.action.sourcing.SourcingContext;
 import io.simplesource.saga.model.messages.ActionRequest;
 import io.simplesource.saga.model.messages.ActionResponse;
 import io.simplesource.saga.model.saga.SagaError;
-import org.apache.kafka.common.utils.Bytes;
+import io.simplesource.saga.model.serdes.ActionSerdes;
+import io.simplesource.saga.shared.serialization.TupleSerdes;
+import org.apache.kafka.common.serialization.Serde;
+import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.kstream.*;
-import org.apache.kafka.streams.state.KeyValueStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.UUID;
-import java.util.function.Function;
 
 public final class SourcingStream {
 
@@ -64,6 +66,16 @@ public final class SourcingStream {
         ActionPublisher.publishActionResponse(actionCtx, requestErrorResponses);
     }
 
+
+    /**
+     * Unfortunately we have to keep involing this decoder step
+     */
+    private static <A, I> I getIntermediate(SourcingContext<A, I, ?, ?> ctx, ActionRequest<A> aReq) {
+        I i = ctx.commandSpec.decode.apply(aReq.actionCommand.command).getOrElse(null);
+        assert i != null; // this should have already been checked
+        return i;
+    }
+
     /**
      * Translate simplesaga action requests to simplesourcing command requests.
      */
@@ -71,9 +83,6 @@ public final class SourcingStream {
             SourcingContext<A, I, K, C> ctx,
             KStream<UUID, ActionRequest<A>> actionRequests,
             KStream<K, CommandResponse<K>> commandResponseByAggregate) {
-
-        Function<CommandResponse<K>, Sequence> getAggregateSequence = cResp ->
-                cResp.sequenceResult().getOrElse(cResp.readSequence());
 
         KStream<UUID, Tuple2<ActionRequest<A>, Result<Throwable, I>>> reqsWithDecoded =
                 actionRequests
@@ -89,53 +98,71 @@ public final class SourcingStream {
                     SagaError.of(SagaError.Reason.InternalError, reasons.head())));
         });
 
-        KStream<UUID, Tuple2<ActionRequest<A>, I>> allGood = reqsWithDecoded.mapValues((k, v) -> Tuple2.of(v.v1(), v.v2().getOrElse(null)));
+        KStream<UUID, Tuple2<ActionRequest<A>, I>> allGood = reqsWithDecoded
+                .mapValues((k, v) -> Tuple2.of(v.v1(), v.v2().getOrElse(null)));
 
-        // Sort incoming request by the aggregate key
-        KStream<K, ActionRequest<A>> requestByAggregateKey = allGood
-                .map((k, v) -> KeyValue.pair(ctx.commandSpec.keyMapper.apply(v.v2()), v.v1()))
-                .peek(Utils.logValues(logger, "requestByAggregateKey"));
+        KTable<Tuple2<K, UUID>, Long> latestSequenceNumbers = latestSequenceNumbersForSagaAggregate(
+                ctx, actionRequests, commandResponseByAggregate);
 
-        Materialized<K, CommandResponse<K>, KeyValueStore<Bytes, byte[]>> materializer =
-                Materialized
-                        .<K, CommandResponse<K>, KeyValueStore<Bytes, byte[]>>as(
-                                "last_command_by_aggregate_" + ctx.commandSpec.aggregateName)
-                        .withKeySerde(ctx.cSerdes().aggregateKey())
-                        .withValueSerde(ctx.cSerdes().commandResponse());
 
-        // Get the most recent command response for the aggregate
-        KTable<K, CommandResponse<K>> lastCommandByAggregate =
-                commandResponseByAggregate
-                        .groupByKey()
-                        .reduce((cr1, cr2) ->
-                                        getAggregateSequence.apply(cr2).isGreaterThan(getAggregateSequence.apply(cr1)) ? cr2 : cr1,
-                                materializer);
-
-        ValueJoiner<ActionRequest<A>, CommandResponse<K>, CommandRequest<K, C>> valueJoiner =
-                (aReq, cResp) -> {
-                    Sequence sequence = (cResp == null) ? Sequence.first() : getAggregateSequence.apply(cResp);
-
+        ValueJoiner<ActionRequest<A>, Long, CommandRequest<K, C>> valueJoiner =
+                (aReq, seq) -> {
                     // we can do this safely as we have (unfortunately) already done this, and succeeded first time
-                    I intermediate = ctx.commandSpec.decode.apply(aReq.actionCommand.command).getOrElse(null);
+                    I intermediate = getIntermediate(ctx, aReq);
+
+                    // use the input sequence for the first action, and the last sequence number for the aggregate in the saga otherwise
+                    Sequence sequence = (seq == null) ?
+                            ctx.commandSpec.sequenceMapper.apply(intermediate) :
+                            Sequence.position(seq);
                     return new CommandRequest<>(ctx.commandSpec.keyMapper.apply(intermediate),
                             ctx.commandSpec.commandMapper.apply(intermediate),
                             sequence,
                             aReq.actionCommand.commandId);
                 };
 
-        // Get the latest sequence number and turn action request into a command request
-        KStream<K, CommandRequest<K, C>> commandRequestByAggregate = requestByAggregateKey
-                .leftJoin(
-                        lastCommandByAggregate,
-                        valueJoiner,
-                        Joined.with(ctx.cSerdes().aggregateKey(),
-                                ctx.aSerdes().request(),
-                                ctx.cSerdes().commandResponse()))
+        KStream<K, CommandRequest<K, C>> commandRequestByAggregate = allGood.map((k, v) ->
+        {
+            I intermediate = getIntermediate(ctx, v.v1());
+            K key = ctx.commandSpec.keyMapper.apply(intermediate);
+            return KeyValue.pair(Tuple2.of(key, v.v1().sagaId), v.v1());
+        })
+                .leftJoin(latestSequenceNumbers, valueJoiner,
+                        Joined.with(TupleSerdes.tuple2(ctx.cSerdes().aggregateKey(), ctx.aSerdes().uuid()), ctx.aSerdes().request(), Serdes.Long()))
+                .selectKey((k, v) -> v.aggregateKey())
                 .peek(Utils.logValues(logger, "commandRequestByAggregate"));
 
         return Tuple2.of(errorActionResponses, commandRequestByAggregate);
     }
 
+    private static <A, K> KTable<Tuple2<K, UUID>, Long> latestSequenceNumbersForSagaAggregate(
+            SourcingContext<A, ?, K, ?> ctx,
+            KStream<UUID, ActionRequest<A>> actionRequests,
+            KStream<K, CommandResponse<K>> commandResponseByAggregate) {
+        CommandSerdes<K, ?> cSerdes = ctx.cSerdes();
+        ActionSerdes<A> aSerdes = ctx.aSerdes();
+
+        Serde<Tuple2<K, UUID>> sagaAggKeySerde = TupleSerdes.tuple2(cSerdes.aggregateKey(), aSerdes.uuid());
+        Reducer<Long> reducer = (cr1, cr2) -> cr2 > cr1 ? cr2 : cr1;
+
+        // Join the action request and command response by commandID
+        KStream<UUID, Tuple2<CommandResponse<K>, ActionRequest<A>>> crArByCi = commandResponseByAggregate
+                .selectKey((k, v) -> v.commandId())
+                .join(actionRequests.selectKey((k, v) -> v.actionCommand.commandId), Tuple2::of, JoinWindows.of(0L),
+                        Joined.with(cSerdes.commandResponseKey(), cSerdes.commandResponse(), aSerdes.request()))
+                .peek(Utils.logValues(logger, "crArByCi"));
+
+
+        // Get the stream of sequence numbers keyed by (aggregate key, sagaID)
+        KStream<Tuple2<K, UUID>, Long> snByAkSi = crArByCi
+                .selectKey((k, v) -> Tuple2.of(v.v1().aggregateKey(), v.v2().sagaId()))
+                .mapValues(v -> v.v1().sequenceResult().getOrElse(Sequence.first()).getSeq())
+                .peek(Utils.logValues(logger, "snByAkSi"));
+
+        // Get the table of the largest sequence number keyed by (aggregate key, sagaID)
+        return snByAkSi
+                .groupByKey(Serialized.with(sagaAggKeySerde, Serdes.Long()))
+                .reduce(reducer, Materialized.with(sagaAggKeySerde, Serdes.Long()));
+}
 
     /**
      * Receives command response from simplesourcing, and convert to simplesaga action response.
