@@ -6,6 +6,7 @@ import io.simplesource.kafka.api.CommandSerdes;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Value;
+import lombok.*;
 
 import java.util.function.Function;
 
