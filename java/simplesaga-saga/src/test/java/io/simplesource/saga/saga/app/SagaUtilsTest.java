@@ -197,7 +197,7 @@ class SagaUtilsTest {
                 .build();
         assertThat(SagaUtils.getNextActions(saga).stream().map(a -> a.actionId)).containsExactlyInAnyOrder(action1, action3);
         assertThat(SagaUtils.getNextActions(saga).stream().map(a -> a.status)).containsOnly(ActionStatus.InUndo);
-        assertThat(SagaUtils.getNextActions(saga).stream().map(a -> a.command().get().commandId)).containsExactlyInAnyOrder(undoCommand1, undoCommand3);
+        assertThat(SagaUtils.getNextActions(saga).stream().map(a -> a.command.get().commandId)).containsExactlyInAnyOrder(undoCommand1, undoCommand3);
     }
 
     @Test
@@ -233,7 +233,7 @@ class SagaUtilsTest {
                 .build();
         assertThat(SagaUtils.getNextActions(saga).stream().map(a -> a.actionId)).containsOnly(action1);
         assertThat(SagaUtils.getNextActions(saga).stream().map(a -> a.status)).containsOnly(ActionStatus.InUndo);
-        assertThat(SagaUtils.getNextActions(saga).stream().map(a -> a.command().get().commandId)).containsOnly(undoCommand1);
+        assertThat(SagaUtils.getNextActions(saga).stream().map(a -> a.command.get().commandId)).containsOnly(undoCommand1);
     }
 
     @Test
@@ -262,8 +262,8 @@ class SagaUtilsTest {
                 .build();
         SagaStateTransition transition = new SagaStateTransition.SetInitialState<>(saga);
         Saga<SpecificRecord> result = SagaUtils.applyTransition(transition, saga);
-        assertThat(result.status()).isEqualTo(SagaStatus.InProgress);
-        assertThat(result.actions()).isEqualTo(saga.actions());
+        assertThat(result.status).isEqualTo(SagaStatus.InProgress);
+        assertThat(result.actions).isEqualTo(saga.actions);
     }
 
     @Test
@@ -293,8 +293,8 @@ class SagaUtilsTest {
                 .build();
         SagaStateTransition transition = new SagaStateTransition.SagaActionStatusChanged(sagaId, action1, ActionStatus.Completed, Collections.emptyList());
         Saga<SpecificRecord> result = SagaUtils.applyTransition(transition, saga);
-        assertThat(result.status()).isEqualTo(SagaStatus.InProgress);
-        assertThat(result.actions().get(action1).status()).isEqualTo(ActionStatus.Completed);
+        assertThat(result.status).isEqualTo(SagaStatus.InProgress);
+        assertThat(result.actions.get(action1).status).isEqualTo(ActionStatus.Completed);
     }
 
     @Test
@@ -328,8 +328,8 @@ class SagaUtilsTest {
                 .build();
         SagaStateTransition transition = new SagaStateTransition.SagaActionStatusChanged(sagaId, action1, ActionStatus.Completed, Collections.emptyList());
         Saga<SpecificRecord> result = SagaUtils.applyTransition(transition, saga);
-        assertThat(result.status()).isEqualTo(SagaStatus.InFailure);
-        assertThat(result.actions().get(action1).status()).isEqualTo(ActionStatus.Undone);
+        assertThat(result.status).isEqualTo(SagaStatus.InFailure);
+        assertThat(result.actions.get(action1).status).isEqualTo(ActionStatus.Undone);
     }
 
     @Test
@@ -363,8 +363,8 @@ class SagaUtilsTest {
                 .build();
         SagaStateTransition transition = new SagaStateTransition.SagaActionStatusChanged(sagaId, action1, ActionStatus.Failed, Collections.emptyList());
         Saga<SpecificRecord> result = SagaUtils.applyTransition(transition, saga);
-        assertThat(result.status()).isEqualTo(SagaStatus.InFailure);
-        assertThat(result.actions().get(action1).status()).isEqualTo(ActionStatus.UndoFailed);
+        assertThat(result.status).isEqualTo(SagaStatus.InFailure);
+        assertThat(result.actions.get(action1).status).isEqualTo(ActionStatus.UndoFailed);
     }
 
     @Test
@@ -394,8 +394,8 @@ class SagaUtilsTest {
                 .build();
         SagaStateTransition transition = new SagaStateTransition.SagaStatusChanged(sagaId, SagaStatus.Completed, Collections.emptyList());
         Saga<SpecificRecord> result = SagaUtils.applyTransition(transition, saga);
-        assertThat(result.status()).isEqualTo(SagaStatus.Completed);
-        assertThat(result.actions()).isEqualTo(saga.actions());
+        assertThat(result.status).isEqualTo(SagaStatus.Completed);
+        assertThat(result.actions).isEqualTo(saga.actions);
     }
 
     @Test
@@ -429,9 +429,9 @@ class SagaUtilsTest {
         ).collect(Collectors.toList());
         SagaStateTransition transition = new SagaStateTransition.TransitionList(transitions);
         Saga<SpecificRecord> result = SagaUtils.applyTransition(transition, saga);
-        assertThat(result.status()).isEqualTo(SagaStatus.InProgress);
-        assertThat(result.actions().get(action1).status()).isEqualTo(ActionStatus.Completed);
-        assertThat(result.actions().get(action3).status()).isEqualTo(ActionStatus.Failed);
+        assertThat(result.status).isEqualTo(SagaStatus.InProgress);
+        assertThat(result.actions.get(action1).status).isEqualTo(ActionStatus.Completed);
+        assertThat(result.actions.get(action3).status).isEqualTo(ActionStatus.Failed);
     }
 
     Saga<SpecificRecord> getTestSaga(ActionStatus... actionStatuses) {

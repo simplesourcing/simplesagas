@@ -10,8 +10,9 @@ import java.util.function.Function;
 
 @Value
 public final class AsyncOutput<I, K, O, R> {
-    Function<O, Optional<Result<Throwable, R>>> outputDecoder;
-    AsyncSerdes<K, R>   serdes;
-    Function<I, Optional<String>> topicName;
-    List<TopicCreation> topicCreations;
+    public final Function<O, Optional<Result<Throwable, R>>> outputDecoder;
+    public final AsyncSerdes<K, R>   serdes;
+    public final Function<I, K> keyMapper;
+    public final Function<I, Optional<String>> topicName;
+    public final List<TopicCreation> topicCreations;
 }

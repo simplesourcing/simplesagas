@@ -30,7 +30,10 @@ final public class SagaStream {
 
     public static <A> void addSubTopology(SagaCoordinatorTopologyBuilder.SagaTopologyContext<A> topologyContext,
                                           SagaContext<A> sagaContext) {
-        KStream<UUID, ActionResponse> actionResponse = SagaConsumer.actionResponse(sagaContext.aSpec(), sagaContext.actionTopicNamer(), topologyContext.builder);
+        KStream<UUID, ActionResponse> actionResponse = SagaConsumer.actionResponse(
+                sagaContext.aSpec,
+                sagaContext.actionTopicNamer,
+                topologyContext.builder);
         SagaStream.addSubTopology(sagaContext,
                 topologyContext.sagaRequest,
                 topologyContext.sagaStateTransition,
@@ -101,8 +104,9 @@ final public class SagaStream {
         return newRequestStream.mapValues((k, v) -> new SagaStateTransition.SetInitialState<>(v.v1().initialState));
     }
 
+
     @Value
-    static class StatusWithError {
+    private static final class StatusWithError {
         Sequence sequence;
         SagaStatus status;
         Optional<NonEmptyList<SagaError>> errors;

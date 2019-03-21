@@ -10,6 +10,7 @@ import io.simplesource.saga.shared.utils.StreamAppConfig;
 
 import java.util.function.Supplier;
 
+// TODO: does this belong in userland?
 public final class HttpApp<A> {
     private final AsyncApp<A> asyncApp;
 
@@ -21,11 +22,13 @@ public final class HttpApp<A> {
         AsyncSpec<A, HttpRequest<K, B>, K, O, R> asyncSpec = new AsyncSpec<>(
                 httpSpec.actionType,
                 httpSpec.decoder::decode,
-                request -> request.key,
                 httpSpec.asyncHttpClient,
                 httpSpec.groupId,
                 httpSpec.outputSpec.map(o ->
-                        new AsyncOutput<>(o.decoder::decode, o.serdes, r -> r.topicName, o.topicCreations)),
+                        new AsyncOutput<>(o.decoder::decode, o.serdes,
+                                r -> r.key,
+                                r -> r.topicName,
+                                o.topicCreations)),
                 httpSpec.timeout);
         asyncApp.addAsync(asyncSpec);
         return this;
@@ -37,7 +40,7 @@ public final class HttpApp<A> {
     }
 
 
-    public HttpApp<A>  addCloseHandler(Supplier<Integer> handler) {
+    public HttpApp<A> addCloseHandler(Supplier<Integer> handler) {
         asyncApp.addCloseHandler(handler);
         return this;
     }

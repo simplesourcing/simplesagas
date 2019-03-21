@@ -12,7 +12,7 @@ class CommandPublisher {
                                                    KStream<K, CommandRequest<K, C>> commandRequestStream) {
         // publish to command request topic
         commandRequestStream.to(
-                ctx.commandTopicNamer().apply(TopicTypes.CommandTopic.request),
+                ctx.commandTopicNamer.apply(TopicTypes.CommandTopic.request),
                 Produced.with(ctx.cSerdes().aggregateKey(), ctx.cSerdes().commandRequest())
         );
     }

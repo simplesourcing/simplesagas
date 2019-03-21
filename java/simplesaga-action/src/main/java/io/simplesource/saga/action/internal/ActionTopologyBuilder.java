@@ -26,11 +26,11 @@ public final class ActionTopologyBuilder<A> implements TopologyBuilder {
      * Topology being built.
      */
     @Value
-    public static class ActionTopologyContext<A> {
-        StreamsBuilder builder;
-        KStream<UUID, ActionRequest<A>> actionRequests;
-        KStream<UUID, ActionResponse> actionResponses;
-        Properties properties;
+    public final static class ActionTopologyContext<A> {
+        public final StreamsBuilder builder;
+        public final KStream<UUID, ActionRequest<A>> actionRequests;
+        public final KStream<UUID, ActionResponse> actionResponses;
+        public final Properties properties;
     }
 
     public ActionTopologyBuilder(ActionProcessorSpec<A> actionSpec, TopicConfig actionTopicConfig) {

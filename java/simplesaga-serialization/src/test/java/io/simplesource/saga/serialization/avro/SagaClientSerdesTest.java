@@ -65,7 +65,7 @@ class SagaClientSerdesTest {
         Saga<SpecificRecord> saga = SagaTestUtils.getTestSaga();
 
         // SagaRequest<SpecificRecord> original = new SagaRequest<>(UUID.randomUUID(), saga);
-        SagaRequest<SpecificRecord> original = new SagaRequest<>(saga.sagaId(), saga);
+        SagaRequest<SpecificRecord> original = new SagaRequest<>(saga.sagaId , saga);
 
         byte[] serialized = serdes.request().serializer().serialize(FAKE_TOPIC, original);
         SagaRequest<SpecificRecord> deserialized = serdes.request().deserializer().deserialize(FAKE_TOPIC, serialized);

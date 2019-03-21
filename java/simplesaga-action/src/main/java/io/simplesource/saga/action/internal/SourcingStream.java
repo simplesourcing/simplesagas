@@ -36,8 +36,8 @@ public final class SourcingStream {
     public static <A, I, K, C> void addSubTopology(ActionTopologyBuilder.ActionTopologyContext<A> topologyContext,
                                                    SourcingContext<A, I, K, C> sourcing) {
         KStream<K, CommandResponse<K>> commandResponseStream = CommandConsumer.commandResponseStream(
-                sourcing.commandSpec(), sourcing.commandTopicNamer(), topologyContext.builder());
-        addSubTopology(sourcing, topologyContext.actionRequests(), topologyContext.actionResponses(), commandResponseStream);
+                sourcing.commandSpec, sourcing.commandTopicNamer, topologyContext.builder);
+        addSubTopology(sourcing, topologyContext.actionRequests, topologyContext.actionResponses, commandResponseStream);
     }
 
     private static <A, I, K, C> void addSubTopology(SourcingContext<A, I, K, C> ctx,
@@ -61,7 +61,7 @@ public final class SourcingStream {
         ActionContext<A> actionCtx = ctx.getActionContext();
 
         CommandPublisher.publishCommandRequest(ctx, commandRequests);
-        ActionPublisher.publishActionResponse(actionCtx, idempotentAction.priorResponses());
+        ActionPublisher.publishActionResponse(actionCtx, idempotentAction.priorResponses);
         ActionPublisher.publishActionResponse(actionCtx, newActionResponses);
         ActionPublisher.publishActionResponse(actionCtx, requestErrorResponses);
     }
@@ -153,14 +153,14 @@ public final class SourcingStream {
 
         // Get the stream of sequence numbers keyed by (aggregate key, sagaID)
         KStream<Tuple2<K, UUID>, Long> snByAkSi = crArByCi
-                .selectKey((k, v) -> Tuple2.of(v.v1().aggregateKey(), v.v2().sagaId()))
+                .selectKey((k, v) -> Tuple2.of(v.v1().aggregateKey(), v.v2().sagaId))
                 .mapValues(v -> v.v1().sequenceResult().getOrElse(Sequence.first()).getSeq());
 
         // Get the table of the largest sequence number keyed by (aggregate key, sagaID)
         return snByAkSi
                 .groupByKey(Serialized.with(sagaAggKeySerde, Serdes.Long()))
                 .reduce(reducer, Materialized.with(sagaAggKeySerde, Serdes.Long()));
-}
+    }
 
     /**
      * Receives command response from simplesourcing, and convert to simplesaga action response.
@@ -172,7 +172,6 @@ public final class SourcingStream {
         long timeOutMillis = ctx.commandSpec.timeOutMillis;
         // find the response for the request
         KStream<UUID, Tuple2<ActionRequest<A>, CommandResponse<K>>> actionRequestWithResponse =
-
                 // join command response to action request by the command / action ID
                 // TODO: timeouts - will be easy to do timeouts with a left join once https://issues.apache.org/jira/browse/KAFKA-6556 has been released
                 actionRequests

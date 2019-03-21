@@ -120,14 +120,14 @@ class SourcingStreamTests {
 
         ActionRequest<SpecificRecord> actionRequest = createRequest(UUID.randomUUID(), accountCommand, UUID.randomUUID());
 
-        acc.actionRequestPublisher().publish(actionRequest.sagaId, actionRequest);
+        acc.actionRequestPublisher.publish(actionRequest.sagaId, actionRequest);
 
-        acc.commandRequestVerifier().verifySingle((accountId, commandRequest) -> {
+        acc.commandRequestVerifier.verifySingle((accountId, commandRequest) -> {
             assertThat(commandRequest.readSequence().getSeq()).isEqualTo(200L);
             assertThat(accountId.getId()).isEqualTo(ACCOUNT_ID);
             assertThat(commandRequest.command()).isEqualToComparingFieldByField(accountCommand);
         });
-        acc.commandRequestVerifier().verifyNoRecords();
+        acc.commandRequestVerifier.verifyNoRecords();
     }
 
     @Test
@@ -141,19 +141,19 @@ class SourcingStreamTests {
         UUID commandId = UUID.randomUUID();
         ActionRequest<SpecificRecord> actionRequest = createRequest(UUID.randomUUID(), accountCommand, commandId);
 
-        acc.actionRequestPublisher().publish(actionRequest.sagaId, actionRequest);
-        acc.commandRequestVerifier().drainAll();
+        acc.actionRequestPublisher.publish(actionRequest.sagaId, actionRequest);
+        acc.commandRequestVerifier.drainAll();
 
         CommandResponse<AccountId> commandResponse = new CommandResponse<>(accountCommand.getId(), commandId, Sequence.position(201L), Result.success(Sequence.position(202L)));
-        acc.commandResponsePublisher().publish(new AccountId(createAccount.getId()), commandResponse);
+        acc.commandResponsePublisher.publish(new AccountId(createAccount.getId()), commandResponse);
 
-        acc.actionResponseVerifier().verifySingle((sagaId, actionResponse) -> {
+        acc.actionResponseVerifier.verifySingle((sagaId, actionResponse) -> {
             assertThat(sagaId).isEqualTo(actionRequest.sagaId);
             assertThat(actionResponse.actionId).isEqualTo(actionRequest.actionId);
             assertThat(actionResponse.sagaId).isEqualTo(actionRequest.sagaId);
             assertThat(actionResponse.result.isSuccess()).isEqualTo(true);
         });
-        acc.actionResponseVerifier().verifyNoRecords();
+        acc.actionResponseVerifier.verifyNoRecords();
     }
 
     @Test
@@ -167,26 +167,26 @@ class SourcingStreamTests {
         UUID commandId = UUID.randomUUID();
         ActionRequest<SpecificRecord> actionRequest = createRequest(UUID.randomUUID(), accountCommand, commandId);
 
-        acc.actionRequestPublisher().publish(actionRequest.sagaId, actionRequest);
-        acc.commandRequestVerifier().drainAll();
+        acc.actionRequestPublisher.publish(actionRequest.sagaId, actionRequest);
+        acc.commandRequestVerifier.drainAll();
 
         CommandResponse commandResponse = new CommandResponse<>(accountCommand.getId(), commandId, Sequence.position(201L), Result.success(Sequence.position(202L)));
-        acc.commandResponsePublisher().publish(new AccountId(createAccount.getId()), commandResponse);
+        acc.commandResponsePublisher.publish(new AccountId(createAccount.getId()), commandResponse);
 
-        acc.actionResponseVerifier().verifySingle((sagaId, actionResponse) -> {});
-        acc.actionResponseVerifier().verifyNoRecords();
+        acc.actionResponseVerifier.verifySingle((sagaId, actionResponse) -> {});
+        acc.actionResponseVerifier.verifyNoRecords();
 
-        acc.actionRequestPublisher().publish(actionRequest.sagaId, actionRequest);
+        acc.actionRequestPublisher.publish(actionRequest.sagaId, actionRequest);
         // does not generate a command request
-        acc.commandRequestVerifier().verifyNoRecords();
+        acc.commandRequestVerifier.verifyNoRecords();
         // regenerates an action response
 
-        acc.actionResponseVerifier().verifySingle((sagaId, actionResponse) -> {
+        acc.actionResponseVerifier.verifySingle((sagaId, actionResponse) -> {
             assertThat(sagaId).isEqualTo(actionRequest.sagaId);
             assertThat(actionResponse.actionId).isEqualTo(actionRequest.actionId);
             assertThat(actionResponse.result.isSuccess()).isEqualTo(true);
         });
-        acc.actionResponseVerifier().verifyNoRecords();
+        acc.actionResponseVerifier.verifyNoRecords();
     }
 
     @Test

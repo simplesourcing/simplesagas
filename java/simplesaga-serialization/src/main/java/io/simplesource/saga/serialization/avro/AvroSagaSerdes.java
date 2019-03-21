@@ -43,7 +43,7 @@ public class AvroSagaSerdes<A> extends AvroSagaClientSerdes<A> implements SagaSe
                     initial -> new AvroSagaTransitionInitial(sagaToAvro(topic, (Saga<A>)initial.sagaState)),
                     AvroSagaSerdes::actionStatusChangeToAvro,
                     sagaChange -> AvroSagaTransitionSagaStatusChange.newBuilder()
-                            .setSagaId(sagaChange.sagaId().toString())
+                            .setSagaId(sagaChange.sagaId.toString())
                             .setSagaStatus(sagaChange.sagaStatus.toString())
                             .setSagaErrors(SagaSerdeUtils.sagaErrorListToAvro(sagaChange.sagaErrors))
                             .build(),
@@ -80,8 +80,8 @@ public class AvroSagaSerdes<A> extends AvroSagaClientSerdes<A> implements SagaSe
 
     private static AvroSagaTransitionActionStatusChange actionStatusChangeToAvro(SagaStateTransition.SagaActionStatusChanged actionChange) {
         return AvroSagaTransitionActionStatusChange.newBuilder()
-                .setSagaId(actionChange.sagaId().toString())
-                .setActionId(actionChange.actionId().toString())
+                .setSagaId(actionChange.sagaId.toString())
+                .setActionId(actionChange.actionId.toString())
                 .setActionStatus(actionChange.actionStatus.toString())
                 .setActionErrors(SagaSerdeUtils.sagaErrorListToAvro(actionChange.actionErrors))
                 .build();
