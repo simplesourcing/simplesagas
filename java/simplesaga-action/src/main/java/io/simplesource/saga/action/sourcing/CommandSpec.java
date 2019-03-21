@@ -3,10 +3,7 @@ package io.simplesource.saga.action.sourcing;
 import io.simplesource.data.Result;
 import io.simplesource.data.Sequence;
 import io.simplesource.kafka.api.CommandSerdes;
-import lombok.AccessLevel;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.Value;
+import lombok.*;
 
 import java.util.function.Function;
 
@@ -18,6 +15,7 @@ import java.util.function.Function;
   */
 @Value
 @Builder
+@AllArgsConstructor
 public final class CommandSpec<A, I, K, C> {
     public final String actionType;
     public final Function<A, Result<Throwable, I>> decode;

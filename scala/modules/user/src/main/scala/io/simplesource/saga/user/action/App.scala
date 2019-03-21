@@ -33,10 +33,9 @@ object App {
   }
 
   def startSourcingActionProcessor(): Unit = {
-    new SourcingApp[Json](
-      JsonSerdes.actionSerdes[Json],
-      TopicUtils.buildSteps(constants.actionTopicPrefix, constants.sagaActionBaseName)
-    ).addCommand(accountSpec,
+    new SourcingApp[Json](JsonSerdes.actionSerdes[Json],
+                          TopicUtils.buildSteps(constants.actionTopicPrefix, constants.sagaActionBaseName))
+      .addCommand(accountSpec,
                   TopicUtils.buildSteps(constants.commandTopicPrefix, constants.accountAggregateName))
       .addCommand(userSpec, TopicUtils.buildSteps(constants.commandTopicPrefix, constants.userAggregateName))
       .run(sourcingConfig)
