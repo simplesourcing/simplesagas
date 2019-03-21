@@ -21,21 +21,21 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-class AsyncConsumerRunner<A, I, K, O, R> implements Runnable {
+class AsyncConsumerRunner<A, D, K, O, R> implements Runnable {
 
-    private final AsyncSpec<A, I, K, O, R> asyncSpec;
+    private final AsyncSpec<A, D, K, O, R> asyncSpec;
     private final ActionProcessorSpec<A> actionSpec;
     private final Consumer<Boolean> onClose;
     private final AtomicBoolean closed;
     private Optional<KafkaConsumer<UUID, ActionRequest<A>>> consumer = Optional.empty();
     private final Logger logger = LoggerFactory.getLogger(AsyncConsumerRunner.class);
     private final Properties consumerConfig;
-    private final AsyncContext<A, I, K, O, R> asyncContext;
+    private final AsyncContext<A, D, K, O, R> asyncContext;
     private final AsyncPublisher<UUID, ActionResponse> responsePublisher;
     private final Function<AsyncSerdes<K, R>, AsyncPublisher<K, R>> outputPublisher;
 
     AsyncConsumerRunner(
-            AsyncContext<A, I, K, O, R> asyncContext,
+            AsyncContext<A, D, K, O, R> asyncContext,
             Properties consumerConfig,
             AsyncPublisher<UUID, ActionResponse> responsePublisher,
             Function<AsyncSerdes<K, R>, AsyncPublisher<K, R>> outputPublisher,

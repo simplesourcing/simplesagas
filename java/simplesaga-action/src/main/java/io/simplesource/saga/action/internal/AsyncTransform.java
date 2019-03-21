@@ -30,8 +30,8 @@ final class AsyncTransform {
     }
 
 
-    static <A, I, K, O, R> AsyncPipe async(AsyncContext<A, I, K, O, R> asyncContext, Properties config) {
-        AsyncSpec<A, I, K, O, R> asyncSpec = asyncContext.asyncSpec;
+    static <A, D, K, O, R> AsyncPipe async(AsyncContext<A, D, K, O, R> asyncContext, Properties config) {
+        AsyncSpec<A, D, K, O, R> asyncSpec = asyncContext.asyncSpec;
 
         Function<Properties, Properties> copyProperties = properties -> {
             Properties newProps = new Properties();
@@ -63,7 +63,7 @@ final class AsyncTransform {
         AsyncPublisher<UUID, ActionResponse> responsePublisher = new KafkaAsyncPublisher<>(producer, asyncContext.actionSpec.serdes.uuid(), asyncContext.actionSpec.serdes.response());
         Function<AsyncSerdes<K, R>, AsyncPublisher<K, R>> outputPublisher = serdes -> new KafkaAsyncPublisher<>(producer, serdes.key, serdes.output);
 
-        final AsyncConsumerRunner<A, I, K, O, R> runner = new AsyncConsumerRunner<>(asyncContext, consumerConfig, responsePublisher, outputPublisher, closed -> {
+        final AsyncConsumerRunner<A, D, K, O, R> runner = new AsyncConsumerRunner<>(asyncContext, consumerConfig, responsePublisher, outputPublisher, closed -> {
             producer.flush();
             producer.close();
         });

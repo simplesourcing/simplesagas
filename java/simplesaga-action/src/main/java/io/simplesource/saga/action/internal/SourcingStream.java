@@ -33,14 +33,14 @@ public final class SourcingStream {
      * @param topologyContext topology context.
      * @param sourcing        sourcing context.
      */
-    public static <A, I, K, C> void addSubTopology(ActionTopologyBuilder.ActionTopologyContext<A> topologyContext,
-                                                   SourcingContext<A, I, K, C> sourcing) {
+    public static <A, D, K, C> void addSubTopology(ActionTopologyBuilder.ActionTopologyContext<A> topologyContext,
+                                                   SourcingContext<A, D, K, C> sourcing) {
         KStream<K, CommandResponse<K>> commandResponseStream = CommandConsumer.commandResponseStream(
                 sourcing.commandSpec, sourcing.commandTopicNamer, topologyContext.builder);
         addSubTopology(sourcing, topologyContext.actionRequests, topologyContext.actionResponses, commandResponseStream);
     }
 
-    private static <A, I, K, C> void addSubTopology(SourcingContext<A, I, K, C> ctx,
+    private static <A, D, K, C> void addSubTopology(SourcingContext<A, D, K, C> ctx,
                                                     KStream<UUID, ActionRequest<A>> actionRequest,
                                                     KStream<UUID, ActionResponse> actionResponse,
                                                     KStream<K, CommandResponse<K>> commandResponseByAggregate) {
@@ -70,26 +70,26 @@ public final class SourcingStream {
     /**
      * Unfortunately we have to keep invoking this decoder step
      */
-    private static <A, I> I getIntermediate(SourcingContext<A, I, ?, ?> ctx, ActionRequest<A> aReq) {
-        I i = ctx.commandSpec.decode.apply(aReq.actionCommand.command).getOrElse(null);
-        assert i != null; // this should have already been checked
-        return i;
+    private static <A, D> D getDecoded(SourcingContext<A, D, ?, ?> ctx, ActionRequest<A> aReq) {
+        D d = ctx.commandSpec.decode.apply(aReq.actionCommand.command).getOrElse(null);
+        assert d != null; // this should have already been checked
+        return d;
     }
 
     /**
      * Translate simplesaga action requests to simplesourcing command requests.
      */
-    private static <A, I, K, C> Tuple2<KStream<UUID, ActionResponse>, KStream<K, CommandRequest<K, C>>> handleActionRequest(
-            SourcingContext<A, I, K, C> ctx,
+    private static <A, D, K, C> Tuple2<KStream<UUID, ActionResponse>, KStream<K, CommandRequest<K, C>>> handleActionRequest(
+            SourcingContext<A, D, K, C> ctx,
             KStream<UUID, ActionRequest<A>> actionRequests,
             KStream<K, CommandResponse<K>> commandResponseByAggregate) {
 
-        KStream<UUID, Tuple2<ActionRequest<A>, Result<Throwable, I>>> reqsWithDecoded =
+        KStream<UUID, Tuple2<ActionRequest<A>, Result<Throwable, D>>> reqsWithDecoded =
                 actionRequests
                         .mapValues((k, ar) -> Tuple2.of(ar, ctx.commandSpec.decode.apply(ar.actionCommand.command)))
                         .peek(Utils.logValues(logger, "reqsWithDecoded"));
 
-        KStream<UUID, Tuple2<ActionRequest<A>, Result<Throwable, I>>>[] branchSuccessFailure = reqsWithDecoded.branch((k, v) -> v.v2().isSuccess(), (k, v) -> v.v2().isFailure());
+        KStream<UUID, Tuple2<ActionRequest<A>, Result<Throwable, D>>>[] branchSuccessFailure = reqsWithDecoded.branch((k, v) -> v.v2().isSuccess(), (k, v) -> v.v2().isFailure());
 
         KStream<UUID, ActionResponse> errorActionResponses = branchSuccessFailure[1].mapValues((k, v) -> {
             ActionRequest<A> request = v.v1();
@@ -98,7 +98,7 @@ public final class SourcingStream {
                     SagaError.of(SagaError.Reason.InternalError, reasons.head())));
         });
 
-        KStream<UUID, Tuple2<ActionRequest<A>, I>> allGood = reqsWithDecoded
+        KStream<UUID, Tuple2<ActionRequest<A>, D>> allGood = reqsWithDecoded
                 .mapValues((k, v) -> Tuple2.of(v.v1(), v.v2().getOrElse(null)));
 
         KTable<Tuple2<K, UUID>, Long> latestSequenceNumbers = latestSequenceNumbersForSagaAggregate(
@@ -108,22 +108,22 @@ public final class SourcingStream {
         ValueJoiner<ActionRequest<A>, Long, CommandRequest<K, C>> valueJoiner =
                 (aReq, seq) -> {
                     // we can do this safely as we have (unfortunately) already done this, and succeeded first time
-                    I intermediate = getIntermediate(ctx, aReq);
+                    D decoded = getDecoded(ctx, aReq);
 
                     // use the input sequence for the first action, and the last sequence number for the aggregate in the saga otherwise
                     Sequence sequence = (seq == null) ?
-                            ctx.commandSpec.sequenceMapper.apply(intermediate) :
+                            ctx.commandSpec.sequenceMapper.apply(decoded) :
                             Sequence.position(seq);
-                    return new CommandRequest<>(ctx.commandSpec.keyMapper.apply(intermediate),
-                            ctx.commandSpec.commandMapper.apply(intermediate),
+                    return new CommandRequest<>(ctx.commandSpec.keyMapper.apply(decoded),
+                            ctx.commandSpec.commandMapper.apply(decoded),
                             sequence,
                             aReq.actionCommand.commandId);
                 };
 
         KStream<K, CommandRequest<K, C>> commandRequestByAggregate = allGood.map((k, v) ->
         {
-            I intermediate = getIntermediate(ctx, v.v1());
-            K key = ctx.commandSpec.keyMapper.apply(intermediate);
+            D decoded = getDecoded(ctx, v.v1());
+            K key = ctx.commandSpec.keyMapper.apply(decoded);
             return KeyValue.pair(Tuple2.of(key, v.v1().sagaId), v.v1());
         })
                 .leftJoin(latestSequenceNumbers, valueJoiner,
@@ -165,8 +165,8 @@ public final class SourcingStream {
     /**
      * Receives command response from simplesourcing, and convert to simplesaga action response.
      */
-    private static <A, I, K, C> KStream<UUID, ActionResponse> handleCommandResponse(
-            SourcingContext<A, I, K, C> ctx,
+    private static <A, D, K, C> KStream<UUID, ActionResponse> handleCommandResponse(
+            SourcingContext<A, D, K, C> ctx,
             KStream<UUID, ActionRequest<A>> actionRequests,
             KStream<UUID, CommandResponse<K>> responseByCommandId) {
         long timeOutMillis = ctx.commandSpec.timeOutMillis;

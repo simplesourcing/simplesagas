@@ -34,7 +34,7 @@ public final class HttpApp<A> {
         return this;
     }
 
-    public <I, K, O, R> HttpApp<A> addAsync(AsyncSpec<A, I, K, O, R> spec) {
+    public <D, K, O, R> HttpApp<A> addAsync(AsyncSpec<A, D, K, O, R> spec) {
         asyncApp.addAsync(spec);
         return this;
     }

@@ -9,16 +9,16 @@ import java.util.concurrent.ScheduledExecutorService;
 
 /**
   * @param <A> - common representation form for all action commands (typically Json / or GenericRecord for Avro)
-  * @param <I> - input to async function
+  * @param <D> - intermediate decoded input type
   * @param <K> - key for the output topic
   * @param <O> - output returned by async function
   * @param <R> - final result type that ends up in output topic
   */
 @Value
-public final class AsyncContext<A, I, K, O, R> {
+public final class AsyncContext<A, D, K, O, R> {
     public final ActionProcessorSpec<A> actionSpec;
     public final TopicNamer actionTopicNamer;
-    public final AsyncSpec<A, I, K, O, R> asyncSpec;
+    public final AsyncSpec<A, D, K, O, R> asyncSpec;
     public final ScheduledExecutorService executor;
 
     public ActionContext<A> getActionContext() {
