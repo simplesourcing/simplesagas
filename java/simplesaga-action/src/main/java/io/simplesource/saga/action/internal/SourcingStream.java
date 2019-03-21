@@ -68,7 +68,7 @@ public final class SourcingStream {
 
 
     /**
-     * Unfortunately we have to keep involing this decoder step
+     * Unfortunately we have to keep invoking this decoder step
      */
     private static <A, I> I getIntermediate(SourcingContext<A, I, ?, ?> ctx, ActionRequest<A> aReq) {
         I i = ctx.commandSpec.decode.apply(aReq.actionCommand.command).getOrElse(null);
@@ -148,15 +148,13 @@ public final class SourcingStream {
         KStream<UUID, Tuple2<CommandResponse<K>, ActionRequest<A>>> crArByCi = commandResponseByAggregate
                 .selectKey((k, v) -> v.commandId())
                 .join(actionRequests.selectKey((k, v) -> v.actionCommand.commandId), Tuple2::of, JoinWindows.of(0L),
-                        Joined.with(cSerdes.commandResponseKey(), cSerdes.commandResponse(), aSerdes.request()))
-                .peek(Utils.logValues(logger, "crArByCi"));
+                        Joined.with(cSerdes.commandResponseKey(), cSerdes.commandResponse(), aSerdes.request()));
 
 
         // Get the stream of sequence numbers keyed by (aggregate key, sagaID)
         KStream<Tuple2<K, UUID>, Long> snByAkSi = crArByCi
                 .selectKey((k, v) -> Tuple2.of(v.v1().aggregateKey(), v.v2().sagaId()))
-                .mapValues(v -> v.v1().sequenceResult().getOrElse(Sequence.first()).getSeq())
-                .peek(Utils.logValues(logger, "snByAkSi"));
+                .mapValues(v -> v.v1().sequenceResult().getOrElse(Sequence.first()).getSeq());
 
         // Get the table of the largest sequence number keyed by (aggregate key, sagaID)
         return snByAkSi
