@@ -8,7 +8,7 @@ import org.apache.kafka.streams.kstream.Produced;
 
 class CommandPublisher {
 
-    static <A, I, K, C> void publishCommandRequest(SourcingContext<A, I, K, C> ctx,
+    static <A, D, K, C> void publishCommandRequest(SourcingContext<A, D, K, C> ctx,
                                                    KStream<K, CommandRequest<K, C>> commandRequestStream) {
         // publish to command request topic
         commandRequestStream.to(

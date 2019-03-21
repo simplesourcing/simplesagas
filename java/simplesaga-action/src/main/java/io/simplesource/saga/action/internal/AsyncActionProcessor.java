@@ -30,17 +30,17 @@ final class AsyncActionProcessor {
         public final R result;
     }
 
-    public static <A, I, K, O, R> void processRecord(
-            AsyncContext<A, I, K, O, R> asyncContext,
+    public static <A, D, K, O, R> void processRecord(
+            AsyncContext<A, D, K, O, R> asyncContext,
             UUID sagaId, ActionRequest<A> request,
             AsyncPublisher<UUID, ActionResponse> responsePublisher,
             Function<AsyncSerdes<K, R>, AsyncPublisher<K, R>> outputPublisher) {
-        AsyncSpec<A, I, K, O, R> asyncSpec = asyncContext.asyncSpec;
-        Result<Throwable, I> decodedInput = tryWrap(() ->
+        AsyncSpec<A, D, K, O, R> asyncSpec = asyncContext.asyncSpec;
+        Result<Throwable, D> decodedInputResult = tryWrap(() ->
                 asyncSpec.inputDecoder.apply(request.actionCommand.command));
 
         AtomicBoolean completed = new AtomicBoolean(false);
-        Function<I, Callback<O>> cpb = input -> result -> {
+        Function<D, Callback<O>> callbackProvider = input -> result -> {
             if (completed.compareAndSet(false, true)) {
                 Result<Throwable, Optional<ResultGeneration<K, R>>> resultWithOutput = tryWrap(() ->
                         result.flatMap(output -> {
@@ -68,18 +68,13 @@ final class AsyncActionProcessor {
             }
         };
 
-        if (decodedInput.isFailure()) {
-            publishActionResult(asyncContext, sagaId, request, responsePublisher, decodedInput);
+        if (decodedInputResult.isFailure()) {
+            publishActionResult(asyncContext, sagaId, request, responsePublisher, decodedInputResult);
         } else {
-            I inputWithKey = decodedInput.getOrElse(null);
+            D decodedInput = decodedInputResult.getOrElse(null);
 
-            Callback<O> callback;
-            try {
-                callback = cpb.apply(inputWithKey);
-            } catch (Exception e) {
-                e.printStackTrace();
-                throw e;
-            }
+            Callback<O> callback = callbackProvider.apply(decodedInput);
+
             asyncSpec.timeout.ifPresent(tmOut -> {
                         asyncContext.executor.schedule(() -> {
                             if (completed.compareAndSet(false, true)) {
@@ -92,7 +87,7 @@ final class AsyncActionProcessor {
             );
             asyncContext.executor.execute(() -> {
                 try {
-                    asyncSpec.asyncFunction.accept(inputWithKey, callback);
+                    asyncSpec.asyncFunction.accept(decodedInput, callback);
                 } catch (Throwable e) {
                     Result<Throwable, O> failure = Result.failure(e);
                     publishActionResult(asyncContext, sagaId, request, responsePublisher, failure);
@@ -121,8 +116,8 @@ final class AsyncActionProcessor {
         }
     }
 
-    private static <A, I, K, O, R> void publishActionResult(
-            AsyncContext<A, I, K, O, R> asyncContext,
+    private static <A, D, K, O, R> void publishActionResult(
+            AsyncContext<A, D, K, O, R> asyncContext,
             UUID sagaId,
             ActionRequest<A> request,
             AsyncPublisher<UUID, ActionResponse> responsePublisher,

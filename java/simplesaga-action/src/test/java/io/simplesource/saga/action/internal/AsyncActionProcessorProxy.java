@@ -11,8 +11,8 @@ import java.util.function.Function;
 // to avoid making AsyncActionProcessor public
 public final class AsyncActionProcessorProxy {
 
-    public static <A, I, K, O, R> void processRecord(
-            AsyncContext<A, I, K, O, R> asyncContext,
+    public static <A, D, K, O, R> void processRecord(
+            AsyncContext<A, D, K, O, R> asyncContext,
             UUID sagaId, ActionRequest<A> request,
             AsyncPublisher<UUID, ActionResponse> responsePublisher,
             Function<AsyncSerdes<K, R>, AsyncPublisher<K, R>> outputPublisher) {
