@@ -1,6 +1,7 @@
 package io.simplesource.saga.action.async;
 
 import io.confluent.kafka.schemaregistry.client.MockSchemaRegistryClient;
+import io.simplesource.api.CommandId;
 import io.simplesource.data.Result;
 import io.simplesource.kafka.spec.TopicSpec;
 import io.simplesource.saga.action.internal.AsyncActionProcessorProxy;
@@ -142,7 +143,7 @@ class AsyncStreamTests {
         }
     }
 
-    private static ActionRequest<SpecificRecord> createRequest(AsyncTestCommand AsyncTestCommand, UUID commandId) {
+    private static ActionRequest<SpecificRecord> createRequest(AsyncTestCommand AsyncTestCommand, CommandId commandId) {
         ActionCommand<SpecificRecord> actionCommand = new ActionCommand<>(commandId, AsyncTestCommand);
         return ActionRequest.<SpecificRecord>builder()
                 .sagaId(UUID.randomUUID())
@@ -203,7 +204,7 @@ class AsyncStreamTests {
 
         AsyncTestCommand accountCommand = new AsyncTestCommand(new AsyncTestId("id"), 12);
 
-        ActionRequest<SpecificRecord> actionRequest = createRequest(accountCommand, UUID.randomUUID());
+        ActionRequest<SpecificRecord> actionRequest = createRequest(accountCommand, CommandId.random());
 
         acc.actionRequestPublisher.publish(actionRequest.sagaId, actionRequest);
 
@@ -219,7 +220,7 @@ class AsyncStreamTests {
         AsyncValidation validation = AsyncValidation.create();
 
         AsyncTestCommand accountCommand = new AsyncTestCommand(new AsyncTestId("id"), 12);
-        ActionRequest<SpecificRecord> actionRequest = createRequest(new AsyncTestCommand(new AsyncTestId("id"), 12), UUID.randomUUID());
+        ActionRequest<SpecificRecord> actionRequest = createRequest(new AsyncTestCommand(new AsyncTestId("id"), 12),CommandId.random());
         acc.actionRequestPublisher.publish(actionRequest.sagaId, actionRequest);
 
         AsyncActionProcessorProxy.processRecord(acc.asyncContext, actionRequest.sagaId, actionRequest, validation.responseProducer, validation.outputProducer);
@@ -241,7 +242,7 @@ class AsyncStreamTests {
         AsyncTestId testId = new AsyncTestId("id");
         AsyncTestCommand accountCommand = new AsyncTestCommand(testId, 12);
 
-        ActionRequest<SpecificRecord> actionRequest = createRequest(accountCommand, UUID.randomUUID());
+        ActionRequest<SpecificRecord> actionRequest = createRequest(accountCommand, CommandId.random());
         acc.actionRequestPublisher.publish(actionRequest.sagaId, actionRequest);
 
         AsyncValidation validation = AsyncValidation.create();
@@ -258,7 +259,7 @@ class AsyncStreamTests {
         AsyncTestId testId = new AsyncTestId("id");
         AsyncTestCommand accountCommand = new AsyncTestCommand(testId, 12);
 
-        ActionRequest<SpecificRecord> actionRequest = createRequest(accountCommand, UUID.randomUUID());
+        ActionRequest<SpecificRecord> actionRequest = createRequest(accountCommand, CommandId.random());
         acc.actionRequestPublisher.publish(actionRequest.sagaId, actionRequest);
 
         AsyncValidation validation = AsyncValidation.create();
@@ -278,7 +279,7 @@ class AsyncStreamTests {
         AsyncTestId testId = new AsyncTestId("id");
         AsyncTestCommand accountCommand = new AsyncTestCommand(testId, 12);
 
-        ActionRequest<SpecificRecord> actionRequest = createRequest(accountCommand, UUID.randomUUID());
+        ActionRequest<SpecificRecord> actionRequest = createRequest(accountCommand, CommandId.random());
         acc.actionRequestPublisher.publish(actionRequest.sagaId, actionRequest);
 
         AsyncValidation validation = AsyncValidation.create();
@@ -299,7 +300,7 @@ class AsyncStreamTests {
         AsyncTestId testId = new AsyncTestId("id");
         AsyncTestCommand accountCommand = new AsyncTestCommand(testId, 12);
 
-        ActionRequest<SpecificRecord> actionRequest = createRequest(accountCommand, UUID.randomUUID());
+        ActionRequest<SpecificRecord> actionRequest = createRequest(accountCommand, CommandId.random());
         acc.actionRequestPublisher.publish(actionRequest.sagaId, actionRequest);
 
         AsyncValidation validation = AsyncValidation.create();
@@ -325,7 +326,7 @@ class AsyncStreamTests {
         AsyncTestId testId = new AsyncTestId("id");
         AsyncTestCommand accountCommand = new AsyncTestCommand(testId, 12);
 
-        ActionRequest<SpecificRecord> actionRequest = createRequest(accountCommand, UUID.randomUUID());
+        ActionRequest<SpecificRecord> actionRequest = createRequest(accountCommand, CommandId.random());
         acc.actionRequestPublisher.publish(actionRequest.sagaId, actionRequest);
 
         AsyncValidation validation = AsyncValidation.create();
@@ -345,7 +346,7 @@ class AsyncStreamTests {
         AsyncTestContext acc = AsyncTestContext.of(100);
         AsyncValidation validation = AsyncValidation.create(acc.actionResponsePublisher);
 
-        ActionRequest<SpecificRecord> actionRequest = createRequest(new AsyncTestCommand(new AsyncTestId("id"), 12), UUID.randomUUID());
+        ActionRequest<SpecificRecord> actionRequest = createRequest(new AsyncTestCommand(new AsyncTestId("id"), 12), CommandId.random());
         acc.actionRequestPublisher.publish(actionRequest.sagaId, actionRequest);
 
         acc.actionUnprocessedRequestVerifier.verifySingle((id, req) -> { });

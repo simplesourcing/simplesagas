@@ -82,7 +82,7 @@ public class SagaSerdeUtils {
         byte[] serializedPayload = payloadSerde.serializer().serialize(getSubjectName(payloadTopic, actionType), ac.command);
         return AvroActionCommand
                 .newBuilder()
-                .setCommandId(ac.commandId.toString())
+                .setCommandId(ac.commandId.id().toString())
                 .setCommand(ByteBuffer.wrap(serializedPayload))
                 .build();
     }

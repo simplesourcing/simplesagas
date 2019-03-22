@@ -1,5 +1,6 @@
 package io.simplesource.saga.action.sourcing;
 
+import io.simplesource.api.CommandId;
 import io.simplesource.data.Result;
 import io.simplesource.data.Sequence;
 import io.simplesource.kafka.api.CommandSerdes;
@@ -100,7 +101,7 @@ class SourcingStreamTests {
         }
     }
 
-    private static ActionRequest<SpecificRecord> createRequest(UUID sagaId, AccountCommand accountCommand, UUID commandId) {
+    private static ActionRequest<SpecificRecord> createRequest(UUID sagaId, AccountCommand accountCommand, CommandId commandId) {
         ActionCommand<SpecificRecord> actionCommand = new ActionCommand<>(commandId, accountCommand);
         return ActionRequest.<SpecificRecord>builder()
                 .sagaId(sagaId)
@@ -118,7 +119,7 @@ class SourcingStreamTests {
         CreateAccount createAccount = new CreateAccount(ACCOUNT_ID, "user name");
         AccountCommand accountCommand = new AccountCommand(new AccountId(createAccount.getId()), 200L, createAccount);
 
-        ActionRequest<SpecificRecord> actionRequest = createRequest(UUID.randomUUID(), accountCommand, UUID.randomUUID());
+        ActionRequest<SpecificRecord> actionRequest = createRequest(UUID.randomUUID(), accountCommand, CommandId.random());
 
         acc.actionRequestPublisher.publish(actionRequest.sagaId, actionRequest);
 
@@ -138,13 +139,13 @@ class SourcingStreamTests {
         CreateAccount createAccount = new CreateAccount(ACCOUNT_ID, "user name");
         AccountCommand accountCommand = new AccountCommand(new AccountId(createAccount.getId()), 200L, createAccount);
 
-        UUID commandId = UUID.randomUUID();
+        CommandId commandId = CommandId.random();
         ActionRequest<SpecificRecord> actionRequest = createRequest(UUID.randomUUID(), accountCommand, commandId);
 
         acc.actionRequestPublisher.publish(actionRequest.sagaId, actionRequest);
         acc.commandRequestVerifier.drainAll();
 
-        CommandResponse<AccountId> commandResponse = new CommandResponse<>(accountCommand.getId(), commandId, Sequence.position(201L), Result.success(Sequence.position(202L)));
+        CommandResponse<AccountId> commandResponse = new CommandResponse<>(commandId, accountCommand.getId(), Sequence.position(201L), Result.success(Sequence.position(202L)));
         acc.commandResponsePublisher.publish(new AccountId(createAccount.getId()), commandResponse);
 
         acc.actionResponseVerifier.verifySingle((sagaId, actionResponse) -> {
@@ -164,13 +165,13 @@ class SourcingStreamTests {
         CreateAccount createAccount = new CreateAccount(ACCOUNT_ID, "user name");
         AccountCommand accountCommand = new AccountCommand(new AccountId(createAccount.getId()), 200L, createAccount);
 
-        UUID commandId = UUID.randomUUID();
+        CommandId commandId = CommandId.random();
         ActionRequest<SpecificRecord> actionRequest = createRequest(UUID.randomUUID(), accountCommand, commandId);
 
         acc.actionRequestPublisher.publish(actionRequest.sagaId, actionRequest);
         acc.commandRequestVerifier.drainAll();
 
-        CommandResponse commandResponse = new CommandResponse<>(accountCommand.getId(), commandId, Sequence.position(201L), Result.success(Sequence.position(202L)));
+        CommandResponse commandResponse = new CommandResponse<>(commandId, accountCommand.getId(), Sequence.position(201L), Result.success(Sequence.position(202L)));
         acc.commandResponsePublisher.publish(new AccountId(createAccount.getId()), commandResponse);
 
         acc.actionResponseVerifier.verifySingle((sagaId, actionResponse) -> {});
@@ -205,18 +206,18 @@ class SourcingStreamTests {
         CreateAccount createAccount = new CreateAccount(ACCOUNT_ID, "user name");
         AccountCommand createCommand = new AccountCommand(new AccountId(createAccount.getId()), 100L, createAccount);
 
-        UUID createCommandId = UUID.randomUUID();
+        CommandId createCommandId = CommandId.random();
         UUID sagaId = UUID.randomUUID();
         ActionRequest<SpecificRecord> createActionRequest = createRequest(sagaId, createCommand, createCommandId);
 
         acc.actionRequestPublisher.publish(sagaId, createActionRequest);
         acc.commandRequestVerifier.drainAll();
 
-        CommandResponse<AccountId> createCommandResponse = new CommandResponse<>(createCommand.getId(), createCommandId, Sequence.position(185L), Result.success(Sequence.position(186L)));
+        CommandResponse<AccountId> createCommandResponse = new CommandResponse<>(createCommandId, createCommand.getId(), Sequence.position(185L), Result.success(Sequence.position(186L)));
         acc.commandResponsePublisher.publish(new AccountId(createAccount.getId()), createCommandResponse);
 
         // let another saga try (or the same saga if isSameSaga = true)
-        UUID transferCommandId = UUID.randomUUID();
+        CommandId transferCommandId = CommandId.random();
         UUID sagaId2 = isSameSaga? sagaId : UUID.randomUUID();
         AccountCommand transferCommand = new AccountCommand(createCommand.getId(), 186L, new TransferFunds(ACCOUNT_ID, ACCOUNT_ID_2, 50.0));
         ActionRequest<SpecificRecord> transferRequest = createRequest(sagaId2, transferCommand, transferCommandId);
@@ -227,12 +228,12 @@ class SourcingStreamTests {
         });
 
         acc.commandRequestVerifier.verifyNoRecords();
-        CommandResponse<AccountId> transferCommandResponse = new CommandResponse<>(transferCommand.getId(), transferCommandId, Sequence.position(186L), Result.success(Sequence.position(187L)));
+        CommandResponse<AccountId> transferCommandResponse = new CommandResponse<>(transferCommandId, transferCommand.getId(), Sequence.position(186L), Result.success(Sequence.position(187L)));
         acc.commandResponsePublisher.publish(new AccountId(createAccount.getId()), transferCommandResponse);
 
         // add another request, but don't know about the saga, so use the previous sequence number
         AccountCommand addCommand = new AccountCommand(createCommand.getId(), 0L, new AddFunds(ACCOUNT_ID, 100.0));
-        ActionRequest<SpecificRecord> addRequest = createRequest(sagaId, addCommand, UUID.randomUUID());
+        ActionRequest<SpecificRecord> addRequest = createRequest(sagaId, addCommand, CommandId.random());
         acc.actionRequestPublisher.publish(sagaId, addRequest);
 
         acc.commandRequestVerifier.verifySingle((aId, cr) -> {

@@ -2,6 +2,7 @@ package io.simplesource.saga.action.internal;
 
 import java.util.UUID;
 
+import io.simplesource.api.CommandId;
 import io.simplesource.kafka.internal.util.Tuple2;
 import io.simplesource.saga.model.messages.ActionRequest;
 import io.simplesource.saga.model.messages.ActionResponse;
@@ -25,23 +26,18 @@ class IdempotentStream {
              KStream<UUID, ActionResponse> actionResponse,
              String actionType) {
 
-        Materialized<UUID, ActionResponse, KeyValueStore<Bytes, byte[]>> materializer = Materialized
-                .<UUID, ActionResponse, KeyValueStore<Bytes, byte[]>>as(
-                        "last_action_by_command_id_" + actionType)
-                .withKeySerde(aSpec.serdes.uuid())
-                .withValueSerde(aSpec.serdes.response());
-        KTable<UUID, ActionResponse> actionByCommandId =
+        KTable<CommandId, ActionResponse> actionByCommandId =
                 actionResponse
                         .selectKey((k, aResp) -> aResp.commandId)
-                        .groupByKey(Serialized.with(aSpec.serdes.uuid(), aSpec.serdes.response()))
-                        .reduce((cr1, cr2) -> cr2, materializer);
+                        .groupByKey(Serialized.with(aSpec.serdes.commandId(), aSpec.serdes.response()))
+                        .reduce((cr1, cr2) -> cr2, Materialized.with(aSpec.serdes.commandId(), aSpec.serdes.response()));
 
         KStream<UUID, Tuple2<ActionRequest<A>, ActionResponse>> actionRequestWithResponse = actionRequests
                 .filter((k, aReq) -> aReq.actionType.equals(actionType))
                 .selectKey((k, v) -> v.actionCommand.commandId)
                 .leftJoin(actionByCommandId,
                         (k, v) -> Tuple2.of(k, v),
-                        Joined.with(aSpec.serdes.uuid(), aSpec.serdes.request(), aSpec.serdes.response()))
+                        Joined.with(aSpec.serdes.commandId(), aSpec.serdes.request(), aSpec.serdes.response()))
                 .selectKey(((k, v) -> v.v1().sagaId));
 
         // split between unprocessed and prior-processed actions

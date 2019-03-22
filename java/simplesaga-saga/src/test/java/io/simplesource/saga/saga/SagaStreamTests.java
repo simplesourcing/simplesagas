@@ -1,5 +1,6 @@
 package io.simplesource.saga.saga;
 
+import io.simplesource.api.CommandId;
 import io.simplesource.data.NonEmptyList;
 import io.simplesource.data.Result;
 import io.simplesource.kafka.spec.WindowSpec;
@@ -99,14 +100,14 @@ class SagaStreamTests {
     private UUID action1 = UUID.randomUUID();
     private UUID action2 = UUID.randomUUID();
     private UUID action3 = UUID.randomUUID();
-    private UUID createAccountId1 = UUID.randomUUID();
-    private UUID createAccountId2 = UUID.randomUUID();
-    private UUID addFundsId1 = UUID.randomUUID();
-    private UUID undoFundsId1 = UUID.randomUUID();
-    private UUID addFundsId2 = UUID.randomUUID();
-    private UUID undoFundsId2 = UUID.randomUUID();
-    private UUID transferId = UUID.randomUUID();
-    private UUID undoTransferId = UUID.randomUUID();
+    private CommandId createAccountId1 = CommandId.random();
+    private CommandId createAccountId2 = CommandId.random();
+    private CommandId addFundsId1 = CommandId.random();
+    private CommandId undoFundsId1 = CommandId.random();
+    private CommandId addFundsId2 = CommandId.random();
+    private CommandId undoFundsId2 = CommandId.random();
+    private CommandId transferId = CommandId.random();
+    private CommandId undoTransferId = CommandId.random();
 
     Saga<SpecificRecord> getBasicSaga() {
         SagaDsl.SagaBuilder<SpecificRecord> builder = SagaDsl.SagaBuilder.create();

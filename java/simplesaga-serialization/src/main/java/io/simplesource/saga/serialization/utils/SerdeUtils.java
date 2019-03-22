@@ -10,11 +10,11 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 public class SerdeUtils {
-    public static <S extends SpecificRecord, V> Serde<V> iMap(Serde<S> sSerde, Function<V, S> toGeneric, Function<S, V> fromGeneric) {
+    public static <S, V> Serde<V> iMap(Serde<S> sSerde, Function<V, S> toGeneric, Function<S, V> fromGeneric) {
         return iMap(sSerde, (topic, v) -> toGeneric.apply(v), (topic, s) -> fromGeneric.apply(s));
     }
 
-    public static <S extends SpecificRecord, V> Serde<V> iMap(Serde<S> sSerde, BiFunction<String, V, S> toGeneric, BiFunction<String, S, V> fromGeneric) {
+    public static <S, V> Serde<V> iMap(Serde<S> sSerde, BiFunction<String, V, S> toGeneric, BiFunction<String, S, V> fromGeneric) {
         Serializer<V> serializer = new Serializer<V>() {
             @Override
             public void configure(Map<String, ?> configs, boolean isKey) {

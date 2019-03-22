@@ -1,10 +1,6 @@
 @namespace("io.simplesource.saga.serialization.avro.generated")
 protocol SagaSchemas {
-  record AvroActionId {
-    string id;
-  }
-
-  record AvroActionCommand {
+   record AvroActionCommand {
     string commandId;
     bytes command;
   }

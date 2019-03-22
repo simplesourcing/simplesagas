@@ -115,10 +115,11 @@ public final class SourcingStream {
                     Sequence sequence = (seq == null) ?
                             ctx.commandSpec.sequenceMapper.apply(decoded) :
                             Sequence.position(seq);
-                    return new CommandRequest<>(ctx.commandSpec.keyMapper.apply(decoded),
-                            ctx.commandSpec.commandMapper.apply(decoded),
+                    return new CommandRequest<>(
+                            aReq.actionCommand.commandId,
+                            ctx.commandSpec.keyMapper.apply(decoded),
                             sequence,
-                            aReq.actionCommand.commandId);
+                            ctx.commandSpec.commandMapper.apply(decoded));
                 };
 
         KStream<K, CommandRequest<K, C>> commandRequestByAggregate = allGood.map((k, v) ->
@@ -146,10 +147,10 @@ public final class SourcingStream {
         Reducer<Long> reducer = (cr1, cr2) -> cr2 > cr1 ? cr2 : cr1;
 
         // Join the action request and command response by commandID
-        KStream<UUID, Tuple2<CommandResponse<K>, ActionRequest<A>>> crArByCi = commandResponseByAggregate
+        KStream<CommandId, Tuple2<CommandResponse<K>, ActionRequest<A>>> crArByCi = commandResponseByAggregate
                 .selectKey((k, v) -> v.commandId())
                 .join(actionRequests.selectKey((k, v) -> v.actionCommand.commandId), Tuple2::of, JoinWindows.of(0L),
-                        Joined.with(cSerdes.commandResponseKey(), cSerdes.commandResponse(), aSerdes.request()));
+                        Joined.with(cSerdes.commandId(), cSerdes.commandResponse(), aSerdes.request()));
 
 
         // Get the stream of sequence numbers keyed by (aggregate key, sagaID)
@@ -172,7 +173,7 @@ public final class SourcingStream {
             KStream<CommandId, CommandResponse<K>> responseByCommandId) {
         long timeOutMillis = ctx.commandSpec.timeOutMillis;
         // find the response for the request
-        KStream<UUID, Tuple2<ActionRequest<A>, CommandResponse<K>>> actionRequestWithResponse =
+        KStream<CommandId, Tuple2<ActionRequest<A>, CommandResponse<K>>> actionRequestWithResponse =
                 // join command response to action request by the command / action ID
                 // TODO: timeouts - will be easy to do timeouts with a left join once https://issues.apache.org/jira/browse/KAFKA-6556 has been released
                 actionRequests
@@ -181,7 +182,7 @@ public final class SourcingStream {
                                 responseByCommandId,
                                 Tuple2::of,
                                 JoinWindows.of(timeOutMillis).until(timeOutMillis * 2 + 1),
-                                Joined.with(ctx.aSerdes().uuid(), ctx.aSerdes().request(), ctx.cSerdes().commandResponse())
+                                Joined.with(ctx.cSerdes().commandId(), ctx.aSerdes().request(), ctx.cSerdes().commandResponse())
                         )
                         .peek(Utils.logValues(logger, "joinActionRequestAndCommandResponse"));
 
