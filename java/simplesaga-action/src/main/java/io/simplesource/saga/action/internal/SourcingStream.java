@@ -1,6 +1,7 @@
 package io.simplesource.saga.action.internal;
 
 import io.simplesource.api.CommandError;
+import io.simplesource.api.CommandId;
 import io.simplesource.data.NonEmptyList;
 import io.simplesource.data.Result;
 import io.simplesource.data.Sequence;
@@ -44,7 +45,7 @@ public final class SourcingStream {
                                                     KStream<UUID, ActionRequest<A>> actionRequest,
                                                     KStream<UUID, ActionResponse> actionResponse,
                                                     KStream<K, CommandResponse<K>> commandResponseByAggregate) {
-        KStream<UUID, CommandResponse<K>> commandResponseByCommandId = commandResponseByAggregate.selectKey((k, v) -> v.commandId());
+        KStream<CommandId, CommandResponse<K>> commandResponseByCommandId = commandResponseByAggregate.selectKey((k, v) -> v.commandId());
 
         IdempotentStream.IdempotentAction<A> idempotentAction = IdempotentStream.getActionRequestsWithResponse(ctx.actionSpec,
                 actionRequest,
@@ -168,7 +169,7 @@ public final class SourcingStream {
     private static <A, D, K, C> KStream<UUID, ActionResponse> handleCommandResponse(
             SourcingContext<A, D, K, C> ctx,
             KStream<UUID, ActionRequest<A>> actionRequests,
-            KStream<UUID, CommandResponse<K>> responseByCommandId) {
+            KStream<CommandId, CommandResponse<K>> responseByCommandId) {
         long timeOutMillis = ctx.commandSpec.timeOutMillis;
         // find the response for the request
         KStream<UUID, Tuple2<ActionRequest<A>, CommandResponse<K>>> actionRequestWithResponse =

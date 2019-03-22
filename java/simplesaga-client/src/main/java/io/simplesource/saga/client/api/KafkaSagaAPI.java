@@ -22,7 +22,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public final class KafkaSagaAPI<A> implements SagaAPI<A> {
-    private final KafkaRequestAPI<UUID, SagaRequest<A>, SagaResponse> requestApi;
+    private final KafkaRequestAPI<UUID, SagaRequest<A>, UUID, SagaResponse> requestApi;
 
     public KafkaSagaAPI(SagaSpec<A> sagaSpec,
                         KafkaConfig kConfig,
@@ -31,8 +31,8 @@ public final class KafkaSagaAPI<A> implements SagaAPI<A> {
                         ScheduledExecutorService scheduler) {
         SagaSerdes<A> serdes = sagaSpec.serdes;
 
-        RequestAPIContext<UUID, SagaRequest<A>, SagaResponse> apiContext = RequestAPIContext
-                .<UUID, SagaRequest<A>, SagaResponse>builder()
+        RequestAPIContext<UUID, SagaRequest<A>, UUID, SagaResponse> apiContext = RequestAPIContext
+                .<UUID, SagaRequest<A>, UUID, SagaResponse>builder()
                 .kafkaConfig(kConfig)
                 .requestTopic(sagaTopicConfig.namer.apply(TopicTypes.SagaTopic.request))
                 .responseTopicMapTopic(sagaTopicConfig.namer.apply(TopicTypes.SagaTopic.responseTopicMap))

@@ -1,5 +1,6 @@
 package io.simplesource.saga.serialization.avro;
 
+import io.simplesource.api.CommandId;
 import io.simplesource.saga.model.action.ActionCommand;
 import io.simplesource.saga.model.messages.ActionRequest;
 import io.simplesource.saga.model.serdes.ActionSerdes;
@@ -41,9 +42,10 @@ class ActionSerdesPropsTest {
         ).as(User::new);
 
         Arbitrary<UUID> uuid = Arbitraries.randomValue(random -> UUID.randomUUID());
+        Arbitrary<CommandId> commandId = Arbitraries.randomValue(random -> CommandId.random());
 
         Arbitrary<ActionCommand<User>> actionCommand = Combinators.combine(
-            uuid,
+            commandId,
             user
         ).as(ActionCommand::new);
         return Combinators.combine(uuid, uuid, actionCommand, strings).as(

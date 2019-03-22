@@ -5,6 +5,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import io.simplesource.api.CommandId;
 import io.simplesource.data.NonEmptyList;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -23,7 +24,7 @@ class DslTest {
     SagaBuilder<String> builder = SagaBuilder.create();
 
     SubSaga<String> create(String a) {
-        return builder.addAction(randomId(), "actionType-" + a, new ActionCommand<>(randomId(), "Command-" + a));
+        return builder.addAction(randomId(), "actionType-" + a, new ActionCommand<>(CommandId.random(), "Command-" + a));
     }
 
     void dependsOnSet(String action, Set<String> dependsOn, Saga<String> saga) {

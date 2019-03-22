@@ -1,6 +1,7 @@
 package io.simplesource.saga.serialization.avro;
 
 import io.confluent.kafka.schemaregistry.client.MockSchemaRegistryClient;
+import io.simplesource.api.CommandId;
 import io.simplesource.data.Result;
 import io.simplesource.kafka.internal.util.Tuple2;
 import io.simplesource.saga.model.action.ActionCommand;
@@ -42,7 +43,7 @@ class ActionSerdesTest {
         ActionSerdes<User> serdes = AvroSerdes.actionSerdes(payloadSerde, SCHEMA_URL, true);
         User testUser = new User("Albus", "Dumbledore", 1732);
 
-        ActionCommand<User> actionCommand = new ActionCommand<>(UUID.randomUUID(), testUser);
+        ActionCommand<User> actionCommand = new ActionCommand<>(CommandId.random(), testUser);
 
         ActionRequest<User> original = ActionRequest.<User>builder()
                 .sagaId(UUID.randomUUID())
@@ -69,7 +70,7 @@ class ActionSerdesTest {
         ActionSerdes<User> serdes = AvroSerdes.Specific.actionSerdes(SCHEMA_URL, true);
         User testUser = new User("Albus", "Dumbledore", 1732);
 
-        ActionCommand<User> actionCommand = new ActionCommand<>(UUID.randomUUID(), testUser);
+        ActionCommand<User> actionCommand = new ActionCommand<>(CommandId.random(), testUser);
 
         ActionRequest<User> original = ActionRequest.<User>builder()
                 .sagaId(UUID.randomUUID())
@@ -122,7 +123,7 @@ class ActionSerdesTest {
         ActionSerdes<User> serdes = AvroSerdes.actionSerdes(payloadSerde, SCHEMA_URL, true);
         User testUser = new User("Albus", "Dumbledore", 1732);
 
-        ActionCommand<User> actionCommand = new ActionCommand<>(UUID.randomUUID(), testUser);
+        ActionCommand<User> actionCommand = new ActionCommand<>(CommandId.random(), testUser);
 
         ActionRequest<User> request = ActionRequest.<User>builder()
                 .sagaId(UUID.randomUUID())

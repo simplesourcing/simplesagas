@@ -1,5 +1,6 @@
 package io.simplesource.saga.serialization.avro;
 
+import io.simplesource.api.CommandId;
 import io.simplesource.data.Result;
 import io.simplesource.saga.model.action.ActionCommand;
 import io.simplesource.saga.model.action.SagaAction;
@@ -28,14 +29,14 @@ public class SagaTestUtils {
                 builder.addAction(
                         UUID.randomUUID(),
                         "actionType",
-                        new ActionCommand<>(UUID.randomUUID(), command));
+                        new ActionCommand<>(CommandId.random(), command));
 
         BiFunction<SpecificRecord, SpecificRecord, SagaDsl.SubSaga<SpecificRecord>> addActionWithUndo = (command, undo) ->
                 builder.addAction(
                         UUID.randomUUID(),
                         "actionType",
-                        new ActionCommand<>(UUID.randomUUID(), command),
-                        new ActionCommand<>(UUID.randomUUID(), undo));
+                        new ActionCommand<>(CommandId.random(), command),
+                        new ActionCommand<>(CommandId.random(), undo));
 
         SagaDsl.SubSaga<SpecificRecord> create1 = addAction.apply(new CreateAccount("id1", "User 1"));
         SagaDsl.SubSaga<SpecificRecord> create2 = addAction.apply(new CreateAccount("id2", "User 2"));
