@@ -2,6 +2,7 @@ package io.simplesource.saga.action.internal;
 
 import io.simplesource.saga.model.messages.ActionRequest;
 import io.simplesource.saga.model.messages.ActionResponse;
+import io.simplesource.saga.model.saga.SagaId;
 import io.simplesource.saga.model.specs.ActionProcessorSpec;
 import io.simplesource.saga.shared.topics.TopicConfig;
 import io.simplesource.saga.shared.utils.StreamAppConfig;
@@ -13,7 +14,6 @@ import org.apache.kafka.streams.kstream.KStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
-import java.util.UUID;
 import java.util.function.Consumer;
 
 public final class ActionTopologyBuilder<A> implements TopologyBuilder {
@@ -28,8 +28,8 @@ public final class ActionTopologyBuilder<A> implements TopologyBuilder {
     @Value
     public final static class ActionTopologyContext<A> {
         public final StreamsBuilder builder;
-        public final KStream<UUID, ActionRequest<A>> actionRequests;
-        public final KStream<UUID, ActionResponse> actionResponses;
+        public final KStream<SagaId, ActionRequest<A>> actionRequests;
+        public final KStream<SagaId, ActionResponse> actionResponses;
         public final Properties properties;
     }
 
@@ -54,9 +54,9 @@ public final class ActionTopologyBuilder<A> implements TopologyBuilder {
         Properties properties = StreamAppConfig.getConfig(config);
         StreamsBuilder builder = new StreamsBuilder();
 
-        KStream<UUID, ActionRequest<A>> actionRequests =
+        KStream<SagaId, ActionRequest<A>> actionRequests =
                 ActionConsumer.actionRequestStream(actionSpec, actionTopicConfig.namer, builder);
-        KStream<UUID, ActionResponse> actionResponses =
+        KStream<SagaId, ActionResponse> actionResponses =
                 ActionConsumer.actionResponseStream(actionSpec, actionTopicConfig.namer, builder);
 
         ActionTopologyContext<A> topologyContext = new ActionTopologyContext<>(builder, actionRequests, actionResponses, properties);

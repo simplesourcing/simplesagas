@@ -1,14 +1,13 @@
 package io.simplesource.saga.action.internal;
 
-import java.io.Closeable;
 import java.util.Properties;
-import java.util.UUID;
 import java.util.function.Function;
 
 import io.simplesource.saga.action.async.AsyncContext;
 import io.simplesource.saga.action.async.AsyncSerdes;
 import io.simplesource.saga.action.async.AsyncSpec;
 import io.simplesource.saga.model.messages.ActionResponse;
+import io.simplesource.saga.model.saga.SagaId;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
@@ -60,10 +59,10 @@ final class AsyncTransform {
         if (useTransactions)
             producer.initTransactions();
 
-        AsyncPublisher<UUID, ActionResponse> responsePublisher = new KafkaAsyncPublisher<>(producer, asyncContext.actionSpec.serdes.uuid(), asyncContext.actionSpec.serdes.response());
+        AsyncPublisher<SagaId, ActionResponse> responsePublisher = new KafkaAsyncPublisher<>(producer, asyncContext.actionSpec.serdes.sagaId(), asyncContext.actionSpec.serdes.response());
         Function<AsyncSerdes<K, R>, AsyncPublisher<K, R>> outputPublisher = serdes -> new KafkaAsyncPublisher<>(producer, serdes.key, serdes.output);
 
-        final AsyncConsumerRunner<A, D, K, O, R> runner = new AsyncConsumerRunner<>(asyncContext, consumerConfig, responsePublisher, outputPublisher, closed -> {
+        final AsyncConsumerRunner<A, D, K, O, R> runner = new AsyncConsumerRunner<A, D, K, O, R>(asyncContext, consumerConfig, responsePublisher, outputPublisher, closed -> {
             producer.flush();
             producer.close();
         });

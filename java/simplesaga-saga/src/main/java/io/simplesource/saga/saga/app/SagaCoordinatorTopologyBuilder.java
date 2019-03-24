@@ -4,6 +4,7 @@ import io.simplesource.saga.model.messages.SagaRequest;
 import io.simplesource.saga.model.messages.SagaResponse;
 import io.simplesource.saga.model.messages.SagaStateTransition;
 import io.simplesource.saga.model.saga.Saga;
+import io.simplesource.saga.model.saga.SagaId;
 import io.simplesource.saga.model.specs.SagaSpec;
 import io.simplesource.saga.shared.topics.TopicConfig;
 import io.simplesource.saga.shared.topics.TopicNamer;
@@ -15,7 +16,6 @@ import org.apache.kafka.streams.kstream.KStream;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 import java.util.function.Consumer;
 
 public class SagaCoordinatorTopologyBuilder<A> {
@@ -27,9 +27,9 @@ public class SagaCoordinatorTopologyBuilder<A> {
     @Value
     public final static class SagaTopologyContext<A> {
         public final StreamsBuilder builder;
-        public final KStream<UUID, SagaRequest<A>> sagaRequest;
-        public final KStream<UUID, Saga<A>> sagaState;
-        public final KStream<UUID, SagaStateTransition> sagaStateTransition;
+        public final KStream<SagaId, SagaRequest<A>> sagaRequest;
+        public final KStream<SagaId, Saga<A>> sagaState;
+        public final KStream<SagaId, SagaStateTransition> sagaStateTransition;
     }
 
     public SagaCoordinatorTopologyBuilder(SagaSpec<A> sagaSpec, TopicConfig sagaTopicConfig) {
@@ -49,20 +49,21 @@ public class SagaCoordinatorTopologyBuilder<A> {
         StreamsBuilder builder = new StreamsBuilder();
         // get input topic streams
         TopicNamer topicNamer = sagaTopicConfig.namer;
-        KStream<UUID, SagaRequest<A>> sagaRequest = SagaConsumer.sagaRequest(sagaSpec, topicNamer, builder);
-        KStream<UUID, Saga<A>> sagaState = SagaConsumer.state(sagaSpec, topicNamer, builder);
-        KStream<UUID, SagaStateTransition> sagaStateTransition = SagaConsumer.stateTransition(sagaSpec, topicNamer, builder);
+        KStream<SagaId, SagaRequest<A>> sagaRequest = SagaConsumer.sagaRequest(sagaSpec, topicNamer, builder);
+        KStream<SagaId, Saga<A>> sagaState = SagaConsumer.state(sagaSpec, topicNamer, builder);
+        KStream<SagaId, SagaStateTransition> sagaStateTransition = SagaConsumer.stateTransition(sagaSpec, topicNamer, builder);
         SagaTopologyContext<A> topologyContext = new SagaTopologyContext<>(builder, sagaRequest, sagaState, sagaStateTransition);
         onBuildConsumers.forEach(p -> p.accept(topologyContext));
 
-        DistributorContext<SagaResponse> distCtx = new DistributorContext<>(
-                new DistributorSerdes<>(sagaSpec.serdes.uuid(), sagaSpec.serdes.response()),
+        DistributorContext<SagaId, SagaResponse> distCtx = new DistributorContext<>(
+                new DistributorSerdes<>(sagaSpec.serdes.sagaId(), sagaSpec.serdes.response()),
                 sagaTopicConfig.namer.apply(TopicTypes.SagaTopic.responseTopicMap),
                 sagaSpec.responseWindow,
-                response -> response.sagaId);
+                response -> response.sagaId,
+                key -> key.id);
 
-        KStream<UUID, String> topicNames = ResultDistributor.resultTopicMapStream(distCtx, builder);
-        KStream<UUID, SagaResponse> sagaResponse = SagaConsumer.sagaResponse(sagaSpec, topicNamer, builder);
+        KStream<SagaId, String> topicNames = ResultDistributor.resultTopicMapStream(distCtx, builder);
+        KStream<SagaId, SagaResponse> sagaResponse = SagaConsumer.sagaResponse(sagaSpec, topicNamer, builder);
         ResultDistributor.distribute(distCtx, sagaResponse, topicNames);
         return builder.build();
     }

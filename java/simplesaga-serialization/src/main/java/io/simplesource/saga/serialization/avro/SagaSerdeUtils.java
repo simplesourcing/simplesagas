@@ -1,5 +1,6 @@
 package io.simplesource.saga.serialization.avro;
 
+import io.simplesource.api.CommandId;
 import io.simplesource.data.NonEmptyList;
 import io.simplesource.data.Result;
 import io.simplesource.saga.model.action.ActionCommand;
@@ -81,7 +82,7 @@ public class SagaSerdeUtils {
         byte[] serializedPayload = payloadSerde.serializer().serialize(getSubjectName(payloadTopic, actionType), ac.command);
         return AvroActionCommand
                 .newBuilder()
-                .setCommandId(ac.commandId.toString())
+                .setCommandId(ac.commandId.id().toString())
                 .setCommand(ByteBuffer.wrap(serializedPayload))
                 .build();
     }
@@ -89,7 +90,7 @@ public class SagaSerdeUtils {
     static <A> ActionCommand<A> actionCommandFromAvro(Serde<A> payloadSerde, String payloadTopic, String actionType, AvroActionCommand ac) {
         if (ac == null) return null;
         A command = payloadSerde.deserializer().deserialize(getSubjectName(payloadTopic, actionType), ac.getCommand().array());
-        return new ActionCommand<>(UUID.fromString(ac.getCommandId()), command);
+        return new ActionCommand<>(CommandId.of(UUID.fromString(ac.getCommandId())), command);
     }
 
     static String getSubjectName(String topic, String actionType) {

@@ -1,12 +1,11 @@
 package io.simplesource.saga.model.action;
 
+import io.simplesource.api.CommandId;
 import lombok.Value;
-
-import java.util.UUID;
 
 @Value
 public class ActionCommand<A> {
-    public final UUID commandId;
+    public final CommandId commandId;
     public final A command;
 }
 

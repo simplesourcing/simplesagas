@@ -5,6 +5,7 @@ import io.simplesource.saga.model.messages.SagaRequest;
 import io.simplesource.saga.model.messages.SagaResponse;
 import io.simplesource.saga.model.messages.SagaStateTransition;
 import io.simplesource.saga.model.saga.Saga;
+import io.simplesource.saga.model.saga.SagaId;
 import io.simplesource.saga.model.specs.ActionProcessorSpec;
 import io.simplesource.saga.model.specs.SagaSpec;
 import io.simplesource.saga.shared.topics.TopicNamer;
@@ -12,45 +13,41 @@ import io.simplesource.saga.shared.topics.TopicTypes;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.KStream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.UUID;
 
 final class SagaConsumer {
 
-    static <A> KStream<UUID, SagaRequest<A>> sagaRequest(SagaSpec<A> spec,
+    static <A> KStream<SagaId, SagaRequest<A>> sagaRequest(SagaSpec<A> spec,
                                                          TopicNamer sagaTopicNamer,
                                                          StreamsBuilder builder) {
         return builder.stream(sagaTopicNamer.apply(TopicTypes.SagaTopic.request),
-                Consumed.with(spec.serdes.uuid(), spec.serdes.request()));
+                Consumed.with(spec.serdes.sagaId(), spec.serdes.request()));
     }
 
-    static <A> KStream<UUID, SagaResponse> sagaResponse(SagaSpec<A> spec,
+    static <A> KStream<SagaId, SagaResponse> sagaResponse(SagaSpec<A> spec,
                                                         TopicNamer sagaTopicNamer,
                                                         StreamsBuilder builder) {
         return builder.stream(sagaTopicNamer.apply(TopicTypes.SagaTopic.response),
-                Consumed.with(spec.serdes.uuid(), spec.serdes.response()));
+                Consumed.with(spec.serdes.sagaId(), spec.serdes.response()));
     }
 
-    static <A> KStream<UUID, SagaStateTransition> stateTransition(SagaSpec<A> spec,
-                                                                  TopicNamer sagaTopicNamer,
-                                                                  StreamsBuilder builder) {
+    static <A> KStream<SagaId, SagaStateTransition> stateTransition(SagaSpec<A> spec,
+                                                                    TopicNamer sagaTopicNamer,
+                                                                    StreamsBuilder builder) {
         return builder.stream(sagaTopicNamer.apply(TopicTypes.SagaTopic.stateTransition),
-                Consumed.with(spec.serdes.uuid(), spec.serdes.transition()));
+                Consumed.with(spec.serdes.sagaId(), spec.serdes.transition()));
     }
 
-    static <A> KStream<UUID, Saga<A>> state(SagaSpec<A> spec,
+    static <A> KStream<SagaId, Saga<A>> state(SagaSpec<A> spec,
                                             TopicNamer sagaTopicNamer,
                                             StreamsBuilder builder) {
         return builder.stream(sagaTopicNamer.apply(TopicTypes.SagaTopic.state),
-                Consumed.with(spec.serdes.uuid(), spec.serdes.state()));
+                Consumed.with(spec.serdes.sagaId(), spec.serdes.state()));
     }
 
-    static <A> KStream<UUID, ActionResponse> actionResponse(ActionProcessorSpec<A> actionSpec,
+    static <A> KStream<SagaId, ActionResponse> actionResponse(ActionProcessorSpec<A> actionSpec,
                                                             TopicNamer topicNamer,
                                                             StreamsBuilder builder) {
         return builder.stream(topicNamer.apply(TopicTypes.ActionTopic.response),
-                Consumed.with(actionSpec.serdes.uuid(), actionSpec.serdes.response()));
+                Consumed.with(actionSpec.serdes.sagaId(), actionSpec.serdes.response()));
     }
 }

@@ -2,9 +2,11 @@ package io.simplesource.saga.serialization.avro;
 
 import io.confluent.kafka.schemaregistry.client.MockSchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
+import io.simplesource.saga.model.action.ActionId;
 import io.simplesource.saga.model.action.ActionStatus;
 import io.simplesource.saga.model.messages.SagaStateTransition;
 import io.simplesource.saga.model.saga.Saga;
+import io.simplesource.saga.model.saga.SagaId;
 import io.simplesource.saga.model.saga.SagaStatus;
 import io.simplesource.saga.model.serdes.SagaSerdes;
 import io.simplesource.saga.serialization.avro.generated.*;
@@ -64,7 +66,7 @@ public class AvroSagaSerdes<A> extends AvroSagaClientSerdes<A> implements SagaSe
             if (t instanceof AvroSagaTransitionSagaStatusChange) {
                 AvroSagaTransitionSagaStatusChange st = (AvroSagaTransitionSagaStatusChange) t;
                 return new SagaStateTransition.SagaStatusChanged(
-                        UUID.fromString(st.getSagaId()),
+                        SagaId.fromString(st.getSagaId()),
                         SagaStatus.valueOf(st.getSagaStatus()),
                         SagaSerdeUtils.sagaErrorListFromAvro(st.getSagaErrors()));
             }
@@ -89,8 +91,8 @@ public class AvroSagaSerdes<A> extends AvroSagaClientSerdes<A> implements SagaSe
 
     private static SagaStateTransition.SagaActionStatusChanged actionStatusChangeFromAvro(AvroSagaTransitionActionStatusChange actionChange) {
         return new SagaStateTransition.SagaActionStatusChanged(
-                UUID.fromString(actionChange.getSagaId()),
-                UUID.fromString(actionChange.getActionId()),
+                SagaId.fromString(actionChange.getSagaId()),
+                ActionId.fromString(actionChange.getActionId()),
                 ActionStatus.valueOf(actionChange.getActionStatus()),
                 SagaSerdeUtils.sagaErrorListFromAvro(actionChange.getActionErrors()));
     }

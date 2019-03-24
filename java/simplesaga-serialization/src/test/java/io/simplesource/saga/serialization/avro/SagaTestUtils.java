@@ -1,7 +1,9 @@
 package io.simplesource.saga.serialization.avro;
 
+import io.simplesource.api.CommandId;
 import io.simplesource.data.Result;
 import io.simplesource.saga.model.action.ActionCommand;
+import io.simplesource.saga.model.action.ActionId;
 import io.simplesource.saga.model.action.SagaAction;
 import io.simplesource.saga.model.saga.Saga;
 import io.simplesource.saga.model.saga.SagaError;
@@ -12,7 +14,6 @@ import io.simplesource.saga.serialization.avro.generated.test.TransferFunds;
 import org.apache.avro.specific.SpecificRecord;
 
 import java.util.List;
-import java.util.UUID;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -26,16 +27,16 @@ public class SagaTestUtils {
 
         Function<SpecificRecord, SagaDsl.SubSaga<SpecificRecord>> addAction = command ->
                 builder.addAction(
-                        UUID.randomUUID(),
+                        ActionId.random(),
                         "actionType",
-                        new ActionCommand<>(UUID.randomUUID(), command));
+                        new ActionCommand<>(CommandId.random(), command));
 
         BiFunction<SpecificRecord, SpecificRecord, SagaDsl.SubSaga<SpecificRecord>> addActionWithUndo = (command, undo) ->
                 builder.addAction(
-                        UUID.randomUUID(),
+                        ActionId.random(),
                         "actionType",
-                        new ActionCommand<>(UUID.randomUUID(), command),
-                        new ActionCommand<>(UUID.randomUUID(), undo));
+                        new ActionCommand<>(CommandId.random(), command),
+                        new ActionCommand<>(CommandId.random(), undo));
 
         SagaDsl.SubSaga<SpecificRecord> create1 = addAction.apply(new CreateAccount("id1", "User 1"));
         SagaDsl.SubSaga<SpecificRecord> create2 = addAction.apply(new CreateAccount("id2", "User 2"));

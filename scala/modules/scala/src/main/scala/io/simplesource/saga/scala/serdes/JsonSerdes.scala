@@ -1,15 +1,16 @@
 package io.simplesource.saga.scala.serdes
 
+import java.util.stream.Collectors
 import java.util.{Optional, UUID}
 
 import io.circe.{Decoder, Encoder}
-import io.simplesource.data.{NonEmptyList, Result, Sequence}
+import io.simplesource.api.CommandId
+import io.simplesource.data.{Result, Sequence}
 import io.simplesource.kafka.api.{AggregateSerdes, CommandSerdes}
 import io.simplesource.kafka.model._
-import io.simplesource.saga.model.action.{ActionCommand, ActionStatus, SagaAction}
-import io.simplesource.saga.model.messages.ActionRequest
+import io.simplesource.saga.model.action.{ActionCommand, ActionId, ActionStatus, SagaAction}
 import io.simplesource.saga.model.saga
-import io.simplesource.saga.model.saga.SagaError
+import io.simplesource.saga.model.saga.{SagaError, SagaId}
 import io.simplesource.saga.model.serdes.{ActionSerdes, SagaSerdes}
 import org.apache.kafka.common.serialization.Serde
 
@@ -24,12 +25,10 @@ object JsonSerdes {
       val aks = serdeFromCodecs[K]
 
       val crs =
-        productCodecs4[K, C, Long, UUID, CommandRequest[K, C]]("key", "command", "readSequence", "commandId")(
-          v => (v.aggregateKey(), v.command(), v.readSequence().getSeq, v.commandId()),
-          (k, v, rs, id) => new CommandRequest(k, v, Sequence.position(rs), id)
+        productCodecs4[UUID, K, Long, C, CommandRequest[K, C]]("key", "command", "readSequence", "commandId")(
+          v => (v.commandId().id, v.aggregateKey(), v.readSequence().getSeq, v.command()),
+          (id, k, rs, c) => new CommandRequest(CommandId.of(id), k, Sequence.position(rs), c)
         ).asSerde
-
-      val crks = serdeFromCodecs[UUID]
 
       val vwss =
         productCodecs2[E, Long, ValueWithSequence[E]]("value", "sequence")(
@@ -42,12 +41,14 @@ object JsonSerdes {
       val aus = au.asSerde
       val cr  = ResultEncoders.cr[K]
 
+      val cid = mappedCodec[UUID, CommandId](_.id, CommandId.of).asSerde
+
       override def aggregateKey(): Serde[K]                         = aks
       override def commandRequest(): Serde[CommandRequest[K, C]]    = crs
-      override def commandResponseKey(): Serde[UUID]                = crks
+      override def commandId(): Serde[CommandId]                    = cid
       override def valueWithSequence(): Serde[ValueWithSequence[E]] = vwss
       override def aggregateUpdate(): Serde[AggregateUpdate[A]]     = aus
-      override def commandResponse(): Serde[CommandResponse[K]]        = cr
+      override def commandResponse(): Serde[CommandResponse[K]]     = cr
     }
 
   def commandSerdes[K: Encoder: Decoder, C: Encoder: Decoder]: CommandSerdes[K, C] =
@@ -57,17 +58,17 @@ object JsonSerdes {
 
       val crs: Serde[CommandRequest[K, C]] =
         productCodecs4[K, C, Long, UUID, CommandRequest[K, C]]("key", "command", "readSequence", "commandId")(
-          v => (v.aggregateKey(), v.command(), v.readSequence().getSeq, v.commandId()),
-          (k, v, rs, id) => new CommandRequest(k, v, Sequence.position(rs), id)
+          v => (v.aggregateKey(), v.command(), v.readSequence().getSeq, v.commandId().id),
+          (k, v, rs, id) => new CommandRequest(CommandId.of(id), k, Sequence.position(rs), v)
         ).asSerde
 
-      val crks = serdeFromCodecs[UUID]
-      val cr   = ResultEncoders.cr[K]
+      val cid = mappedCodec[UUID, CommandId](_.id, CommandId.of).asSerde
+      val cr  = ResultEncoders.cr[K]
 
       override def aggregateKey(): Serde[K]                      = aks
       override def commandRequest(): Serde[CommandRequest[K, C]] = crs
-      override def commandResponseKey(): Serde[UUID]             = crks
-      override def commandResponse(): Serde[CommandResponse[K]]     = cr
+      override def commandId(): Serde[CommandId]                 = cid
+      override def commandResponse(): Serde[CommandResponse[K]]  = cr
     }
 
   def actionSerdes[A: Encoder: Decoder]: ActionSerdes[A] = new ActionSerdes[A] {
@@ -79,13 +80,13 @@ object JsonSerdes {
                                                                             "commandId",
                                                                             "command",
                                                                             "actionType")(
-      v => (v.sagaId, v.actionId, v.actionCommand.commandId, v.actionCommand.command, v.actionType),
+      v => (v.sagaId.id, v.actionId.id, v.actionCommand.commandId.id, v.actionCommand.command, v.actionType),
       (sId, aId, cId, c, at) =>
         ActionRequest
           .builder[A]()
-          .sagaId(sId)
-          .actionId(aId)
-          .actionCommand(new ActionCommand[A](cId, c))
+          .sagaId(SagaId.of(sId))
+          .actionId(ActionId.of(aId))
+          .actionCommand(new ActionCommand[A](CommandId.of(cId), c))
           .actionType(at)
           .build()
     ).asSerde
@@ -96,13 +97,22 @@ object JsonSerdes {
                                                                                    "actionId",
                                                                                    "commandId",
                                                                                    "sequenceResult")(
-        x => (x.sagaId, x.actionId, x.commandId, x.result.map(_ => true)),
+        x => (x.sagaId.id, x.actionId.id, x.commandId.id, x.result.map(_ => true)),
         (sagaId, actionId, commandId, result) =>
-          new ActionResponse(sagaId, actionId, commandId, result.map(_ => true))
+          new ActionResponse(SagaId.of(sagaId),
+                             ActionId.of(actionId),
+                             CommandId.of(commandId),
+                             result.map(_ => true))
       ).asSerde
     }
 
-    override def uuid(): Serde[UUID]                = u
+    val sid = mappedCodec[UUID, SagaId](_.id, SagaId.of).asSerde
+    val aid = mappedCodec[UUID, ActionId](_.id, ActionId.of).asSerde
+    val cid = mappedCodec[UUID, CommandId](_.id, CommandId.of).asSerde
+
+    override def commandId(): Serde[CommandId]      = cid
+    override def sagaId(): Serde[SagaId]            = sid
+    override def actionId(): Serde[ActionId]        = aid
     override def request(): Serde[ActionRequest[A]] = req
     override def response(): Serde[ActionResponse]  = resp
   }
@@ -113,11 +123,15 @@ object JsonSerdes {
     import ResultEncoders._
 
     import ProductCodecs._
+    implicit val (sidEnd, sidDec) = mappedCodec[UUID, SagaId](_.id, SagaId.of)
+    private val sid               = (sidEnd, sidDec).asSerde
+
+    implicit val (aidEnd, aidDec) = mappedCodec[UUID, ActionId](_.id, ActionId.of)
 
     implicit val (acEnc, acDec) =
       productCodecs2[UUID, A, ActionCommand[A]]("commandId", "command")(
-        x => (x.commandId, x.command),
-        (cid, c) => new ActionCommand[A](cid, c))
+        x => (x.commandId.id, x.command),
+        (cid, c) => new ActionCommand[A](CommandId.of(cid), c))
 
     Set(1).map(identity)
 
@@ -125,9 +139,9 @@ object JsonSerdes {
                                                  String,
                                                  ActionCommand[A],
                                                  Optional[ActionCommand[A]],
-                                                 java.util.Set[UUID],
+                                                 java.util.Set[ActionId],
                                                  String,
-                                                  java.util.List[SagaError],
+                                                 java.util.List[SagaError],
                                                  SagaAction[A]]("actionId",
                                                                 "actionType",
                                                                 "command",
@@ -135,12 +149,14 @@ object JsonSerdes {
                                                                 "dependencies",
                                                                 "status",
                                                                 "error")(
-      x => (x.actionId, x.actionType, x.command, x.undoCommand, x.dependencies, x.status.toString, x.error),
-      (aid, at, c, uc, d, s, e) => new SagaAction[A](aid, at, c, uc, d, ActionStatus.valueOf(s), e)
+      x =>
+        (x.actionId.id, x.actionType, x.command, x.undoCommand, x.dependencies, x.status.toString, x.error),
+      (aid, at, c, uc, d, s, e) =>
+        new SagaAction[A](ActionId.of(aid), at, c, uc, d, ActionStatus.valueOf(s), e)
     )
 
     implicit val (sagaEnc, sagaDec) =
-      productCodecs4[UUID, java.util.Map[UUID, SagaAction[A]], String, Sequence, Saga[A]](
+      productCodecs4[SagaId, java.util.Map[ActionId, SagaAction[A]], String, Sequence, Saga[A]](
         "sagaId",
         "actions",
         "status",
@@ -151,14 +167,14 @@ object JsonSerdes {
     private val sagaSerde = (sagaEnc, sagaDec).asSerde
 
     private val sagaRequestSerde =
-      productCodecs2[UUID, Saga[A], SagaRequest[A]]("sagaId", "initialState")(
+      productCodecs2[SagaId, Saga[A], SagaRequest[A]]("sagaId", "initialState")(
         x => (x.sagaId, x.initialState),
         (id, init) => new SagaRequest[A](id, init)
       ).asSerde
 
     import ResultEncoders._
     private val sagaResponseSerde =
-      productCodecs2[UUID, Result[SagaError, Sequence], SagaResponse]("sagaId", "initialState")(
+      productCodecs2[SagaId, Result[SagaError, Sequence], SagaResponse]("sagaId", "initialState")(
         x => (x.sagaId, x.result),
         (id, init) => new SagaResponse(id, init)
       ).asSerde
@@ -169,7 +185,11 @@ object JsonSerdes {
         new SagaStateTransition.SetInitialState[A](_))
 
     implicit val (ascEnc, ascDec) =
-      productCodecs4[UUID, UUID, String, java.util.List[SagaError], SagaStateTransition.SagaActionStatusChanged](
+      productCodecs4[SagaId,
+                     ActionId,
+                     String,
+                     java.util.List[SagaError],
+                     SagaStateTransition.SagaActionStatusChanged](
         "sagaId",
         "actionId",
         "actionStatus",
@@ -181,7 +201,7 @@ object JsonSerdes {
       )
 
     implicit val (sscEnc, sscDec) =
-      productCodecs3[UUID, String, java.util.List[SagaError], SagaStateTransition.SagaStatusChanged](
+      productCodecs3[SagaId, String, java.util.List[SagaError], SagaStateTransition.SagaStatusChanged](
         "sagaId",
         "sagaStatus",
         "errors"
@@ -222,7 +242,7 @@ object JsonSerdes {
         }
       ).asSerde
 
-    override def uuid(): Serde[UUID]                      = serdeFromCodecs[UUID]
+    override def sagaId(): Serde[SagaId]                  = sid
     override def request(): Serde[SagaRequest[A]]         = sagaRequestSerde
     override def response(): Serde[SagaResponse]          = sagaResponseSerde
     override def state(): Serde[saga.Saga[A]]             = sagaSerde

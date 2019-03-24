@@ -1,9 +1,11 @@
 package io.simplesource.saga.serialization.avro;
 
+import io.simplesource.saga.model.action.ActionId;
 import io.simplesource.saga.model.action.ActionStatus;
 import io.simplesource.saga.model.messages.SagaStateTransition;
 import io.simplesource.saga.model.saga.Saga;
 import io.simplesource.saga.model.saga.SagaError;
+import io.simplesource.saga.model.saga.SagaId;
 import io.simplesource.saga.model.saga.SagaStatus;
 import io.simplesource.saga.model.serdes.SagaSerdes;
 import io.simplesource.saga.shared.utils.Lists;
@@ -11,7 +13,6 @@ import org.apache.avro.specific.SpecificRecord;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -61,8 +62,8 @@ class SagaInternalSerdesTest {
     @Test
     void sagaTransitionActionStatusSuccessTest() {
         SagaStateTransition.SagaActionStatusChanged original = new SagaStateTransition.SagaActionStatusChanged(
-                UUID.randomUUID(),
-                UUID.randomUUID(),
+                SagaId.random(),
+                ActionId.random(),
                 ActionStatus.Completed,
                 Collections.emptyList());
 
@@ -73,8 +74,8 @@ class SagaInternalSerdesTest {
     @Test
     void sagaTransitionActionStatusFailureTest() {
         SagaStateTransition.SagaActionStatusChanged original = new SagaStateTransition.SagaActionStatusChanged(
-                UUID.randomUUID(),
-                UUID.randomUUID(),
+                SagaId.random(),
+                ActionId.random(),
                 ActionStatus.Failed,
                 Lists.of(
                         SagaError.of(SagaError.Reason.InternalError, "internal error"),
@@ -89,7 +90,7 @@ class SagaInternalSerdesTest {
     @Test
     void sagaTransitionSagaStatusSuccessTest() {
         SagaStateTransition.SagaStatusChanged original = new SagaStateTransition.SagaStatusChanged(
-                UUID.randomUUID(),
+                SagaId.random(),
                 SagaStatus.Completed,
                 Collections.emptyList());
 
@@ -102,7 +103,7 @@ class SagaInternalSerdesTest {
     @Test
     void sagaTransitionSagaStatusFailureTest() {
         SagaStateTransition.SagaStatusChanged original = new SagaStateTransition.SagaStatusChanged(
-                UUID.randomUUID(),
+                SagaId.random(),
                 SagaStatus.Completed,
                 Lists.of(
                         SagaError.of(SagaError.Reason.InternalError, "internal error"),
@@ -118,15 +119,15 @@ class SagaInternalSerdesTest {
     void sagaTransitionTransitionListTest() {
         SagaStateTransition.TransitionList original = new SagaStateTransition.TransitionList(Lists.of(
                 new SagaStateTransition.SagaActionStatusChanged(
-                        UUID.randomUUID(),
-                        UUID.randomUUID(),
+                        SagaId.random(),
+                        ActionId.random(),
                         ActionStatus.Failed,
                         Lists.of(
                                 SagaError.of(SagaError.Reason.InternalError, "internal error"),
                                 SagaError.of(SagaError.Reason.Timeout, "timeout"))),
                 new SagaStateTransition.SagaActionStatusChanged(
-                        UUID.randomUUID(),
-                        UUID.randomUUID(),
+                        SagaId.random(),
+                        ActionId.random(),
                         ActionStatus.Completed,
                         Collections.emptyList())));
 

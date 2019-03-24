@@ -2,7 +2,7 @@ package io.simplesource.saga.scala.serdes
 import java.util.UUID
 
 import io.circe.{Decoder, Encoder}
-import io.simplesource.api.CommandError
+import io.simplesource.api.{CommandError, CommandId}
 import io.simplesource.data.{NonEmptyList, Result, Sequence}
 import io.simplesource.kafka.model.{AggregateUpdate, CommandResponse}
 import io.simplesource.saga.model.saga.SagaError
@@ -50,8 +50,9 @@ object ResultEncoders {
                                                                                       "commandId",
                                                                                       "readSequence",
                                                                                       "sequenceResult")(
-      x => (x.aggregateKey(), x.commandId(), x.readSequence().getSeq, x.sequenceResult()),
-      (key, id, seq, ur) => new CommandResponse(key, id, Sequence.position(seq), ur))
+      x => (x.aggregateKey(), x.commandId.id, x.readSequence().getSeq, x.sequenceResult()),
+      (key, id, seq, ur) => new CommandResponse(CommandId.of(id), key, Sequence.position(seq), ur)
+    )
   }.asSerde
 
   implicit val cee: Encoder[SagaError] =

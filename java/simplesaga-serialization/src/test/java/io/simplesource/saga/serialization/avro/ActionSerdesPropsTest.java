@@ -1,13 +1,14 @@
 package io.simplesource.saga.serialization.avro;
 
+import io.simplesource.api.CommandId;
 import io.simplesource.saga.model.action.ActionCommand;
+import io.simplesource.saga.model.action.ActionId;
 import io.simplesource.saga.model.messages.ActionRequest;
+import io.simplesource.saga.model.saga.SagaId;
 import io.simplesource.saga.model.serdes.ActionSerdes;
 import io.simplesource.saga.serialization.avro.generated.test.User;
 import net.jqwik.api.*;
 import net.jqwik.api.arbitraries.StringArbitrary;
-
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -40,16 +41,18 @@ class ActionSerdesPropsTest {
                 Arbitraries.integers()
         ).as(User::new);
 
-        Arbitrary<UUID> uuid = Arbitraries.randomValue(random -> UUID.randomUUID());
+        Arbitrary<SagaId> sagaId = Arbitraries.randomValue(random -> SagaId.random());
+        Arbitrary<ActionId> actionId = Arbitraries.randomValue(random -> ActionId.random());
+        Arbitrary<CommandId> commandId = Arbitraries.randomValue(random -> CommandId.random());
 
         Arbitrary<ActionCommand<User>> actionCommand = Combinators.combine(
-            uuid,
+            commandId,
             user
         ).as(ActionCommand::new);
-        return Combinators.combine(uuid, uuid, actionCommand, strings).as(
-                (sagaId,actionId, command, actionType) -> ActionRequest.<User>builder()
-            .sagaId(sagaId)
-            .actionId(actionId)
+        return Combinators.combine(sagaId, actionId, actionCommand, strings).as(
+                (sId,aId, command, actionType) -> ActionRequest.<User>builder()
+            .sagaId(sId)
+            .actionId(aId)
             .actionCommand(command)
             .actionType(actionType)
             .build()

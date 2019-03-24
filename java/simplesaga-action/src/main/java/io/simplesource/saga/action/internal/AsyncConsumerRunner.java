@@ -3,6 +3,7 @@ package io.simplesource.saga.action.internal;
 import io.simplesource.saga.action.async.*;
 import io.simplesource.saga.model.messages.ActionRequest;
 import io.simplesource.saga.model.messages.ActionResponse;
+import io.simplesource.saga.model.saga.SagaId;
 import io.simplesource.saga.model.specs.ActionProcessorSpec;
 import io.simplesource.saga.shared.topics.TopicTypes;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -16,7 +17,6 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.Properties;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -27,17 +27,17 @@ class AsyncConsumerRunner<A, D, K, O, R> implements Runnable {
     private final ActionProcessorSpec<A> actionSpec;
     private final Consumer<Boolean> onClose;
     private final AtomicBoolean closed;
-    private Optional<KafkaConsumer<UUID, ActionRequest<A>>> consumer = Optional.empty();
+    private Optional<KafkaConsumer<SagaId, ActionRequest<A>>> consumer = Optional.empty();
     private final Logger logger = LoggerFactory.getLogger(AsyncConsumerRunner.class);
     private final Properties consumerConfig;
     private final AsyncContext<A, D, K, O, R> asyncContext;
-    private final AsyncPublisher<UUID, ActionResponse> responsePublisher;
+    private final AsyncPublisher<SagaId, ActionResponse> responsePublisher;
     private final Function<AsyncSerdes<K, R>, AsyncPublisher<K, R>> outputPublisher;
 
     AsyncConsumerRunner(
             AsyncContext<A, D, K, O, R> asyncContext,
             Properties consumerConfig,
-            AsyncPublisher<UUID, ActionResponse> responsePublisher,
+            AsyncPublisher<SagaId, ActionResponse> responsePublisher,
             Function<AsyncSerdes<K, R>, AsyncPublisher<K, R>> outputPublisher,
             Consumer<Boolean> onClose) {
         asyncSpec = asyncContext.asyncSpec;
@@ -53,8 +53,8 @@ class AsyncConsumerRunner<A, D, K, O, R> implements Runnable {
     @Override
     public void run() {
 
-        KafkaConsumer<UUID, ActionRequest<A>> consumer = new KafkaConsumer<>(consumerConfig,
-                actionSpec.serdes.uuid().deserializer(),
+        KafkaConsumer<SagaId, ActionRequest<A>> consumer = new KafkaConsumer<>(consumerConfig,
+                actionSpec.serdes.sagaId().deserializer(),
                 actionSpec.serdes.request().deserializer());
         consumer.subscribe(Collections.singletonList(asyncContext.actionTopicNamer.apply(TopicTypes.ActionTopic.requestUnprocessed)));
 
@@ -62,9 +62,9 @@ class AsyncConsumerRunner<A, D, K, O, R> implements Runnable {
 
         try {
             while (!closed.get()) {
-                ConsumerRecords<UUID, ActionRequest<A>> records = consumer.poll(Duration.ofMillis(100L));
-                for (ConsumerRecord<UUID, ActionRequest<A>> x : records) {
-                    UUID sagaId = x.key();
+                ConsumerRecords<SagaId, ActionRequest<A>> records = consumer.poll(Duration.ofMillis(100L));
+                for (ConsumerRecord<SagaId, ActionRequest<A>> x : records) {
+                    SagaId sagaId = x.key();
                     ActionRequest<A> request = x.value();
                     if (request.actionType.equals(asyncSpec.actionType)) {
                         AsyncActionProcessor.processRecord(asyncContext, sagaId, request, responsePublisher, outputPublisher);
