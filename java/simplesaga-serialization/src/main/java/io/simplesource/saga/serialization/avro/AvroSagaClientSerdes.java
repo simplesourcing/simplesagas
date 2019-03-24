@@ -51,12 +51,12 @@ public class AvroSagaClientSerdes<A> implements SagaClientSerdes<A> {
             AvroSaga avroSaga = sagaToAvro(topic, s);
             return AvroSagaRequest.newBuilder()
                     .setInitialState(avroSaga)
-                    .setSagaId(sr.sagaId.id.toString())
+                    .setSagaId(sr.sagaId.toString())
                     .build();
         }, (topic, asr) -> {
             AvroSaga as = asr.getInitialState();
             Saga<A> saga = sagaFromAvro(topic, as);
-            return new SagaRequest<>(SagaId.of(UUID.fromString(asr.getSagaId())), saga);
+            return new SagaRequest<>(SagaId.fromString(asr.getSagaId()), saga);
         });
     }
 
@@ -64,7 +64,7 @@ public class AvroSagaClientSerdes<A> implements SagaClientSerdes<A> {
     public Serde<SagaResponse> response() {
         return SerdeUtils.iMap(avroSagaResponseSerde,
                 r -> AvroSagaResponse.newBuilder()
-                        .setSagaId(r.sagaId.id.toString())
+                        .setSagaId(r.sagaId.toString())
                         .setResult(r.result.fold(
                                 es -> es.map(e ->
                                         new AvroSagaError(
@@ -74,7 +74,7 @@ public class AvroSagaClientSerdes<A> implements SagaClientSerdes<A> {
                                 Sequence::getSeq))
                         .build(),
                 ar -> new SagaResponse(
-                        SagaId.of(UUID.fromString(ar.getSagaId())),
+                        SagaId.fromString(ar.getSagaId()),
                         SagaSerdeUtils.<Long, Sequence>sagaResultFromAvro(ar.getResult(), x -> Sequence.position(x))));
 
     }
@@ -83,20 +83,20 @@ public class AvroSagaClientSerdes<A> implements SagaClientSerdes<A> {
         Map<String, AvroSagaAction> aActions = as.getActions();
         Map<ActionId, SagaAction<A>> actions = new HashMap<>();
         aActions.forEach((id, aa) -> {
-            ActionId actionId = ActionId.of(UUID.fromString(aa.getActionId()));
+            ActionId actionId = ActionId.fromString(aa.getActionId());
             SagaAction<A> action = new SagaAction<>(
                     actionId,
                     aa.getActionType(),
                     SagaSerdeUtils.actionCommandFromAvro(payloadSerde, topic, aa.getActionType(), aa.getActionCommand()),
                     Optional.ofNullable(SagaSerdeUtils.actionCommandFromAvro(payloadSerde, topic, aa.getActionType() + "-undo", aa.getUndoCommand())),
-                    aa.getDependencies().stream().map(actIdStr -> ActionId.of(UUID.fromString(actIdStr))).collect(Collectors.toSet()),
+                    aa.getDependencies().stream().map(actIdStr -> ActionId.fromString(actIdStr)).collect(Collectors.toSet()),
                     ActionStatus.valueOf(aa.getActionStatus()),
                     SagaSerdeUtils.sagaErrorListFromAvro(aa.getActionErrors()));
             actions.put(actionId, action);
         });
 
         return Saga.of(
-                SagaId.of(UUID.fromString(as.getSagaId())),
+                SagaId.fromString(as.getSagaId()),
                 actions,
                 SagaStatus.valueOf(as.getSagaStatus()),
                 Sequence.position(as.getSequence()));
@@ -105,9 +105,9 @@ public class AvroSagaClientSerdes<A> implements SagaClientSerdes<A> {
     protected AvroSaga sagaToAvro(String topic, Saga<A> s) {
         Map<String, AvroSagaAction> avroActions = new HashMap<>();
         s.actions.forEach((id, act) -> {
-            String actionId = id.id.toString();
+            String actionIdStr = id.toString();
             AvroSagaAction avroSagaAction = AvroSagaAction.newBuilder()
-                    .setActionId(actionId)
+                    .setActionId(actionIdStr)
                     .setActionErrors(SagaSerdeUtils.sagaErrorListToAvro(act.error))
                     .setActionCommand(SagaSerdeUtils.actionCommandToAvro(
                             payloadSerde,
@@ -123,15 +123,15 @@ public class AvroSagaClientSerdes<A> implements SagaClientSerdes<A> {
                     .setActionType(act.actionType)
                     .setDependencies(act.dependencies
                             .stream()
-                            .map(actId -> actId.id.toString())
+                            .map(ActionId::toString)
                             .collect(Collectors.toList()))
                     .build();
-            avroActions.put(actionId, avroSagaAction);
+            avroActions.put(actionIdStr, avroSagaAction);
         });
 
         return AvroSaga
                 .newBuilder()
-                .setSagaId(s.sagaId.id.toString())
+                .setSagaId(s.sagaId.toString())
                 .setSagaStatus(s.status.toString())
                 .setSagaErrors(SagaSerdeUtils.sagaErrorListToAvro(s.sagaError))
                 .setActions(avroActions)

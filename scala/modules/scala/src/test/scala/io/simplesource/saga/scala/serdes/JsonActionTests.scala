@@ -18,7 +18,25 @@ class JsonActionTests extends WordSpec with Matchers {
       JsonSerdes.actionSerdes[Json]
     val topic = "topic"
 
-    "serialise and deserialise key UUIDs" in {
+    "serialise and deserialise SagaId" in {
+      val initial = SagaId.random()
+      val ser =
+        serdes.sagaId().serializer().serialize(topic, initial)
+      val de =
+        serdes.sagaId().deserializer().deserialize(topic, ser)
+      de shouldBe initial
+    }
+
+    "serialise and deserialise ActionId" in {
+      val initial = ActionId.random()
+      val ser =
+        serdes.actionId().serializer().serialize(topic, initial)
+      val de =
+        serdes.actionId().deserializer().deserialize(topic, ser)
+      de shouldBe initial
+    }
+
+    "serialise and deserialise action requests" in {
       val request =
         ActionRequest
           .builder()

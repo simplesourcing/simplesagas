@@ -11,4 +11,6 @@ public final class ActionId {
     public static ActionId random() {
         return new ActionId(UUID.randomUUID());
     }
+    public static ActionId fromString(String uuidString) { return new ActionId(UUID.fromString(uuidString)); }
+    @Override public String toString() { return id.toString(); }
 }

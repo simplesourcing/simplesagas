@@ -45,7 +45,7 @@ public class AvroSagaSerdes<A> extends AvroSagaClientSerdes<A> implements SagaSe
                     initial -> new AvroSagaTransitionInitial(sagaToAvro(topic, (Saga<A>)initial.sagaState)),
                     AvroSagaSerdes::actionStatusChangeToAvro,
                     sagaChange -> AvroSagaTransitionSagaStatusChange.newBuilder()
-                            .setSagaId(sagaChange.sagaId.id.toString())
+                            .setSagaId(sagaChange.sagaId.toString())
                             .setSagaStatus(sagaChange.sagaStatus.toString())
                             .setSagaErrors(SagaSerdeUtils.sagaErrorListToAvro(sagaChange.sagaErrors))
                             .build(),
@@ -66,7 +66,7 @@ public class AvroSagaSerdes<A> extends AvroSagaClientSerdes<A> implements SagaSe
             if (t instanceof AvroSagaTransitionSagaStatusChange) {
                 AvroSagaTransitionSagaStatusChange st = (AvroSagaTransitionSagaStatusChange) t;
                 return new SagaStateTransition.SagaStatusChanged(
-                        SagaId.of(UUID.fromString(st.getSagaId())),
+                        SagaId.fromString(st.getSagaId()),
                         SagaStatus.valueOf(st.getSagaStatus()),
                         SagaSerdeUtils.sagaErrorListFromAvro(st.getSagaErrors()));
             }
@@ -82,8 +82,8 @@ public class AvroSagaSerdes<A> extends AvroSagaClientSerdes<A> implements SagaSe
 
     private static AvroSagaTransitionActionStatusChange actionStatusChangeToAvro(SagaStateTransition.SagaActionStatusChanged actionChange) {
         return AvroSagaTransitionActionStatusChange.newBuilder()
-                .setSagaId(actionChange.sagaId.id.toString())
-                .setActionId(actionChange.actionId.id.toString())
+                .setSagaId(actionChange.sagaId.toString())
+                .setActionId(actionChange.actionId.toString())
                 .setActionStatus(actionChange.actionStatus.toString())
                 .setActionErrors(SagaSerdeUtils.sagaErrorListToAvro(actionChange.actionErrors))
                 .build();
@@ -91,8 +91,8 @@ public class AvroSagaSerdes<A> extends AvroSagaClientSerdes<A> implements SagaSe
 
     private static SagaStateTransition.SagaActionStatusChanged actionStatusChangeFromAvro(AvroSagaTransitionActionStatusChange actionChange) {
         return new SagaStateTransition.SagaActionStatusChanged(
-                SagaId.of(UUID.fromString(actionChange.getSagaId())),
-                ActionId.of(UUID.fromString(actionChange.getActionId())),
+                SagaId.fromString(actionChange.getSagaId()),
+                ActionId.fromString(actionChange.getActionId()),
                 ActionStatus.valueOf(actionChange.getActionStatus()),
                 SagaSerdeUtils.sagaErrorListFromAvro(actionChange.getActionErrors()));
     }

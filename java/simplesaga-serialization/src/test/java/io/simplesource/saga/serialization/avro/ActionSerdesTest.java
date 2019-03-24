@@ -15,8 +15,6 @@ import io.simplesource.saga.serialization.avro.generated.test.User;
 import io.simplesource.saga.shared.serialization.TupleSerdes;
 import org.apache.kafka.common.serialization.Serde;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
@@ -24,17 +22,24 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 
 class ActionSerdesTest {
-    private static Logger logger = LoggerFactory.getLogger(ActionSerdesTest.class);
-
     private static String SCHEMA_URL = "http://localhost:8081/";
     private static String FAKE_TOPIC = "topic";
 
     @Test
-    void uuidTest() {
+    void actionIdTest() {
         ActionSerdes<?> serdes = AvroSerdes.Specific.actionSerdes(SCHEMA_URL, true);
         ActionId original = ActionId.random();
         byte[] serialized = serdes.actionId().serializer().serialize(FAKE_TOPIC, original);
         ActionId deserialized = serdes.actionId().deserializer().deserialize(FAKE_TOPIC, serialized);
+        assertThat(deserialized).isEqualTo(original);
+    }
+
+    @Test
+    void sagaIdTest() {
+        ActionSerdes<?> serdes = AvroSerdes.Specific.actionSerdes(SCHEMA_URL, true);
+        SagaId original = SagaId.random();
+        byte[] serialized = serdes.sagaId().serializer().serialize(FAKE_TOPIC, original);
+        SagaId deserialized = serdes.sagaId().deserializer().deserialize(FAKE_TOPIC, serialized);
         assertThat(deserialized).isEqualTo(original);
     }
 
