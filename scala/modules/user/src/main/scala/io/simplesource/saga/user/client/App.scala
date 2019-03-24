@@ -8,16 +8,17 @@ import java.util.concurrent.atomic.AtomicInteger
 import io.circe.generic.auto._
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
+import io.simplesource.api.CommandId
 import io.simplesource.data.Result
 import io.simplesource.kafka.dsl.KafkaConfig
 import io.simplesource.saga.action.http.HttpRequest
 import io.simplesource.saga.action.http.HttpRequest.HttpVerb
 import io.simplesource.saga.client.builder.SagaClientBuilder
 import io.simplesource.saga.client.dsl.SagaDsl._
-import io.simplesource.saga.model.action.ActionCommand
+import io.simplesource.saga.model.action.{ActionCommand, ActionId}
 import io.simplesource.saga.model.api.SagaAPI
 import io.simplesource.saga.model.messages.SagaRequest
-import io.simplesource.saga.model.saga.SagaError
+import io.simplesource.saga.model.saga.{SagaError, SagaId}
 import io.simplesource.saga.scala.serdes.JsonSerdes
 import io.simplesource.saga.user.action.App.Key
 import io.simplesource.saga.user.action.HttpClient
@@ -88,24 +89,24 @@ object App {
     val builder = SagaBuilder.create[Json]
 
     val addUser = builder.addAction(
-      UUID.randomUUID(),
+      ActionId.random(),
       constants.userActionType,
       new ActionCommand(
-        UUID.randomUUID(),
+        CommandId.random(),
         (UserCommand.Insert(userId = UUID.randomUUID(), firstName, lastName): UserCommand).asJson)
     )
 
     val createAccount = builder.addAction(
-      UUID.randomUUID(),
+      ActionId.random(),
       constants.accountActionType,
-      new ActionCommand(UUID.randomUUID(),
+      new ActionCommand(CommandId.random(),
                         (AccountCommand
                           .CreateAccount(accountId = accountId,
                                          userName = s"$firstName $lastName",
                                          funds = 1000): AccountCommand).asJson)
     )
 
-    val amountsWithIds = amounts.map((_, UUID.randomUUID(), UUID.randomUUID()))
+    val amountsWithIds = amounts.map((_, ActionId.random(), UUID.randomUUID()))
 
     val reservations = amountsWithIds.map {
       case (amount, actionId, resId) =>
@@ -113,14 +114,14 @@ object App {
           actionId,
           constants.accountActionType,
           new ActionCommand(
-            UUID.randomUUID(),
+            CommandId.random(),
             (AccountCommand.ReserveFunds(accountId = accountId,
                                          reservationId = resId,
                                          description = s"res-${resId.toString.take(4)}",
                                          amount = amount): AccountCommand).asJson
           ),
           new ActionCommand(
-            UUID.randomUUID(),
+            CommandId.random(),
             (AccountCommand
               .CancelReservation(accountId = accountId, reservationId = resId): AccountCommand).asJson)
         )
@@ -129,10 +130,10 @@ object App {
     val confirmations = amountsWithIds.map {
       case (amount, _, resId) =>
         builder.addAction(
-          UUID.randomUUID(),
+          ActionId.random(),
           constants.accountActionType,
           new ActionCommand(
-            UUID.randomUUID(),
+            CommandId.random(),
             (AccountCommand.ConfirmReservation(accountId = accountId,
                                                reservationId = resId,
                                                finalAmount = amount + adjustment): AccountCommand).asJson)
@@ -140,10 +141,10 @@ object App {
     }
 
     val testAsyncInvoke: SubSaga[Json] = builder.addAction(
-      UUID.randomUUID(),
+      ActionId.random(),
       "async_test_action_type",
       new ActionCommand(
-        UUID.randomUUID(),
+        CommandId.random(),
         s"Hello World, time is: ${LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)}".asJson)
     )
 
@@ -159,10 +160,10 @@ object App {
       HttpClient.httpRequest[Key, String]._1
 
     val testHttpInvoke: SubSaga[Json] = builder.addAction(
-      UUID.randomUUID(),
+      ActionId.random(),
       "http_action_type",
       new ActionCommand(
-        UUID.randomUUID(),
+        CommandId.random(),
         v.asJson
       )
     )
@@ -174,7 +175,7 @@ object App {
       .andThen(inSeries(reservations.asJava))
       .andThen(inSeries(confirmations.asJava))
 
-    builder.build().map(s => new SagaRequest(UUID.randomUUID(), s))
+    builder.build().map(s => new SagaRequest(SagaId.random(), s))
   }
 
 }

@@ -1,7 +1,7 @@
 package io.simplesource.saga.scala.dsl
-import java.util.UUID
 
-import io.simplesource.saga.model.action.ActionCommand
+import io.simplesource.api.CommandId
+import io.simplesource.saga.model.action.{ActionCommand, ActionId}
 import io.simplesource.saga.model.saga.Saga
 import io.simplesource.saga.client.dsl.SagaDsl.SagaBuilder
 import org.scalatest.{Matchers, WordSpec}
@@ -27,12 +27,11 @@ class ScalaDslTest extends WordSpec with Matchers {
 
   "action dsl" must {
     "create action dependency graph" in {
-      def rId(): UUID = UUID.randomUUID()
 
       val builder = SagaBuilder.create[String]
 
       def create(a: String) =
-        builder.addAction(rId(), s"actionType-$a", new ActionCommand(rId(), s"Command-$a"))
+        builder.addAction(ActionId.random(), s"actionType-$a", new ActionCommand(CommandId.random(), s"Command-$a"))
 
       val a1 = create("1")
       val a2 = create("2")
