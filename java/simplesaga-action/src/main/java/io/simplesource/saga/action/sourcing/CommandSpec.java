@@ -9,19 +9,19 @@ import java.util.function.Function;
 
 /**
   * @param <A> - common representation form for all action commands (typically Json / GenericRecord for Avro)
-  * @param <I> - intermediate decoded input type (that can easily be converted both K and C)
+  * @param <D> - intermediate decoded input type (that can easily be converted both K and C)
   * @param <K> - aggregate key
   * @param <C> - simple sourcing command type
   */
 @Value
 @Builder
 @AllArgsConstructor
-public final class CommandSpec<A, I, K, C> {
+public final class CommandSpec<A, D, K, C> {
     public final String actionType;
-    public final Function<A, Result<Throwable, I>> decode;
-    public final Function<I, C> commandMapper;
-    public final Function<I, K> keyMapper;
-    public final Function<I, Sequence> sequenceMapper;
+    public final Function<A, Result<Throwable, D>> decode;
+    public final Function<D, C> commandMapper;
+    public final Function<D, K> keyMapper;
+    public final Function<D, Sequence> sequenceMapper;
     public final CommandSerdes<K, C> commandSerdes;
     public final long timeOutMillis;
 }

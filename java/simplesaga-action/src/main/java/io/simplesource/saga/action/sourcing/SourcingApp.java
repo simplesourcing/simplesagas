@@ -53,16 +53,16 @@ public final class SourcingApp<A> {
      * Add a command handler to the SourcingApp.
      * @param cSpec command spec.
      * @param commandTopicBuilder command topic builder.
-     * @param <I> intermediate type.
+     * @param <D> intermediate type.
      * @param <K> key type.
      * @param <C> command type.
      */
-    public <I, K, C> SourcingApp<A> addCommand(CommandSpec<A, I, K, C> cSpec, TopicConfigBuilder.BuildSteps commandTopicBuilder) {
+    public <D, K, C> SourcingApp<A> addCommand(CommandSpec<A, D, K, C> cSpec, TopicConfigBuilder.BuildSteps commandTopicBuilder) {
         TopicConfig commandTopicConfig = TopicConfigBuilder.buildTopics(TopicTypes.CommandTopic.all, Collections.emptyMap(), Collections.emptyMap(), commandTopicBuilder);
         topicCreations.addAll(TopicCreation.allTopics(commandTopicConfig));
 
         topologyBuilder.onBuildTopology((topologyContext) -> {
-            SourcingContext<A, I, K, C> sourcing = new SourcingContext<>(actionSpec, cSpec, actionTopicConfig.namer, commandTopicConfig.namer);
+            SourcingContext<A, D, K, C> sourcing = new SourcingContext<>(actionSpec, cSpec, actionTopicConfig.namer, commandTopicConfig.namer);
             SourcingStream.addSubTopology(topologyContext, sourcing);
         });
 

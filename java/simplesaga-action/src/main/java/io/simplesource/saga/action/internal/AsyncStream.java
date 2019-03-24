@@ -9,14 +9,14 @@ import java.util.UUID;
 
 public final class AsyncStream {
 
-    public static <A, I, K, O, R> AsyncPipe addSubTopology(ActionTopologyBuilder.ActionTopologyContext<A> topologyContext,
-                                                                          AsyncContext<A, I, K, O, R> async) {
+    public static <A, D, K, O, R> AsyncPipe addSubTopology(ActionTopologyBuilder.ActionTopologyContext<A> topologyContext,
+                                                                          AsyncContext<A, D, K, O, R> async) {
         addSubTopology(async, topologyContext.actionRequests, topologyContext.actionResponses);
         // create a Kafka consumer that processes action requests
         return AsyncTransform.async(async, topologyContext.properties);
     }
 
-    private static <A, I, K, O, R> void addSubTopology(AsyncContext<A, I, K, O, R> ctx,
+    private static <A, D, K, O, R> void addSubTopology(AsyncContext<A, D, K, O, R> ctx,
                                                        KStream<UUID, ActionRequest<A>> actionRequest,
                                                        KStream<UUID, ActionResponse> actionResponse) {
         // join the action request with corresponding prior command responses

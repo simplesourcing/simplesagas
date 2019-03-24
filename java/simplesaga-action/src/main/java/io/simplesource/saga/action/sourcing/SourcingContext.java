@@ -9,15 +9,15 @@ import lombok.Value;
 
 /**
   * @param <A> - common representation form for all action commands (typically Json / GenericRecord for Avro)
-  * @param <I> - intermediate decoded input type (that can easily be converted to both K and C)
+  * @param <D> - intermediate decoded input type (that can easily be converted to both K and C)
   * @param <K> - aggregate key
   * @param <C> - simple sourcing command type
   */
 
 @Value
-public final class SourcingContext<A, I, K, C> {
+public final class SourcingContext<A, D, K, C> {
     public final ActionProcessorSpec<A> actionSpec;
-    public final CommandSpec<A, I, K, C> commandSpec;
+    public final CommandSpec<A, D, K, C> commandSpec;
     public final TopicNamer actionTopicNamer;
     public final TopicNamer commandTopicNamer;
 
