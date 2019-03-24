@@ -13,6 +13,7 @@ import io.simplesource.saga.action.sourcing.SourcingContext;
 import io.simplesource.saga.model.messages.ActionRequest;
 import io.simplesource.saga.model.messages.ActionResponse;
 import io.simplesource.saga.model.saga.SagaError;
+import io.simplesource.saga.model.saga.SagaId;
 import io.simplesource.saga.model.serdes.ActionSerdes;
 import io.simplesource.saga.shared.serialization.TupleSerdes;
 import org.apache.kafka.common.serialization.Serde;
@@ -21,8 +22,6 @@ import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.kstream.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.UUID;
 
 public final class SourcingStream {
 
@@ -42,8 +41,8 @@ public final class SourcingStream {
     }
 
     private static <A, D, K, C> void addSubTopology(SourcingContext<A, D, K, C> ctx,
-                                                    KStream<UUID, ActionRequest<A>> actionRequest,
-                                                    KStream<UUID, ActionResponse> actionResponse,
+                                                    KStream<SagaId, ActionRequest<A>> actionRequest,
+                                                    KStream<SagaId, ActionResponse> actionResponse,
                                                     KStream<K, CommandResponse<K>> commandResponseByAggregate) {
         KStream<CommandId, CommandResponse<K>> commandResponseByCommandId = commandResponseByAggregate.selectKey((k, v) -> v.commandId());
 
@@ -52,12 +51,12 @@ public final class SourcingStream {
                 actionResponse,
                 ctx.commandSpec.actionType);
         // get new command requests
-        Tuple2<KStream<UUID, ActionResponse>, KStream<K, CommandRequest<K, C>>> requestResp = handleActionRequest(ctx, idempotentAction.unprocessedRequests, commandResponseByAggregate);
-        KStream<UUID, ActionResponse> requestErrorResponses = requestResp.v1();
+        Tuple2<KStream<SagaId, ActionResponse>, KStream<K, CommandRequest<K, C>>> requestResp = handleActionRequest(ctx, idempotentAction.unprocessedRequests, commandResponseByAggregate);
+        KStream<SagaId, ActionResponse> requestErrorResponses = requestResp.v1();
         KStream<K, CommandRequest<K, C>> commandRequests = requestResp.v2();
 
         // handle incoming command responses
-        KStream<UUID, ActionResponse> newActionResponses = handleCommandResponse(ctx, actionRequest, commandResponseByCommandId);
+        KStream<SagaId, ActionResponse> newActionResponses = handleCommandResponse(ctx, actionRequest, commandResponseByCommandId);
 
         ActionContext<A> actionCtx = ctx.getActionContext();
 
@@ -80,29 +79,29 @@ public final class SourcingStream {
     /**
      * Translate simplesaga action requests to simplesourcing command requests.
      */
-    private static <A, D, K, C> Tuple2<KStream<UUID, ActionResponse>, KStream<K, CommandRequest<K, C>>> handleActionRequest(
+    private static <A, D, K, C> Tuple2<KStream<SagaId, ActionResponse>, KStream<K, CommandRequest<K, C>>> handleActionRequest(
             SourcingContext<A, D, K, C> ctx,
-            KStream<UUID, ActionRequest<A>> actionRequests,
+            KStream<SagaId, ActionRequest<A>> actionRequests,
             KStream<K, CommandResponse<K>> commandResponseByAggregate) {
 
-        KStream<UUID, Tuple2<ActionRequest<A>, Result<Throwable, D>>> reqsWithDecoded =
+        KStream<SagaId, Tuple2<ActionRequest<A>, Result<Throwable, D>>> reqsWithDecoded =
                 actionRequests
                         .mapValues((k, ar) -> Tuple2.of(ar, ctx.commandSpec.decode.apply(ar.actionCommand.command)))
                         .peek(Utils.logValues(logger, "reqsWithDecoded"));
 
-        KStream<UUID, Tuple2<ActionRequest<A>, Result<Throwable, D>>>[] branchSuccessFailure = reqsWithDecoded.branch((k, v) -> v.v2().isSuccess(), (k, v) -> v.v2().isFailure());
+        KStream<SagaId, Tuple2<ActionRequest<A>, Result<Throwable, D>>>[] branchSuccessFailure = reqsWithDecoded.branch((k, v) -> v.v2().isSuccess(), (k, v) -> v.v2().isFailure());
 
-        KStream<UUID, ActionResponse> errorActionResponses = branchSuccessFailure[1].mapValues((k, v) -> {
+        KStream<SagaId, ActionResponse> errorActionResponses = branchSuccessFailure[1].mapValues((k, v) -> {
             ActionRequest<A> request = v.v1();
             NonEmptyList<Throwable> reasons = v.v2().failureReasons().get();
             return new ActionResponse(request.sagaId, request.actionId, request.actionCommand.commandId, Result.failure(
                     SagaError.of(SagaError.Reason.InternalError, reasons.head())));
         });
 
-        KStream<UUID, Tuple2<ActionRequest<A>, D>> allGood = reqsWithDecoded
+        KStream<SagaId, Tuple2<ActionRequest<A>, D>> allGood = reqsWithDecoded
                 .mapValues((k, v) -> Tuple2.of(v.v1(), v.v2().getOrElse(null)));
 
-        KTable<Tuple2<K, UUID>, Long> latestSequenceNumbers = latestSequenceNumbersForSagaAggregate(
+        KTable<Tuple2<K, SagaId>, Long> latestSequenceNumbers = latestSequenceNumbersForSagaAggregate(
                 ctx, actionRequests, commandResponseByAggregate);
 
 
@@ -129,21 +128,21 @@ public final class SourcingStream {
             return KeyValue.pair(Tuple2.of(key, v.v1().sagaId), v.v1());
         })
                 .leftJoin(latestSequenceNumbers, valueJoiner,
-                        Joined.with(TupleSerdes.tuple2(ctx.cSerdes().aggregateKey(), ctx.aSerdes().uuid()), ctx.aSerdes().request(), Serdes.Long()))
+                        Joined.with(TupleSerdes.tuple2(ctx.cSerdes().aggregateKey(), ctx.aSerdes().sagaId()), ctx.aSerdes().request(), Serdes.Long()))
                 .selectKey((k, v) -> v.aggregateKey())
                 .peek(Utils.logValues(logger, "commandRequestByAggregate"));
 
         return Tuple2.of(errorActionResponses, commandRequestByAggregate);
     }
 
-    private static <A, K> KTable<Tuple2<K, UUID>, Long> latestSequenceNumbersForSagaAggregate(
+    private static <A, K> KTable<Tuple2<K, SagaId>, Long> latestSequenceNumbersForSagaAggregate(
             SourcingContext<A, ?, K, ?> ctx,
-            KStream<UUID, ActionRequest<A>> actionRequests,
+            KStream<SagaId, ActionRequest<A>> actionRequests,
             KStream<K, CommandResponse<K>> commandResponseByAggregate) {
         CommandSerdes<K, ?> cSerdes = ctx.cSerdes();
         ActionSerdes<A> aSerdes = ctx.aSerdes();
 
-        Serde<Tuple2<K, UUID>> sagaAggKeySerde = TupleSerdes.tuple2(cSerdes.aggregateKey(), aSerdes.uuid());
+        Serde<Tuple2<K, SagaId>> sagaAggKeySerde = TupleSerdes.tuple2(cSerdes.aggregateKey(), aSerdes.sagaId());
         Reducer<Long> reducer = (cr1, cr2) -> cr2 > cr1 ? cr2 : cr1;
 
         // Join the action request and command response by commandID
@@ -154,22 +153,22 @@ public final class SourcingStream {
 
 
         // Get the stream of sequence numbers keyed by (aggregate key, sagaID)
-        KStream<Tuple2<K, UUID>, Long> snByAkSi = crArByCi
+        KStream<Tuple2<K, SagaId>, Long> snByAkSi = crArByCi
                 .selectKey((k, v) -> Tuple2.of(v.v1().aggregateKey(), v.v2().sagaId))
                 .mapValues(v -> v.v1().sequenceResult().getOrElse(Sequence.first()).getSeq());
 
         // Get the table of the largest sequence number keyed by (aggregate key, sagaID)
         return snByAkSi
-                .groupByKey(Serialized.with(sagaAggKeySerde, Serdes.Long()))
+                .groupByKey(Grouped.with(sagaAggKeySerde, Serdes.Long()))
                 .reduce(reducer, Materialized.with(sagaAggKeySerde, Serdes.Long()));
     }
 
     /**
      * Receives command response from simplesourcing, and convert to simplesaga action response.
      */
-    private static <A, D, K, C> KStream<UUID, ActionResponse> handleCommandResponse(
+    private static <A, D, K, C> KStream<SagaId, ActionResponse> handleCommandResponse(
             SourcingContext<A, D, K, C> ctx,
-            KStream<UUID, ActionRequest<A>> actionRequests,
+            KStream<SagaId, ActionRequest<A>> actionRequests,
             KStream<CommandId, CommandResponse<K>> responseByCommandId) {
         long timeOutMillis = ctx.commandSpec.timeOutMillis;
         // find the response for the request

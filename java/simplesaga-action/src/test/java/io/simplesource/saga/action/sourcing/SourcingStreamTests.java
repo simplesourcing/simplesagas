@@ -9,8 +9,10 @@ import io.simplesource.kafka.model.CommandResponse;
 import io.simplesource.kafka.serialization.avro.AvroCommandSerdes;
 import io.simplesource.saga.avro.avro.generated.test.*;
 import io.simplesource.saga.model.action.ActionCommand;
+import io.simplesource.saga.model.action.ActionId;
 import io.simplesource.saga.model.messages.ActionRequest;
 import io.simplesource.saga.model.messages.ActionResponse;
+import io.simplesource.saga.model.saga.SagaId;
 import io.simplesource.saga.model.serdes.ActionSerdes;
 import io.simplesource.saga.serialization.avro.AvroSerdes;
 import io.simplesource.saga.shared.topics.TopicNamer;
@@ -21,8 +23,6 @@ import lombok.Value;
 import org.apache.avro.specific.SpecificRecord;
 import org.apache.kafka.streams.Topology;
 import org.junit.jupiter.api.Test;
-
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -42,13 +42,13 @@ class SourcingStreamTests {
         final CommandSerdes<AccountId, AccountCommand> commandSerdes = AvroCommandSerdes.of(SCHEMA_URL, true);
 
         // publishers
-        final RecordPublisher<UUID, ActionRequest<SpecificRecord>> actionRequestPublisher;
+        final RecordPublisher<SagaId, ActionRequest<SpecificRecord>> actionRequestPublisher;
         final RecordPublisher<AccountId, CommandResponse<AccountId>> commandResponsePublisher;
-        final RecordPublisher<UUID, ActionResponse> actionResponsePublisher;
+        final RecordPublisher<SagaId, ActionResponse> actionResponsePublisher;
 
         // verifiers
         final RecordVerifier<AccountId, CommandRequest<AccountId, AccountCommand>> commandRequestVerifier;
-        final RecordVerifier<UUID, ActionResponse> actionResponseVerifier;
+        final RecordVerifier<SagaId, ActionResponse> actionResponseVerifier;
 
         AccountContext() {
             CommandSpec<SpecificRecord, AccountCommand, AccountId, AccountCommand> commandSpec = new CommandSpec<>(
@@ -70,7 +70,7 @@ class SourcingStreamTests {
             actionRequestPublisher = testContext.publisher(
                     TopicNamer.forPrefix(Constants.actionTopicPrefix, TOPIC_BASE_NAME)
                             .apply(TopicTypes.ActionTopic.request),
-                    actionSerdes.uuid(),
+                    actionSerdes.sagaId(),
                     actionSerdes.request());
 
             commandResponsePublisher = testContext.publisher(
@@ -82,7 +82,7 @@ class SourcingStreamTests {
             actionResponsePublisher = testContext.publisher(
                     TopicNamer.forPrefix(Constants.actionTopicPrefix, TOPIC_BASE_NAME)
                             .apply(TopicTypes.ActionTopic.response),
-                    actionSerdes.uuid(),
+                    actionSerdes.sagaId(),
                     actionSerdes.response());
 
             // get commandRequestVerifier
@@ -95,17 +95,17 @@ class SourcingStreamTests {
             actionResponseVerifier = testContext.verifier(
                     TopicNamer.forPrefix(Constants.actionTopicPrefix, TOPIC_BASE_NAME)
                             .apply(TopicTypes.ActionTopic.response),
-                    actionSerdes.uuid(),
+                    actionSerdes.sagaId(),
                     actionSerdes.response());
 
         }
     }
 
-    private static ActionRequest<SpecificRecord> createRequest(UUID sagaId, AccountCommand accountCommand, CommandId commandId) {
+    private static ActionRequest<SpecificRecord> createRequest(SagaId sagaId, AccountCommand accountCommand, CommandId commandId) {
         ActionCommand<SpecificRecord> actionCommand = new ActionCommand<>(commandId, accountCommand);
         return ActionRequest.<SpecificRecord>builder()
                 .sagaId(sagaId)
-                .actionId(UUID.randomUUID())
+                .actionId(ActionId.random())
                 .actionCommand(actionCommand)
                 .actionType(Constants.accountActionType)
                 .build();
@@ -119,7 +119,7 @@ class SourcingStreamTests {
         CreateAccount createAccount = new CreateAccount(ACCOUNT_ID, "user name");
         AccountCommand accountCommand = new AccountCommand(new AccountId(createAccount.getId()), 200L, createAccount);
 
-        ActionRequest<SpecificRecord> actionRequest = createRequest(UUID.randomUUID(), accountCommand, CommandId.random());
+        ActionRequest<SpecificRecord> actionRequest = createRequest(SagaId.random(), accountCommand, CommandId.random());
 
         acc.actionRequestPublisher.publish(actionRequest.sagaId, actionRequest);
 
@@ -140,7 +140,7 @@ class SourcingStreamTests {
         AccountCommand accountCommand = new AccountCommand(new AccountId(createAccount.getId()), 200L, createAccount);
 
         CommandId commandId = CommandId.random();
-        ActionRequest<SpecificRecord> actionRequest = createRequest(UUID.randomUUID(), accountCommand, commandId);
+        ActionRequest<SpecificRecord> actionRequest = createRequest(SagaId.random(), accountCommand, commandId);
 
         acc.actionRequestPublisher.publish(actionRequest.sagaId, actionRequest);
         acc.commandRequestVerifier.drainAll();
@@ -166,7 +166,7 @@ class SourcingStreamTests {
         AccountCommand accountCommand = new AccountCommand(new AccountId(createAccount.getId()), 200L, createAccount);
 
         CommandId commandId = CommandId.random();
-        ActionRequest<SpecificRecord> actionRequest = createRequest(UUID.randomUUID(), accountCommand, commandId);
+        ActionRequest<SpecificRecord> actionRequest = createRequest(SagaId.random(), accountCommand, commandId);
 
         acc.actionRequestPublisher.publish(actionRequest.sagaId, actionRequest);
         acc.commandRequestVerifier.drainAll();
@@ -207,7 +207,7 @@ class SourcingStreamTests {
         AccountCommand createCommand = new AccountCommand(new AccountId(createAccount.getId()), 100L, createAccount);
 
         CommandId createCommandId = CommandId.random();
-        UUID sagaId = UUID.randomUUID();
+        SagaId sagaId = SagaId.random();
         ActionRequest<SpecificRecord> createActionRequest = createRequest(sagaId, createCommand, createCommandId);
 
         acc.actionRequestPublisher.publish(sagaId, createActionRequest);
@@ -218,7 +218,7 @@ class SourcingStreamTests {
 
         // let another saga try (or the same saga if isSameSaga = true)
         CommandId transferCommandId = CommandId.random();
-        UUID sagaId2 = isSameSaga? sagaId : UUID.randomUUID();
+        SagaId sagaId2 = isSameSaga? sagaId : SagaId.random();
         AccountCommand transferCommand = new AccountCommand(createCommand.getId(), 186L, new TransferFunds(ACCOUNT_ID, ACCOUNT_ID_2, 50.0));
         ActionRequest<SpecificRecord> transferRequest = createRequest(sagaId2, transferCommand, transferCommandId);
         acc.actionRequestPublisher.publish(sagaId2, transferRequest);

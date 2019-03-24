@@ -6,10 +6,12 @@ import io.simplesource.data.Result;
 import io.simplesource.kafka.spec.WindowSpec;
 import io.simplesource.saga.client.dsl.SagaDsl;
 import io.simplesource.saga.model.action.ActionCommand;
+import io.simplesource.saga.model.action.ActionId;
 import io.simplesource.saga.model.action.ActionStatus;
 import io.simplesource.saga.model.messages.*;
 import io.simplesource.saga.model.saga.Saga;
 import io.simplesource.saga.model.saga.SagaError;
+import io.simplesource.saga.model.saga.SagaId;
 import io.simplesource.saga.model.saga.SagaStatus;
 import io.simplesource.saga.model.serdes.ActionSerdes;
 import io.simplesource.saga.model.serdes.SagaSerdes;
@@ -28,7 +30,6 @@ import org.apache.kafka.streams.Topology;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
-import java.util.UUID;
 
 import static io.simplesource.saga.client.dsl.SagaDsl.inParallel;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -45,14 +46,14 @@ class SagaStreamTests {
         final ActionSerdes<SpecificRecord> actionSerdes = AvroSerdes.Specific.actionSerdes(SCHEMA_URL, true);
 
         // publishers
-        final RecordPublisher<UUID, SagaRequest<SpecificRecord>> sagaRequestPublisher;
-        final RecordPublisher<UUID, ActionResponse> actionResponsePublisher;
+        final RecordPublisher<SagaId, SagaRequest<SpecificRecord>> sagaRequestPublisher;
+        final RecordPublisher<SagaId, ActionResponse> actionResponsePublisher;
 
         // verifiers
-        final RecordVerifier<UUID, ActionRequest<SpecificRecord>> actionRequestVerifier;
-        final RecordVerifier<UUID, SagaStateTransition> sagaStateTransitionVerifier;
-        final RecordVerifier<UUID, Saga<SpecificRecord>> sagaStateVerifier;
-        final RecordVerifier<UUID, SagaResponse> sagaResponseVerifier;
+        final RecordVerifier<SagaId, ActionRequest<SpecificRecord>> actionRequestVerifier;
+        final RecordVerifier<SagaId, SagaStateTransition> sagaStateTransitionVerifier;
+        final RecordVerifier<SagaId, Saga<SpecificRecord>> sagaStateVerifier;
+        final RecordVerifier<SagaId, SagaResponse> sagaResponseVerifier;
 
         SagaCoordinatorContext() {
             TopicNamer sagaTopicNamer = TopicNamer.forPrefix(Constants.sagaTopicPrefix, Constants.sagaBaseName);
@@ -70,36 +71,36 @@ class SagaStreamTests {
 
             sagaRequestPublisher = testContext.publisher(
                     sagaTopicNamer.apply(TopicTypes.SagaTopic.request),
-                    sagaSerdes.uuid(),
+                    sagaSerdes.sagaId(),
                     sagaSerdes.request());
             actionResponsePublisher = testContext.publisher(
                     actionTopicNamer.apply(TopicTypes.ActionTopic.response),
-                    actionSerdes.uuid(),
+                    actionSerdes.sagaId(),
                     actionSerdes.response());
 
             actionRequestVerifier = testContext.verifier(
                     actionTopicNamer.apply(TopicTypes.ActionTopic.request),
-                    actionSerdes.uuid(),
+                    actionSerdes.sagaId(),
                     actionSerdes.request());
             sagaStateTransitionVerifier = testContext.verifier(
                     sagaTopicNamer.apply(TopicTypes.SagaTopic.stateTransition),
-                    sagaSerdes.uuid(),
+                    sagaSerdes.sagaId(),
                     sagaSerdes.transition());
             sagaStateVerifier = testContext.verifier(
                     sagaTopicNamer.apply(TopicTypes.SagaTopic.state),
-                    sagaSerdes.uuid(),
+                    sagaSerdes.sagaId(),
                     sagaSerdes.state());
             sagaResponseVerifier = testContext.verifier(
                     sagaTopicNamer.apply(TopicTypes.SagaTopic.response),
-                    sagaSerdes.uuid(),
+                    sagaSerdes.sagaId(),
                     sagaSerdes.response());
 
         }
     }
 
-    private UUID action1 = UUID.randomUUID();
-    private UUID action2 = UUID.randomUUID();
-    private UUID action3 = UUID.randomUUID();
+    private ActionId action1 = ActionId.random();
+    private ActionId action2 = ActionId.random();
+    private ActionId action3 = ActionId.random();
     private CommandId createAccountId1 = CommandId.random();
     private CommandId createAccountId2 = CommandId.random();
     private CommandId addFundsId1 = CommandId.random();
@@ -208,7 +209,7 @@ class SagaStreamTests {
     void testSuccessfulSaga() {
         SagaCoordinatorContext scc = new SagaCoordinatorContext();
 
-        UUID sagaRequestId = UUID.randomUUID();
+        SagaId sagaRequestId = SagaId.random();
         Saga<SpecificRecord> saga = getBasicSaga();
         scc.sagaRequestPublisher.publish(saga.sagaId, new SagaRequest<>(sagaRequestId, saga));
 
@@ -337,7 +338,7 @@ class SagaStreamTests {
     void testShortCircuitOnFailure() {
         SagaCoordinatorContext scc = new SagaCoordinatorContext();
 
-        UUID sagaRequestId = UUID.randomUUID();
+        SagaId sagaRequestId = SagaId.random();
         Saga<SpecificRecord> saga = getBasicSaga();
         scc.sagaRequestPublisher.publish(saga.sagaId, new SagaRequest<>(sagaRequestId, saga));
 
@@ -392,7 +393,7 @@ class SagaStreamTests {
     void testBypassUndoOnFailureIfNotDefined() {
         SagaCoordinatorContext scc = new SagaCoordinatorContext();
 
-        UUID sagaRequestId = UUID.randomUUID();
+        SagaId sagaRequestId = SagaId.random();
         Saga<SpecificRecord> saga = getBasicSaga();
         scc.sagaRequestPublisher.publish(saga.sagaId, new SagaRequest<>(sagaRequestId, saga));
 
@@ -468,7 +469,7 @@ class SagaStreamTests {
     void testUndoCommandOnFailure() {
         SagaCoordinatorContext scc = new SagaCoordinatorContext();
 
-        UUID sagaRequestId = UUID.randomUUID();
+        SagaId sagaRequestId = SagaId.random();
         Saga<SpecificRecord> saga = getSagaWithUndo();
         scc.sagaRequestPublisher.publish(saga.sagaId, new SagaRequest<>(sagaRequestId, saga));
 
@@ -575,7 +576,7 @@ class SagaStreamTests {
         SagaCoordinatorContext scc = new SagaCoordinatorContext();
 
         Saga<SpecificRecord> saga = getParallelSaga();
-        scc.sagaRequestPublisher.publish(saga.sagaId, new SagaRequest<>(UUID.randomUUID(), saga));
+        scc.sagaRequestPublisher.publish(saga.sagaId, new SagaRequest<>(SagaId.random() , saga));
 
         scc.actionRequestVerifier.verifyMultiple(2, (i, id, actionRequest) -> {
             assertThat(id).isEqualTo(saga.sagaId);
@@ -613,7 +614,7 @@ class SagaStreamTests {
         SagaCoordinatorContext scc = new SagaCoordinatorContext();
 
         Saga<SpecificRecord> saga = getParallelSaga();
-        scc.sagaRequestPublisher.publish(saga.sagaId, new SagaRequest<>(UUID.randomUUID(), saga));
+        scc.sagaRequestPublisher.publish(saga.sagaId, new SagaRequest<>(SagaId.random(), saga));
 
         scc.actionRequestVerifier.verifyMultiple(2, (i, id, actionRequest) -> {
             assertThat(id).isEqualTo(saga.sagaId);
@@ -667,7 +668,7 @@ class SagaStreamTests {
         SagaCoordinatorContext scc = new SagaCoordinatorContext();
 
         Saga<SpecificRecord> saga = getParallelSaga3Actions();
-        scc.sagaRequestPublisher.publish(saga.sagaId, new SagaRequest<>(UUID.randomUUID(), saga));
+        scc.sagaRequestPublisher.publish(saga.sagaId, new SagaRequest<>(SagaId.random(), saga));
 
         scc.actionRequestVerifier.verifyMultiple(3, (i, id, actionRequest) -> {
             assertThat(id).isEqualTo(saga.sagaId);

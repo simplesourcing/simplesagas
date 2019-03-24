@@ -24,10 +24,6 @@ protocol SagaSchemas {
     union { array<AvroSagaError>, boolean } result;
   }
 
-  record AvroSagaId {
-    string id;
-  }
-
   record AvroSagaResponse {
     string sagaId;
     union { array<AvroSagaError>, long } result;

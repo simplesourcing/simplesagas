@@ -2,6 +2,7 @@ package io.simplesource.saga.saga.app;
 
 
 import io.simplesource.data.Sequence;
+import io.simplesource.saga.model.action.ActionId;
 import io.simplesource.saga.model.action.ActionStatus;
 import io.simplesource.saga.model.action.SagaAction;
 import io.simplesource.saga.model.messages.SagaStateTransition;
@@ -56,7 +57,7 @@ final class SagaUtils {
 
     static <A> List<SagaActionExecution<A>> getNextActions(Saga<A> sagaState) {
         if (sagaState.status == SagaStatus.InProgress) {
-            Set<UUID> doneKeys = sagaState.actions
+            Set<ActionId> doneKeys = sagaState.actions
                     .entrySet()
                     .stream()
                     .filter(entry -> entry.getValue().status == ActionStatus.Completed)
@@ -67,21 +68,21 @@ final class SagaUtils {
                     .values()
                     .stream()
                     .filter(action -> action.status == ActionStatus.Pending && doneKeys.containsAll(action.dependencies))
-                    .map(a -> new SagaActionExecution<>(a.actionId, a.actionType, Optional.of(a.command), ActionStatus.InProgress))
+                    .map(a -> new SagaActionExecution<A>(a.actionId, a.actionType, Optional.of(a.command), ActionStatus.InProgress))
                     .collect(Collectors.toList());
             return pendingActions;
         } else if (sagaState.status == SagaStatus.InFailure) {
             // reverse the arrows in the dependency graph
-            Map<UUID, Set<UUID>> reversed = new HashMap<>();
+            Map<ActionId, Set<ActionId>> reversed = new HashMap<>();
             sagaState.actions.values().forEach(action -> {
                 action.dependencies.forEach(dep -> {
                     reversed.putIfAbsent(dep, new HashSet<>());
-                    Set<UUID> revSet = reversed.get(dep);
+                    Set<ActionId> revSet = reversed.get(dep);
                     revSet.add(action.actionId);
                 });
             });
 
-            Set<UUID> undoneKeys = sagaState.actions.entrySet().stream()
+            Set<ActionId> undoneKeys = sagaState.actions.entrySet().stream()
                     .filter(entry -> {
                         ActionStatus status = entry.getValue().status;
                         return status != ActionStatus.InUndo && status != ActionStatus.Completed;
@@ -89,7 +90,7 @@ final class SagaUtils {
                     .map(Map.Entry::getKey)
                     .collect(Collectors.toSet());
 
-            Map<UUID, SagaAction<A>> pendingUndoes = sagaState.actions
+            Map<ActionId, SagaAction<A>> pendingUndoes = sagaState.actions
                     .entrySet()
                     .stream()
                     .filter(entry -> {
@@ -135,7 +136,7 @@ final class SagaUtils {
                             new SagaAction<>(oa.actionId, oa.actionType, oa.command, oa.undoCommand, oa.dependencies, newStatus, sagaActionStatusChanged.actionErrors);
 
                     // TODO: add a MapUtils updated
-                    Map<UUID, SagaAction<A>> actionMap = new HashMap<>();
+                    Map<ActionId, SagaAction<A>> actionMap = new HashMap<>();
                     s.actions.forEach((k, v) -> actionMap.put(k, k.equals(sagaActionStatusChanged.actionId) ? action : v));
                     return s.updated(actionMap, s.status, s.sagaError);
                 },

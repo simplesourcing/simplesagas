@@ -13,14 +13,14 @@ import java.util.UUID;
 //// TODO: really should find a way to share the code in SimpleSourcing
 public class ResultDistributor {
 
-  public static <V> KStream<UUID, String> resultTopicMapStream(DistributorContext<V> ctx, StreamsBuilder builder) {
-      return builder.stream(ctx.topicNameMapTopic, Consumed.with(ctx.serdes.uuid, Serdes.String()));
+  public static <K, V> KStream<K, String> resultTopicMapStream(DistributorContext<K, V> ctx, StreamsBuilder builder) {
+      return builder.stream(ctx.topicNameMapTopic, Consumed.with(ctx.serdes.key, Serdes.String()));
   }
 
-  public static <K, V> void distribute(DistributorContext<V> ctx,
+  public static <K, V> void distribute(DistributorContext<K, V> ctx,
                        KStream<K, V> resultStream,
-                       KStream<UUID, String> topicNameStream) {
-      DistributorSerdes<V> serdes          = ctx.serdes;
+                       KStream<K, String> topicNameStream) {
+      DistributorSerdes<K, V> serdes          = ctx.serdes;
     long retentionMillis = ctx.responseWindowSpec.retentionInSeconds() * 1000L;
 
       TopicNameExtractor<String, V> topicNameExtractor = (key, v, c) ->
@@ -31,8 +31,8 @@ public class ResultDistributor {
               .join(topicNameStream,
                       Tuple2::of,
                       JoinWindows.of(retentionMillis).until(retentionMillis * 2 + 1),
-                      Joined.with(serdes.uuid, serdes.value, Serdes.String()))
-              .map((uuid, tuple) -> KeyValue.pair(String.format("%s:%s", tuple.v2(), uuid.toString()), tuple.v1()));
+                      Joined.with(serdes.key, serdes.value, Serdes.String()))
+              .map((key, tuple) -> KeyValue.pair(String.format("%s:%s", tuple.v2(), ctx.keyToUuid.apply(key).toString()), tuple.v1()));
     joined.to(topicNameExtractor, Produced.with(Serdes.String(), serdes.value));
   }
 }

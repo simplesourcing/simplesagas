@@ -1,7 +1,6 @@
 package io.simplesource.saga.action.internal;
 
 import io.simplesource.data.Result;
-import io.simplesource.kafka.internal.util.Tuple2;
 import io.simplesource.saga.action.async.AsyncContext;
 import io.simplesource.saga.action.async.AsyncSerdes;
 import io.simplesource.saga.action.async.AsyncSpec;
@@ -9,11 +8,11 @@ import io.simplesource.saga.action.async.Callback;
 import io.simplesource.saga.model.messages.ActionRequest;
 import io.simplesource.saga.model.messages.ActionResponse;
 import io.simplesource.saga.model.saga.SagaError;
+import io.simplesource.saga.model.saga.SagaId;
 import io.simplesource.saga.shared.topics.TopicTypes;
 import lombok.Value;
 
 import java.util.Optional;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -32,8 +31,8 @@ final class AsyncActionProcessor {
 
     public static <A, D, K, O, R> void processRecord(
             AsyncContext<A, D, K, O, R> asyncContext,
-            UUID sagaId, ActionRequest<A> request,
-            AsyncPublisher<UUID, ActionResponse> responsePublisher,
+            SagaId sagaId, ActionRequest<A> request,
+            AsyncPublisher<SagaId, ActionResponse> responsePublisher,
             Function<AsyncSerdes<K, R>, AsyncPublisher<K, R>> outputPublisher) {
         AsyncSpec<A, D, K, O, R> asyncSpec = asyncContext.asyncSpec;
         Result<Throwable, D> decodedInputResult = tryWrap(() ->
@@ -118,9 +117,9 @@ final class AsyncActionProcessor {
 
     private static <A, D, K, O, R> void publishActionResult(
             AsyncContext<A, D, K, O, R> asyncContext,
-            UUID sagaId,
+            SagaId sagaId,
             ActionRequest<A> request,
-            AsyncPublisher<UUID, ActionResponse> responsePublisher,
+            AsyncPublisher<SagaId, ActionResponse> responsePublisher,
             Result<Throwable, ?> result) {
 
         // TODO: capture timeout exception as SagaError.Reason.Timeout

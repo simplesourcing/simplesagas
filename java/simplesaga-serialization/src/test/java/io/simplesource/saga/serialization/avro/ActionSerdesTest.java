@@ -5,9 +5,11 @@ import io.simplesource.api.CommandId;
 import io.simplesource.data.Result;
 import io.simplesource.kafka.internal.util.Tuple2;
 import io.simplesource.saga.model.action.ActionCommand;
+import io.simplesource.saga.model.action.ActionId;
 import io.simplesource.saga.model.messages.ActionRequest;
 import io.simplesource.saga.model.messages.ActionResponse;
 import io.simplesource.saga.model.saga.SagaError;
+import io.simplesource.saga.model.saga.SagaId;
 import io.simplesource.saga.model.serdes.ActionSerdes;
 import io.simplesource.saga.serialization.avro.generated.test.User;
 import io.simplesource.saga.shared.serialization.TupleSerdes;
@@ -17,7 +19,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -31,9 +32,9 @@ class ActionSerdesTest {
     @Test
     void uuidTest() {
         ActionSerdes<?> serdes = AvroSerdes.Specific.actionSerdes(SCHEMA_URL, true);
-        UUID original = UUID.randomUUID();
-        byte[] serialized = serdes.uuid().serializer().serialize(FAKE_TOPIC, original);
-        UUID deserialized = serdes.uuid().deserializer().deserialize(FAKE_TOPIC, serialized);
+        ActionId original = ActionId.random();
+        byte[] serialized = serdes.actionId().serializer().serialize(FAKE_TOPIC, original);
+        ActionId deserialized = serdes.actionId().deserializer().deserialize(FAKE_TOPIC, serialized);
         assertThat(deserialized).isEqualTo(original);
     }
 
@@ -46,8 +47,8 @@ class ActionSerdesTest {
         ActionCommand<User> actionCommand = new ActionCommand<>(CommandId.random(), testUser);
 
         ActionRequest<User> original = ActionRequest.<User>builder()
-                .sagaId(UUID.randomUUID())
-                .actionId(UUID.randomUUID())
+                .sagaId(SagaId.random())
+                .actionId(ActionId.random())
                 .actionCommand(actionCommand)
                 .actionType("actionType")
                 .build();
@@ -73,8 +74,8 @@ class ActionSerdesTest {
         ActionCommand<User> actionCommand = new ActionCommand<>(CommandId.random(), testUser);
 
         ActionRequest<User> original = ActionRequest.<User>builder()
-                .sagaId(UUID.randomUUID())
-                .actionId(UUID.randomUUID())
+                .sagaId(SagaId.random())
+                .actionId(ActionId.random())
                 .actionCommand(actionCommand)
                 .actionType("actionType")
                 .build();
@@ -90,7 +91,7 @@ class ActionSerdesTest {
     @Test
     void responseTestSuccess() {
         ActionSerdes<?> serdes = AvroSerdes.Specific.actionSerdes(SCHEMA_URL, true);
-        ActionResponse original = new ActionResponse(UUID.randomUUID(), UUID.randomUUID(), CommandId.random(), Result.success(true));
+        ActionResponse original = new ActionResponse(SagaId.random(), ActionId.random(), CommandId.random(), Result.success(true));
         byte[] serialized = serdes.response().serializer().serialize(FAKE_TOPIC, original);
         ActionResponse deserialized = serdes.response().deserializer().deserialize(FAKE_TOPIC, serialized);
         assertThat(deserialized).isEqualToIgnoringGivenFields(original, "result");
@@ -102,7 +103,7 @@ class ActionSerdesTest {
         ActionSerdes<?> serdes = AvroSerdes.Specific.actionSerdes(SCHEMA_URL, true);
         SagaError sagaError1 = SagaError.of(SagaError.Reason.InternalError, "There was an error");
         SagaError sagaError2 = SagaError.of(SagaError.Reason.CommandError, "Invalid command");
-        ActionResponse original = new ActionResponse(UUID.randomUUID(), UUID.randomUUID(), CommandId.random(),
+        ActionResponse original = new ActionResponse(SagaId.random(), ActionId.random(), CommandId.random(),
                 Result.failure(sagaError1, sagaError2));
         byte[] serialized = serdes.response().serializer().serialize(FAKE_TOPIC, original);
         ActionResponse deserialized = serdes.response().deserializer().deserialize(FAKE_TOPIC, serialized);
@@ -118,7 +119,7 @@ class ActionSerdesTest {
 
     @Test
     void tuple2Test() {
-        UUID uuid = UUID.randomUUID();
+        SagaId sagaId = SagaId.random();
         Serde<User> payloadSerde = SpecificSerdeUtils.specificAvroSerde(SCHEMA_URL, false, new MockSchemaRegistryClient());
         ActionSerdes<User> serdes = AvroSerdes.actionSerdes(payloadSerde, SCHEMA_URL, true);
         User testUser = new User("Albus", "Dumbledore", 1732);
@@ -126,24 +127,24 @@ class ActionSerdesTest {
         ActionCommand<User> actionCommand = new ActionCommand<>(CommandId.random(), testUser);
 
         ActionRequest<User> request = ActionRequest.<User>builder()
-                .sagaId(UUID.randomUUID())
-                .actionId(UUID.randomUUID())
+                .sagaId(SagaId.random())
+                .actionId(ActionId.random())
                 .actionCommand(actionCommand)
                 .actionType("actionType")
                 .build();
 
-        Tuple2<UUID, ActionRequest<User>> tuple2 = Tuple2.of(uuid, request);
+        Tuple2<SagaId, ActionRequest<User>> tuple2 = Tuple2.of(sagaId, request);
 
-        Serde<Tuple2<UUID, ActionRequest<User>>> tupleSerde = TupleSerdes.tuple2(serdes.uuid(), serdes.request());
+        Serde<Tuple2<SagaId, ActionRequest<User>>> tupleSerde = TupleSerdes.tuple2(serdes.sagaId(), serdes.request());
 
         byte[] serialized =tupleSerde.serializer().serialize(FAKE_TOPIC, tuple2);
-        Tuple2<UUID, ActionRequest<User>> deserialized = tupleSerde.deserializer().deserialize(FAKE_TOPIC, serialized);
+        Tuple2<SagaId, ActionRequest<User>> deserialized = tupleSerde.deserializer().deserialize(FAKE_TOPIC, serialized);
         assertThat(deserialized.v2()).isEqualToIgnoringGivenFields(request, "actionCommand");
 
         User uo = request.actionCommand.command;
         User ud = deserialized.v2().actionCommand.command;
 
-        assertThat(deserialized.v1()).isEqualTo(uuid);
+        assertThat(deserialized.v1()).isEqualTo(sagaId);
         assertThat(deserialized.v2().actionCommand).isEqualToIgnoringGivenFields(request.actionCommand, "command");
         assertThat(ud.getFirstName()).isEqualTo(uo.getFirstName());
         assertThat(ud.getLastName()).isEqualTo(uo.getLastName());

@@ -1,12 +1,11 @@
 package io.simplesource.saga.model.messages;
 
 import io.simplesource.saga.model.saga.Saga;
+import io.simplesource.saga.model.saga.SagaId;
 import lombok.Value;
-
-import java.util.UUID;
 
 @Value
 public class SagaRequest<A> {
-    public final UUID sagaId;
+    public final SagaId sagaId;
     public final Saga<A> initialState;
 }

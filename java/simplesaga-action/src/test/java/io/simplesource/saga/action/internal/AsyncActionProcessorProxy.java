@@ -4,8 +4,8 @@ import io.simplesource.saga.action.async.AsyncContext;
 import io.simplesource.saga.action.async.AsyncSerdes;
 import io.simplesource.saga.model.messages.ActionRequest;
 import io.simplesource.saga.model.messages.ActionResponse;
+import io.simplesource.saga.model.saga.SagaId;
 
-import java.util.UUID;
 import java.util.function.Function;
 
 // to avoid making AsyncActionProcessor public
@@ -13,8 +13,9 @@ public final class AsyncActionProcessorProxy {
 
     public static <A, D, K, O, R> void processRecord(
             AsyncContext<A, D, K, O, R> asyncContext,
-            UUID sagaId, ActionRequest<A> request,
-            AsyncPublisher<UUID, ActionResponse> responsePublisher,
+            SagaId sagaId,
+            ActionRequest<A> request,
+            AsyncPublisher<SagaId, ActionResponse> responsePublisher,
             Function<AsyncSerdes<K, R>, AsyncPublisher<K, R>> outputPublisher) {
         AsyncActionProcessor.processRecord(asyncContext, sagaId, request, responsePublisher, outputPublisher);
     }

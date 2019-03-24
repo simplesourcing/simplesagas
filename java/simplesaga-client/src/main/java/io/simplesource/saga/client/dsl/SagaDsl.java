@@ -4,6 +4,7 @@ import io.simplesource.data.NonEmptyList;
 import io.simplesource.data.Result;
 import io.simplesource.data.Sequence;
 import io.simplesource.saga.model.action.ActionCommand;
+import io.simplesource.saga.model.action.ActionId;
 import io.simplesource.saga.model.action.ActionStatus;
 import io.simplesource.saga.model.action.SagaAction;
 import io.simplesource.saga.model.saga.*;
@@ -17,8 +18,8 @@ import java.util.stream.Stream;
 public final class SagaDsl {
     @Value
     public static final class SubSaga<A> {
-        public final List<UUID> input;
-        public final List<UUID> output;
+        public final List<ActionId> input;
+        public final List<ActionId> output;
         public final Optional<SagaBuilder<A>> sagaBuilder;
 
         public SubSaga<A> andThen(SubSaga<A> next) {
@@ -30,12 +31,12 @@ public final class SagaDsl {
                 SagaBuilder<A> sbNext = sbNextO.get();
                 if (sb != sbNext)
                     sb.errors.add("Actions created by different builders");
-                for (UUID thisId : this.output) {
-                    for (UUID nextId : next.input) {
-                        Set<UUID> e = sb.dependencies.get(nextId);
+                for (ActionId thisId : this.output) {
+                    for (ActionId nextId : next.input) {
+                        Set<ActionId> e = sb.dependencies.get(nextId);
                         if (e != null) {
                             // TODO: need decent immutable collections
-                            Set<UUID> newSet = new HashSet<>(e);
+                            Set<ActionId> newSet = new HashSet<>(e);
                             newSet.add(thisId);
                             sb.dependencies.put(nextId, newSet);
                         }
@@ -79,11 +80,11 @@ public final class SagaDsl {
 
     @Value(staticConstructor = "create")
     public static final class SagaBuilder<A> {
-        private Map<UUID, SagaAction<A>> actions = new HashMap<>();
-        private Map<UUID, Set<UUID>> dependencies = new HashMap<>();
+        private Map<ActionId, SagaAction<A>> actions = new HashMap<>();
+        private Map<ActionId, Set<ActionId>> dependencies = new HashMap<>();
         private List<String> errors = new ArrayList<>();
 
-        private SubSaga<A> addAction(UUID actionId,
+        private SubSaga<A> addAction(ActionId actionId,
                                      String actionType,
                                      ActionCommand<A> actionCommand,
                                      Optional<ActionCommand<A>> undoAction) {
@@ -99,17 +100,17 @@ public final class SagaDsl {
                 errors.add(String.format("Action Id already used %s", actionId));
             actions.put(action.actionId, action);
             dependencies.put(actionId, Collections.emptySet());
-            List<UUID> actionIdList = Collections.singletonList(action.actionId);
+            List<ActionId> actionIdList = Collections.singletonList(action.actionId);
             return new SubSaga<>(actionIdList, actionIdList, Optional.of(this));
         }
 
-        public SubSaga<A> addAction(UUID actionId,
+        public SubSaga<A> addAction(ActionId actionId,
                                     String actionType,
                                     ActionCommand<A> actionCommand) {
             return addAction(actionId, actionType, actionCommand, Optional.empty());
         }
 
-        public SubSaga<A> addAction(UUID actionId,
+        public SubSaga<A> addAction(ActionId actionId,
                                     String actionType,
                                     ActionCommand<A> actionCommand,
                                     ActionCommand<A> undoActionCommand) {
@@ -118,7 +119,7 @@ public final class SagaDsl {
 
         public Result<SagaError, Saga<A>> build() {
             if (errors.isEmpty()) {
-                Map<UUID, SagaAction<A>> newActions = actions.entrySet().stream().map(entry -> {
+                Map<ActionId, SagaAction<A>> newActions = actions.entrySet().stream().map(entry -> {
                     SagaAction<A> eAct = entry.getValue();
                     return new SagaAction<>(eAct.actionId,
                             eAct.actionType,
@@ -128,7 +129,7 @@ public final class SagaDsl {
                             eAct.status,
                             Collections.emptyList());
                 }).collect(Collectors.toMap(sa -> sa.actionId, sa -> sa));
-                return Result.success(Saga.of(UUID.randomUUID(), newActions, SagaStatus.NotStarted, Sequence.first()));
+                return Result.success(Saga.of(SagaId.random(), newActions, SagaStatus.NotStarted, Sequence.first()));
             } else {
                 NonEmptyList<SagaError> nelError = NonEmptyList.fromList(
                         errors.stream()

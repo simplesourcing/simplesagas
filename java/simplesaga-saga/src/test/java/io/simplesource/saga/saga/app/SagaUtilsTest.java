@@ -3,11 +3,13 @@ package io.simplesource.saga.saga.app;
 import io.simplesource.api.CommandId;
 import io.simplesource.data.Sequence;
 import io.simplesource.saga.model.action.ActionCommand;
+import io.simplesource.saga.model.action.ActionId;
 import io.simplesource.saga.model.action.ActionStatus;
 import io.simplesource.saga.model.action.SagaAction;
 import io.simplesource.saga.model.messages.SagaStateTransition;
 import io.simplesource.saga.model.saga.Saga;
 import io.simplesource.saga.model.saga.SagaError;
+import io.simplesource.saga.model.saga.SagaId;
 import io.simplesource.saga.model.saga.SagaStatus;
 import io.simplesource.saga.saga.avro.generated.test.AddFunds;
 import io.simplesource.saga.saga.avro.generated.test.CreateAccount;
@@ -70,11 +72,11 @@ class SagaUtilsTest {
 
     @Test
     void testNextActionsReturnsAllPending() {
-        UUID action1 = UUID.randomUUID();
-        UUID action2 = UUID.randomUUID();
-        UUID action3 = UUID.randomUUID();
+        ActionId action1 = ActionId.random();
+        ActionId action2 = ActionId.random();
+        ActionId action3 = ActionId.random();
         Saga<SpecificRecord> saga = new SagaBuilder<SpecificRecord>()
-                .id(UUID.randomUUID())
+                .id(SagaId.random())
                 .status(SagaStatus.InProgress)
                 .action(builder -> builder
                         .id(action1)
@@ -97,11 +99,11 @@ class SagaUtilsTest {
 
     @Test
     void testNextActionsHandlesDependencies() {
-        UUID action1 = UUID.randomUUID();
-        UUID action2 = UUID.randomUUID();
-        UUID action3 = UUID.randomUUID();
+        ActionId action1 = ActionId.random();
+        ActionId action2 = ActionId.random();
+        ActionId action3 = ActionId.random();
         Saga<SpecificRecord> saga = new SagaBuilder<SpecificRecord>()
-                .id(UUID.randomUUID())
+                .id(SagaId.random())
                 .status(SagaStatus.InProgress)
                 .action(builder -> builder
                         .id(action1)
@@ -125,9 +127,9 @@ class SagaUtilsTest {
 
     @Test
     void testNextActionsReturnsNothingIfCompleted() {
-        UUID action1 = UUID.randomUUID();
+        ActionId action1 = ActionId.random();
         Saga<SpecificRecord> saga = new SagaBuilder<SpecificRecord>()
-                .id(UUID.randomUUID())
+                .id(SagaId.random())
                 .status(SagaStatus.Completed)
                 .action(builder -> builder
                         .id(action1)
@@ -140,11 +142,11 @@ class SagaUtilsTest {
 
     @Test
     void testNextActionsReturnsUndoBypassedActions() {
-        UUID action1 = UUID.randomUUID();
-        UUID action2 = UUID.randomUUID();
-        UUID action3 = UUID.randomUUID();
+        ActionId action1 = ActionId.random();
+        ActionId action2 = ActionId.random();
+        ActionId action3 = ActionId.random();
         Saga<SpecificRecord> saga = new SagaBuilder<SpecificRecord>()
-                .id(UUID.randomUUID())
+                .id(SagaId.random())
                 .status(SagaStatus.InFailure)
                 .action(builder -> builder
                         .id(action1)
@@ -168,14 +170,14 @@ class SagaUtilsTest {
 
     @Test
     void testNextActionsReturnsUndoActions() {
-        UUID action1 = UUID.randomUUID();
-        UUID action2 = UUID.randomUUID();
-        UUID action3 = UUID.randomUUID();
+        ActionId action1 = ActionId.random();
+        ActionId action2 = ActionId.random();
+        ActionId action3 = ActionId.random();
         CommandId undoCommand1 = CommandId.random();
         CommandId undoCommand2 = CommandId.random();
         CommandId undoCommand3 = CommandId.random();
         Saga<SpecificRecord> saga = new SagaBuilder<SpecificRecord>()
-                .id(UUID.randomUUID())
+                .id(SagaId.random())
                 .status(SagaStatus.InFailure)
                 .action(builder -> builder
                         .id(action1)
@@ -203,14 +205,14 @@ class SagaUtilsTest {
 
     @Test
     void testNextActionsHandlesDependenciesForUndo() {
-        UUID action1 = UUID.randomUUID();
-        UUID action2 = UUID.randomUUID();
-        UUID action3 = UUID.randomUUID();
+        ActionId action1 = ActionId.random();
+        ActionId action2 = ActionId.random();
+        ActionId action3 = ActionId.random();
         CommandId undoCommand1 = CommandId.random();
         CommandId undoCommand2 = CommandId.random();
         CommandId undoCommand3 = CommandId.random();
         Saga<SpecificRecord> saga = new SagaBuilder<SpecificRecord>()
-                .id(UUID.randomUUID())
+                .id(SagaId.random())
                 .status(SagaStatus.InFailure)
                 .action(builder -> builder
                         .id(action1)
@@ -239,11 +241,11 @@ class SagaUtilsTest {
 
     @Test
     void testApplyTransitionInitialState() {
-        UUID action1 = UUID.randomUUID();
-        UUID action2 = UUID.randomUUID();
-        UUID action3 = UUID.randomUUID();
+        ActionId action1 = ActionId.random();
+        ActionId action2 = ActionId.random();
+        ActionId action3 = ActionId.random();
         Saga<SpecificRecord> saga = new SagaBuilder<SpecificRecord>()
-                .id(UUID.randomUUID())
+                .id(SagaId.random())
                 .status(SagaStatus.NotStarted)
                 .action(builder -> builder
                         .id(action1)
@@ -269,10 +271,10 @@ class SagaUtilsTest {
 
     @Test
     void testApplyTransitionSagaActionStatusChanged() {
-        UUID sagaId = UUID.randomUUID();
-        UUID action1 = UUID.randomUUID();
-        UUID action2 = UUID.randomUUID();
-        UUID action3 = UUID.randomUUID();
+        SagaId sagaId = SagaId.random();
+        ActionId action1 = ActionId.random();
+        ActionId action2 = ActionId.random();
+        ActionId action3 = ActionId.random();
         Saga<SpecificRecord> saga = new SagaBuilder<SpecificRecord>()
                 .id(sagaId)
                 .status(SagaStatus.InProgress)
@@ -300,10 +302,10 @@ class SagaUtilsTest {
 
     @Test
     void testApplyTransitionSagaActionStatusChangedForCompletedUndo() {
-        UUID sagaId = UUID.randomUUID();
-        UUID action1 = UUID.randomUUID();
-        UUID action2 = UUID.randomUUID();
-        UUID action3 = UUID.randomUUID();
+        SagaId sagaId = SagaId.random();
+        ActionId action1 = ActionId.random();
+        ActionId action2 = ActionId.random();
+        ActionId action3 = ActionId.random();
         Saga<SpecificRecord> saga = new SagaBuilder<SpecificRecord>()
                 .id(sagaId)
                 .status(SagaStatus.InFailure)
@@ -335,10 +337,10 @@ class SagaUtilsTest {
 
     @Test
     void testApplyTransitionSagaActionStatusChangedForFailedUndo() {
-        UUID sagaId = UUID.randomUUID();
-        UUID action1 = UUID.randomUUID();
-        UUID action2 = UUID.randomUUID();
-        UUID action3 = UUID.randomUUID();
+        SagaId sagaId = SagaId.random();
+        ActionId action1 = ActionId.random();
+        ActionId action2 = ActionId.random();
+        ActionId action3 = ActionId.random();
         Saga<SpecificRecord> saga = new SagaBuilder<SpecificRecord>()
                 .id(sagaId)
                 .status(SagaStatus.InFailure)
@@ -370,10 +372,10 @@ class SagaUtilsTest {
 
     @Test
     void testApplyTransitionSagaStatusChanged() {
-        UUID sagaId = UUID.randomUUID();
-        UUID action1 = UUID.randomUUID();
-        UUID action2 = UUID.randomUUID();
-        UUID action3 = UUID.randomUUID();
+        SagaId sagaId = SagaId.random();
+        ActionId action1 = ActionId.random();
+        ActionId action2 = ActionId.random();
+        ActionId action3 = ActionId.random();
         Saga<SpecificRecord> saga = new SagaBuilder<SpecificRecord>()
                 .id(sagaId)
                 .status(SagaStatus.InProgress)
@@ -401,10 +403,10 @@ class SagaUtilsTest {
 
     @Test
     void testApplyTransitionList() {
-        UUID sagaId = UUID.randomUUID();
-        UUID action1 = UUID.randomUUID();
-        UUID action2 = UUID.randomUUID();
-        UUID action3 = UUID.randomUUID();
+        SagaId sagaId = SagaId.random();
+        ActionId action1 = ActionId.random();
+        ActionId action2 = ActionId.random();
+        ActionId action3 = ActionId.random();
         Saga<SpecificRecord> saga = new SagaBuilder<SpecificRecord>()
                 .id(sagaId)
                 .status(SagaStatus.InProgress)
@@ -436,16 +438,16 @@ class SagaUtilsTest {
     }
 
     Saga<SpecificRecord> getTestSaga(ActionStatus... actionStatuses) {
-        Map<UUID, SagaAction<SpecificRecord>> sagaActions = new HashMap<>();
+        Map<ActionId, SagaAction<SpecificRecord>> sagaActions = new HashMap<>();
         for (ActionStatus s : actionStatuses) {
-            sagaActions.put(UUID.randomUUID(), getTestAction(s));
+            sagaActions.put(ActionId.random(), getTestAction(s));
         }
-        return Saga.of(UUID.randomUUID(), sagaActions, SagaStatus.InProgress, Sequence.first());
+        return Saga.of(SagaId.random(), sagaActions, SagaStatus.InProgress, Sequence.first());
     }
 
     SagaAction<SpecificRecord> getTestAction(ActionStatus status) {
         return new SagaAction<>(
-                UUID.randomUUID(),
+                ActionId.random(),
                 "testAction",
                 new ActionCommand<>(CommandId.random(), new CreateAccount("id", "username")),
                 Optional.empty(),
@@ -455,11 +457,11 @@ class SagaUtilsTest {
     }
 
     class SagaBuilder<A> {
-        private UUID sagaId;
+        private SagaId sagaId;
         private SagaStatus status;
-        private Map<UUID, SagaAction<A>> actions = new HashMap<>();
+        private Map<ActionId, SagaAction<A>> actions = new HashMap<>();
 
-        public SagaBuilder<A> id(UUID sagaId) {
+        public SagaBuilder<A> id(SagaId sagaId) {
             this.sagaId = sagaId;
             return this;
         }
@@ -481,15 +483,15 @@ class SagaUtilsTest {
     }
 
     class SagaActionBuilder<A> {
-        private UUID actionId = UUID.randomUUID();
+        private ActionId actionId = ActionId.random();
         private String actionType = "testAction";
         private ActionStatus status = ActionStatus.Pending;
         private ActionCommand<A> command;
         private Optional<ActionCommand<A>> undoCommand = Optional.empty();
-        private Set<UUID> dependencies = new HashSet<>();
+        private Set<ActionId> dependencies = new HashSet<>();
         private List<SagaError> errors = Collections.emptyList();
 
-        public SagaActionBuilder<A> id(UUID actionId) {
+        public SagaActionBuilder<A> id(ActionId actionId) {
             this.actionId = actionId;
             return this;
         }
@@ -514,7 +516,7 @@ class SagaUtilsTest {
             return this;
         }
 
-        public SagaActionBuilder<A> dependency(UUID dep) {
+        public SagaActionBuilder<A> dependency(ActionId dep) {
             this.dependencies.add(dep);
             return this;
         }

@@ -4,8 +4,10 @@ import io.confluent.kafka.schemaregistry.client.MockSchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
 import io.simplesource.api.CommandId;
 import io.simplesource.saga.model.action.ActionCommand;
+import io.simplesource.saga.model.action.ActionId;
 import io.simplesource.saga.model.messages.ActionRequest;
 import io.simplesource.saga.model.messages.ActionResponse;
+import io.simplesource.saga.model.saga.SagaId;
 import io.simplesource.saga.model.serdes.ActionSerdes;
 import io.simplesource.saga.serialization.avro.generated.*;
 import io.simplesource.saga.serialization.utils.SerdeUtils;
@@ -32,8 +34,11 @@ public class AvroActionSerdes<A> implements ActionSerdes<A> {
     }
 
     @Override
-    public Serde<UUID> uuid() {
-        return Serdes.UUID();
+    public Serde<SagaId> sagaId() { return SerdeUtils.iMap(Serdes.UUID(), SagaId::id, SagaId::of); }
+
+    @Override
+    public Serde<ActionId> actionId() {
+        return SerdeUtils.iMap(Serdes.UUID(), ActionId::id, ActionId::of);
     }
 
     @Override
@@ -45,8 +50,8 @@ public class AvroActionSerdes<A> implements ActionSerdes<A> {
     public Serde<ActionRequest<A>> request() {
         return SerdeUtils.iMap(avroActionRequestSerde,
                 (topic, r) -> AvroActionRequest.newBuilder()
-                        .setActionId(r.actionId.toString())
-                        .setSagaId(r.sagaId.toString())
+                        .setActionId(r.actionId.id.toString())
+                        .setSagaId(r.sagaId.id.toString())
                         .setActionType(r.actionType)
                         .setActionCommand(SagaSerdeUtils.actionCommandToAvro(
                                 payloadSerde,
@@ -58,8 +63,8 @@ public class AvroActionSerdes<A> implements ActionSerdes<A> {
                     AvroActionCommand aac = ar.getActionCommand();
                     ActionCommand<A> ac = SagaSerdeUtils.actionCommandFromAvro(payloadSerde, topic, ar.getActionType(), aac);
                     return ActionRequest.<A>builder()
-                            .sagaId(UUID.fromString(ar.getSagaId()))
-                            .actionId(UUID.fromString(ar.getActionId()))
+                            .sagaId(SagaId.of(UUID.fromString(ar.getSagaId())))
+                            .actionId(ActionId.of(UUID.fromString(ar.getActionId())))
                             .actionCommand(ac)
                             .actionType(ar.getActionType())
                             .build();
@@ -71,14 +76,14 @@ public class AvroActionSerdes<A> implements ActionSerdes<A> {
     public Serde<ActionResponse> response() {
         return SerdeUtils.iMap(avroActionResponseSerde,
                 r -> AvroActionResponse.newBuilder()
-                        .setSagaId(r.sagaId.toString())
-                        .setActionId(r.actionId.toString())
-                        .setCommandId(r.commandId.id().toString())
+                        .setSagaId(r.sagaId.id.toString())
+                        .setActionId(r.actionId.id.toString())
+                        .setCommandId(r.commandId.id.toString())
                         .setResult(r.result.fold(SagaSerdeUtils::sagaErrorListToAvro, x -> x))
                         .build(),
                 ar -> new ActionResponse(
-                        UUID.fromString(ar.getSagaId()),
-                        UUID.fromString(ar.getActionId()),
+                        SagaId.of(UUID.fromString(ar.getSagaId())),
+                        ActionId.of(UUID.fromString(ar.getActionId())),
                         CommandId.of(UUID.fromString(ar.getCommandId())),
                         SagaSerdeUtils.<Boolean, Boolean>sagaResultFromAvro(ar.getResult(), x -> x)));
     }

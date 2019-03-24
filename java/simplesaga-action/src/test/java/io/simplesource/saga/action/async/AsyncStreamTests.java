@@ -8,8 +8,10 @@ import io.simplesource.saga.action.internal.AsyncActionProcessorProxy;
 import io.simplesource.saga.action.internal.AsyncPublisher;
 import io.simplesource.saga.avro.avro.generated.test.*;
 import io.simplesource.saga.model.action.ActionCommand;
+import io.simplesource.saga.model.action.ActionId;
 import io.simplesource.saga.model.messages.ActionRequest;
 import io.simplesource.saga.model.messages.ActionResponse;
+import io.simplesource.saga.model.saga.SagaId;
 import io.simplesource.saga.model.serdes.ActionSerdes;
 import io.simplesource.saga.model.specs.ActionProcessorSpec;
 import io.simplesource.saga.serialization.avro.AvroSerdes;
@@ -58,12 +60,12 @@ class AsyncStreamTests {
         final ActionSerdes<SpecificRecord> actionSerdes = AvroSerdes.Specific.actionSerdes(SCHEMA_URL, true);
 
         // publishers
-        final RecordPublisher<UUID, ActionRequest<SpecificRecord>> actionRequestPublisher;
-        final RecordPublisher<UUID, ActionResponse> actionResponsePublisher;
+        final RecordPublisher<SagaId, ActionRequest<SpecificRecord>> actionRequestPublisher;
+        final RecordPublisher<SagaId, ActionResponse> actionResponsePublisher;
         final RecordPublisher<AsyncTestId, AsyncTestOutput> actionOutputPublisher;
 
         // verifiers
-        final RecordVerifier<UUID, ActionRequest<SpecificRecord>> actionUnprocessedRequestVerifier;
+        final RecordVerifier<SagaId, ActionRequest<SpecificRecord>> actionUnprocessedRequestVerifier;
 
         final MockSchemaRegistryClient regClient = new MockSchemaRegistryClient();
 
@@ -103,13 +105,13 @@ class AsyncStreamTests {
             actionRequestPublisher = testContext.publisher(
                     TopicNamer.forPrefix(Constants.actionTopicPrefix, TOPIC_BASE_NAME)
                             .apply(TopicTypes.ActionTopic.request),
-                    actionSerdes.uuid(),
+                    actionSerdes.sagaId(),
                     actionSerdes.request());
 
             actionResponsePublisher = testContext.publisher(
                     TopicNamer.forPrefix(Constants.actionTopicPrefix, TOPIC_BASE_NAME)
                             .apply(TopicTypes.ActionTopic.response),
-                    actionSerdes.uuid(),
+                    actionSerdes.sagaId(),
                     actionSerdes.response());
 
             actionOutputPublisher = testContext.publisher(
@@ -120,7 +122,7 @@ class AsyncStreamTests {
             actionUnprocessedRequestVerifier = testContext.verifier(
                     TopicNamer.forPrefix(Constants.actionTopicPrefix, TOPIC_BASE_NAME)
                             .apply(TopicTypes.ActionTopic.requestUnprocessed),
-                    actionSerdes.uuid(),
+                    actionSerdes.sagaId(),
                     actionSerdes.request());
 
             asyncContext = new AsyncContext<>(
@@ -146,8 +148,8 @@ class AsyncStreamTests {
     private static ActionRequest<SpecificRecord> createRequest(AsyncTestCommand AsyncTestCommand, CommandId commandId) {
         ActionCommand<SpecificRecord> actionCommand = new ActionCommand<>(commandId, AsyncTestCommand);
         return ActionRequest.<SpecificRecord>builder()
-                .sagaId(UUID.randomUUID())
-                .actionId(UUID.randomUUID())
+                .sagaId(SagaId.random())
+                .actionId(ActionId.random())
                 .actionCommand(actionCommand)
                 .actionType(Constants.asyncTestActionType)
                 .build();
@@ -162,17 +164,17 @@ class AsyncStreamTests {
 
     @Value
     private static class AsyncValidation {
-        final List<ValidationRecord<UUID, ActionResponse>> responseRecords = new ArrayList<>();
+        final List<ValidationRecord<SagaId, ActionResponse>> responseRecords = new ArrayList<>();
         final List<ValidationRecord<AsyncTestId, AsyncTestOutput>> outputRecords = new ArrayList<>();
         final String responseTopic = TopicNamer.forPrefix(Constants.actionTopicPrefix, TOPIC_BASE_NAME)
                 .apply(TopicTypes.ActionTopic.response);
 
-        private final RecordPublisher<UUID, ActionResponse> actionResponsePublisher;
-        final AsyncPublisher<UUID, ActionResponse> responseProducer;
+        private final RecordPublisher<SagaId, ActionResponse> actionResponsePublisher;
+        final AsyncPublisher<SagaId, ActionResponse> responseProducer;
 
         final Function<AsyncSerdes<AsyncTestId, AsyncTestOutput>, AsyncPublisher<AsyncTestId, AsyncTestOutput>> outputProducer;
 
-        AsyncValidation(RecordPublisher<UUID, ActionResponse> actionResponsePublisher) {
+        AsyncValidation(RecordPublisher<SagaId, ActionResponse> actionResponsePublisher) {
             this.actionResponsePublisher = actionResponsePublisher;
             this.responseProducer = (topic, key, value) -> {
                 assertThat(topic).isEqualTo(responseTopic);
@@ -187,7 +189,7 @@ class AsyncStreamTests {
         }
 
         static AsyncValidation create() { return new AsyncValidation(null);}
-        static AsyncValidation create(RecordPublisher<UUID, ActionResponse> actionResponsePublisher) { return new AsyncValidation(actionResponsePublisher);}
+        static AsyncValidation create(RecordPublisher<SagaId, ActionResponse> actionResponsePublisher) { return new AsyncValidation(actionResponsePublisher);}
     }
 
     private static void delayMillis(int millis) {
