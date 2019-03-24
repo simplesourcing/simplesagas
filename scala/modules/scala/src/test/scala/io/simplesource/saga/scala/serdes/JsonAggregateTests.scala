@@ -35,8 +35,8 @@ class JsonAggregateTests extends WordSpec with Matchers {
     "serialise and deserialise command requests" in {
       val initial =
         new CommandRequest[UUID, UserCommand](CommandId.random(),
-          UUID.randomUUID(),
-          Sequence.first(),
+                                              UUID.randomUUID(),
+                                              Sequence.first(),
                                               UserCommand.Insert(UUID.randomUUID(), "fn", "ln"))
       val ser = serdes.commandRequest().serializer().serialize(topic, initial)
       val de  = serdes.commandRequest().deserializer().deserialize(topic, ser)

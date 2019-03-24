@@ -51,7 +51,8 @@ object ResultEncoders {
                                                                                       "readSequence",
                                                                                       "sequenceResult")(
       x => (x.aggregateKey(), x.commandId.id, x.readSequence().getSeq, x.sequenceResult()),
-      (key, id, seq, ur) => new CommandResponse(CommandId.of(id), key, Sequence.position(seq), ur))
+      (key, id, seq, ur) => new CommandResponse(CommandId.of(id), key, Sequence.position(seq), ur)
+    )
   }.asSerde
 
   implicit val cee: Encoder[SagaError] =
