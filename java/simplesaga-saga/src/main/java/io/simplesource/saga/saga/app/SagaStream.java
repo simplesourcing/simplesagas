@@ -25,7 +25,7 @@ final public class SagaStream {
         return (k, v) -> logger.info("{}: {}={}", prefix, k.toString().substring(0, 6), v.toString());
     }
 
-    public static <A> void addSubTopology(SagaCoordinatorTopologyBuilder.SagaTopologyContext<A> topologyContext,
+    public static <A> void addSubTopology(SagaTopologyBuilder.SagaTopologyContext<A> topologyContext,
                                           SagaContext<A> sagaContext) {
         KStream<SagaId, ActionResponse> actionResponse = SagaConsumer.actionResponse(
                 sagaContext.aSpec,

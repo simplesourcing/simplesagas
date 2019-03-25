@@ -31,9 +31,7 @@ class ScalaDslTest extends WordSpec with Matchers {
       val builder = SagaBuilder.create[String]
 
       def create(a: String) =
-        builder.addAction(ActionId.random(),
-                          s"actionType-$a",
-                          new ActionCommand(CommandId.random(), s"Command-$a"))
+        builder.addAction(ActionId.random(), s"actionType-$a", s"Command-$a")
 
       val a1 = create("1")
       val a2 = create("2")

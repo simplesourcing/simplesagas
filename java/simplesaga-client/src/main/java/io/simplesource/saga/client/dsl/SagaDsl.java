@@ -1,5 +1,6 @@
 package io.simplesource.saga.client.dsl;
 
+import io.simplesource.api.CommandId;
 import io.simplesource.data.NonEmptyList;
 import io.simplesource.data.Result;
 import io.simplesource.data.Sequence;
@@ -106,15 +107,15 @@ public final class SagaDsl {
 
         public SubSaga<A> addAction(ActionId actionId,
                                     String actionType,
-                                    ActionCommand<A> actionCommand) {
-            return addAction(actionId, actionType, actionCommand, Optional.empty());
+                                    A actionCommand) {
+            return addAction(actionId, actionType, ActionCommand.of(CommandId.random(), actionCommand), Optional.empty());
         }
 
         public SubSaga<A> addAction(ActionId actionId,
                                     String actionType,
-                                    ActionCommand<A> actionCommand,
-                                    ActionCommand<A> undoActionCommand) {
-            return addAction(actionId, actionType, actionCommand, Optional.of(undoActionCommand));
+                                    A actionCommand,
+                                    A undoActionCommand) {
+            return addAction(actionId, actionType, ActionCommand.of(CommandId.random(), actionCommand), Optional.of(ActionCommand.of(CommandId.random(), undoActionCommand)));
         }
 
         public Result<SagaError, Saga<A>> build() {

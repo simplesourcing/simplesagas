@@ -10,7 +10,6 @@ import io.simplesource.data.NonEmptyList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static io.simplesource.saga.client.dsl.SagaDsl.*;
 
-import io.simplesource.saga.model.action.ActionCommand;
 import io.simplesource.saga.model.action.ActionId;
 import io.simplesource.saga.model.saga.Saga;
 import io.simplesource.saga.shared.utils.Sets;
@@ -20,7 +19,7 @@ class DslTest {
     SagaBuilder<String> builder = SagaBuilder.create();
 
     SubSaga<String> create(String a) {
-        return builder.addAction(ActionId.random(), "actionType-" + a, new ActionCommand<>(CommandId.random(), "Command-" + a));
+        return builder.addAction(ActionId.random(), "actionType-" + a, "Command-" + a);
     }
 
     void dependsOnSet(String action, Set<String> dependsOn, Saga<String> saga) {

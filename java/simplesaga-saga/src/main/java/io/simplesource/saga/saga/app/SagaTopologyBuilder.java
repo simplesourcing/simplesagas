@@ -18,7 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
-public class SagaCoordinatorTopologyBuilder<A> {
+public class SagaTopologyBuilder<A> {
 
     private final SagaSpec<A> sagaSpec;
     private final TopicConfig sagaTopicConfig;
@@ -32,7 +32,7 @@ public class SagaCoordinatorTopologyBuilder<A> {
         public final KStream<SagaId, SagaStateTransition> sagaStateTransition;
     }
 
-    public SagaCoordinatorTopologyBuilder(SagaSpec<A> sagaSpec, TopicConfig sagaTopicConfig) {
+    public SagaTopologyBuilder(SagaSpec<A> sagaSpec, TopicConfig sagaTopicConfig) {
         this.sagaSpec = sagaSpec;
         this.sagaTopicConfig = sagaTopicConfig;
     }

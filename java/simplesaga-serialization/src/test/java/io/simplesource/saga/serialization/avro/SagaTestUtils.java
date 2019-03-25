@@ -29,14 +29,14 @@ public class SagaTestUtils {
                 builder.addAction(
                         ActionId.random(),
                         "actionType",
-                        new ActionCommand<>(CommandId.random(), command));
+                        command);
 
         BiFunction<SpecificRecord, SpecificRecord, SagaDsl.SubSaga<SpecificRecord>> addActionWithUndo = (command, undo) ->
                 builder.addAction(
                         ActionId.random(),
                         "actionType",
-                        new ActionCommand<>(CommandId.random(), command),
-                        new ActionCommand<>(CommandId.random(), undo));
+                        command,
+                        undo);
 
         SagaDsl.SubSaga<SpecificRecord> create1 = addAction.apply(new CreateAccount("id1", "User 1"));
         SagaDsl.SubSaga<SpecificRecord> create2 = addAction.apply(new CreateAccount("id2", "User 2"));

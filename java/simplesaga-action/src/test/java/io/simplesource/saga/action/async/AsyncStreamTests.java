@@ -146,7 +146,7 @@ class AsyncStreamTests {
     }
 
     private static ActionRequest<SpecificRecord> createRequest(AsyncTestCommand AsyncTestCommand, CommandId commandId) {
-        ActionCommand<SpecificRecord> actionCommand = new ActionCommand<>(commandId, AsyncTestCommand);
+        ActionCommand<SpecificRecord> actionCommand = ActionCommand.of(commandId, AsyncTestCommand);
         return ActionRequest.<SpecificRecord>builder()
                 .sagaId(SagaId.random())
                 .actionId(ActionId.random())

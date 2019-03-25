@@ -81,17 +81,17 @@ class SagaUtilsTest {
                 .action(builder -> builder
                         .id(action1)
                         .status(ActionStatus.Pending)
-                        .command(new ActionCommand<>(CommandId.random(), new CreateAccount("id1", "username1")))
+                        .command(ActionCommand.of(CommandId.random(), new CreateAccount("id1", "username1")))
                         .build())
                 .action(builder -> builder
                         .id(action2)
                         .status(ActionStatus.Completed)
-                        .command(new ActionCommand<>(CommandId.random(), new CreateAccount("id2", "username2")))
+                        .command(ActionCommand.of(CommandId.random(), new CreateAccount("id2", "username2")))
                         .build())
                 .action(builder -> builder
                         .id(action3)
                         .status(ActionStatus.Pending)
-                        .command(new ActionCommand<>(CommandId.random(), new CreateAccount("id3", "username3")))
+                        .command(ActionCommand.of(CommandId.random(), new CreateAccount("id3", "username3")))
                         .build())
                 .build();
         assertThat(SagaUtils.getNextActions(saga).stream().map(a -> a.actionId)).containsExactlyInAnyOrder(action1, action3);
@@ -108,18 +108,18 @@ class SagaUtilsTest {
                 .action(builder -> builder
                         .id(action1)
                         .status(ActionStatus.Pending)
-                        .command(new ActionCommand<>(CommandId.random(), new CreateAccount("id1", "username1")))
+                        .command(ActionCommand.of(CommandId.random(), new CreateAccount("id1", "username1")))
                         .dependency(action3)
                         .build())
                 .action(builder -> builder
                         .id(action2)
                         .status(ActionStatus.Completed)
-                        .command(new ActionCommand<>(CommandId.random(), new CreateAccount("id2", "username2")))
+                        .command(ActionCommand.of(CommandId.random(), new CreateAccount("id2", "username2")))
                         .build())
                 .action(builder -> builder
                         .id(action3)
                         .status(ActionStatus.Pending)
-                        .command(new ActionCommand<>(CommandId.random(), new CreateAccount("id3", "username3")))
+                        .command(ActionCommand.of(CommandId.random(), new CreateAccount("id3", "username3")))
                         .build())
                 .build();
         assertThat(SagaUtils.getNextActions(saga).stream().map(a -> a.actionId)).containsOnly(action3);
@@ -134,7 +134,7 @@ class SagaUtilsTest {
                 .action(builder -> builder
                         .id(action1)
                         .status(ActionStatus.Pending)
-                        .command(new ActionCommand<>(CommandId.random(), new CreateAccount("id1", "username1")))
+                        .command(ActionCommand.of(CommandId.random(), new CreateAccount("id1", "username1")))
                         .build())
                 .build();
         assertThat(SagaUtils.getNextActions(saga)).isEmpty();
@@ -151,17 +151,17 @@ class SagaUtilsTest {
                 .action(builder -> builder
                         .id(action1)
                         .status(ActionStatus.Completed)
-                        .command(new ActionCommand<>(CommandId.random(), new CreateAccount("id1", "username1")))
+                        .command(ActionCommand.of(CommandId.random(), new CreateAccount("id1", "username1")))
                         .build())
                 .action(builder -> builder
                         .id(action2)
                         .status(ActionStatus.Failed)
-                        .command(new ActionCommand<>(CommandId.random(), new CreateAccount("id2", "username2")))
+                        .command(ActionCommand.of(CommandId.random(), new CreateAccount("id2", "username2")))
                         .build())
                 .action(builder -> builder
                         .id(action3)
                         .status(ActionStatus.Completed)
-                        .command(new ActionCommand<>(CommandId.random(), new CreateAccount("id3", "username3")))
+                        .command(ActionCommand.of(CommandId.random(), new CreateAccount("id3", "username3")))
                         .build())
                 .build();
         assertThat(SagaUtils.getNextActions(saga).stream().map(a -> a.actionId)).containsExactlyInAnyOrder(action1, action3);
@@ -182,20 +182,20 @@ class SagaUtilsTest {
                 .action(builder -> builder
                         .id(action1)
                         .status(ActionStatus.Completed)
-                        .command(new ActionCommand<>(CommandId.random(), new AddFunds("id1", 10.0)))
-                        .undoCommand(new ActionCommand<>(undoCommand1, new AddFunds("id1", -10.0)))
+                        .command(ActionCommand.of(CommandId.random(), new AddFunds("id1", 10.0)))
+                        .undoCommand(ActionCommand.of(undoCommand1, new AddFunds("id1", -10.0)))
                         .build())
                 .action(builder -> builder
                         .id(action2)
                         .status(ActionStatus.Failed)
-                        .command(new ActionCommand<>(CommandId.random(), new AddFunds("id2", 10.0)))
-                        .undoCommand(new ActionCommand<>(undoCommand2, new AddFunds("id2", -10.0)))
+                        .command(ActionCommand.of(CommandId.random(), new AddFunds("id2", 10.0)))
+                        .undoCommand(ActionCommand.of(undoCommand2, new AddFunds("id2", -10.0)))
                         .build())
                 .action(builder -> builder
                         .id(action3)
                         .status(ActionStatus.Completed)
-                        .command(new ActionCommand<>(CommandId.random(), new AddFunds("id3", 10.0)))
-                        .undoCommand(new ActionCommand<>(undoCommand3, new AddFunds("id3", -10.0)))
+                        .command(ActionCommand.of(CommandId.random(), new AddFunds("id3", 10.0)))
+                        .undoCommand(ActionCommand.of(undoCommand3, new AddFunds("id3", -10.0)))
                         .build())
                 .build();
         assertThat(SagaUtils.getNextActions(saga).stream().map(a -> a.actionId)).containsExactlyInAnyOrder(action1, action3);
@@ -217,21 +217,21 @@ class SagaUtilsTest {
                 .action(builder -> builder
                         .id(action1)
                         .status(ActionStatus.Completed)
-                        .command(new ActionCommand<>(CommandId.random(), new AddFunds("id1", 10.0)))
-                        .undoCommand(new ActionCommand<>(undoCommand1, new AddFunds("id1", -10.0)))
+                        .command(ActionCommand.of(CommandId.random(), new AddFunds("id1", 10.0)))
+                        .undoCommand(ActionCommand.of(undoCommand1, new AddFunds("id1", -10.0)))
                         .dependency(action3)
                         .build())
                 .action(builder -> builder
                         .id(action2)
                         .status(ActionStatus.Failed)
-                        .command(new ActionCommand<>(CommandId.random(), new AddFunds("id2", 10.0)))
-                        .undoCommand(new ActionCommand<>(undoCommand2, new AddFunds("id2", -10.0)))
+                        .command(ActionCommand.of(CommandId.random(), new AddFunds("id2", 10.0)))
+                        .undoCommand(ActionCommand.of(undoCommand2, new AddFunds("id2", -10.0)))
                         .build())
                 .action(builder -> builder
                         .id(action3)
                         .status(ActionStatus.Completed)
-                        .command(new ActionCommand<>(CommandId.random(), new AddFunds("id3", 10.0)))
-                        .undoCommand(new ActionCommand<>(undoCommand3, new AddFunds("id3", -10.0)))
+                        .command(ActionCommand.of(CommandId.random(), new AddFunds("id3", 10.0)))
+                        .undoCommand(ActionCommand.of(undoCommand3, new AddFunds("id3", -10.0)))
                         .build())
                 .build();
         assertThat(SagaUtils.getNextActions(saga).stream().map(a -> a.actionId)).containsOnly(action1);
@@ -250,17 +250,17 @@ class SagaUtilsTest {
                 .action(builder -> builder
                         .id(action1)
                         .status(ActionStatus.Pending)
-                        .command(new ActionCommand<>(CommandId.random(), new CreateAccount("id1", "username1")))
+                        .command(ActionCommand.of(CommandId.random(), new CreateAccount("id1", "username1")))
                         .build())
                 .action(builder -> builder
                         .id(action2)
                         .status(ActionStatus.Completed)
-                        .command(new ActionCommand<>(CommandId.random(), new CreateAccount("id2", "username2")))
+                        .command(ActionCommand.of(CommandId.random(), new CreateAccount("id2", "username2")))
                         .build())
                 .action(builder -> builder
                         .id(action3)
                         .status(ActionStatus.Pending)
-                        .command(new ActionCommand<>(CommandId.random(), new CreateAccount("id3", "username3")))
+                        .command(ActionCommand.of(CommandId.random(), new CreateAccount("id3", "username3")))
                         .build())
                 .build();
         SagaStateTransition transition = new SagaStateTransition.SetInitialState<>(saga);
@@ -281,17 +281,17 @@ class SagaUtilsTest {
                 .action(builder -> builder
                         .id(action1)
                         .status(ActionStatus.Pending)
-                        .command(new ActionCommand<>(CommandId.random(), new CreateAccount("id1", "username1")))
+                        .command(ActionCommand.of(CommandId.random(), new CreateAccount("id1", "username1")))
                         .build())
                 .action(builder -> builder
                         .id(action2)
                         .status(ActionStatus.Completed)
-                        .command(new ActionCommand<>(CommandId.random(), new CreateAccount("id2", "username2")))
+                        .command(ActionCommand.of(CommandId.random(), new CreateAccount("id2", "username2")))
                         .build())
                 .action(builder -> builder
                         .id(action3)
                         .status(ActionStatus.Pending)
-                        .command(new ActionCommand<>(CommandId.random(), new CreateAccount("id3", "username3")))
+                        .command(ActionCommand.of(CommandId.random(), new CreateAccount("id3", "username3")))
                         .build())
                 .build();
         SagaStateTransition transition = new SagaStateTransition.SagaActionStatusChanged(sagaId, action1, ActionStatus.Completed, Collections.emptyList());
@@ -312,21 +312,21 @@ class SagaUtilsTest {
                 .action(builder -> builder
                         .id(action1)
                         .status(ActionStatus.InUndo)
-                        .command(new ActionCommand<>(CommandId.random(), new AddFunds("id1", 10.0)))
-                        .undoCommand(new ActionCommand<>(CommandId.random(), new AddFunds("id1", -10.0)))
+                        .command(ActionCommand.of(CommandId.random(), new AddFunds("id1", 10.0)))
+                        .undoCommand(ActionCommand.of(CommandId.random(), new AddFunds("id1", -10.0)))
                         .dependency(action3)
                         .build())
                 .action(builder -> builder
                         .id(action2)
                         .status(ActionStatus.Failed)
-                        .command(new ActionCommand<>(CommandId.random(), new AddFunds("id2", 10.0)))
-                        .undoCommand(new ActionCommand<>(CommandId.random(), new AddFunds("id2", -10.0)))
+                        .command(ActionCommand.of(CommandId.random(), new AddFunds("id2", 10.0)))
+                        .undoCommand(ActionCommand.of(CommandId.random(), new AddFunds("id2", -10.0)))
                         .build())
                 .action(builder -> builder
                         .id(action3)
                         .status(ActionStatus.InUndo)
-                        .command(new ActionCommand<>(CommandId.random(), new AddFunds("id3", 10.0)))
-                        .undoCommand(new ActionCommand<>(CommandId.random(), new AddFunds("id3", -10.0)))
+                        .command(ActionCommand.of(CommandId.random(), new AddFunds("id3", 10.0)))
+                        .undoCommand(ActionCommand.of(CommandId.random(), new AddFunds("id3", -10.0)))
                         .build())
                 .build();
         SagaStateTransition transition = new SagaStateTransition.SagaActionStatusChanged(sagaId, action1, ActionStatus.Completed, Collections.emptyList());
@@ -347,21 +347,21 @@ class SagaUtilsTest {
                 .action(builder -> builder
                         .id(action1)
                         .status(ActionStatus.InUndo)
-                        .command(new ActionCommand<>(CommandId.random(), new AddFunds("id1", 10.0)))
-                        .undoCommand(new ActionCommand<>(CommandId.random(), new AddFunds("id1", -10.0)))
+                        .command(ActionCommand.of(CommandId.random(), new AddFunds("id1", 10.0)))
+                        .undoCommand(ActionCommand.of(CommandId.random(), new AddFunds("id1", -10.0)))
                         .dependency(action3)
                         .build())
                 .action(builder -> builder
                         .id(action2)
                         .status(ActionStatus.Failed)
-                        .command(new ActionCommand<>(CommandId.random(), new AddFunds("id2", 10.0)))
-                        .undoCommand(new ActionCommand<>(CommandId.random(), new AddFunds("id2", -10.0)))
+                        .command(ActionCommand.of(CommandId.random(), new AddFunds("id2", 10.0)))
+                        .undoCommand(ActionCommand.of(CommandId.random(), new AddFunds("id2", -10.0)))
                         .build())
                 .action(builder -> builder
                         .id(action3)
                         .status(ActionStatus.InUndo)
-                        .command(new ActionCommand<>(CommandId.random(), new AddFunds("id3", 10.0)))
-                        .undoCommand(new ActionCommand<>(CommandId.random(), new AddFunds("id3", -10.0)))
+                        .command(ActionCommand.of(CommandId.random(), new AddFunds("id3", 10.0)))
+                        .undoCommand(ActionCommand.of(CommandId.random(), new AddFunds("id3", -10.0)))
                         .build())
                 .build();
         SagaStateTransition transition = new SagaStateTransition.SagaActionStatusChanged(sagaId, action1, ActionStatus.Failed, Collections.emptyList());
@@ -382,17 +382,17 @@ class SagaUtilsTest {
                 .action(builder -> builder
                         .id(action1)
                         .status(ActionStatus.Completed)
-                        .command(new ActionCommand<>(CommandId.random(), new CreateAccount("id1", "username1")))
+                        .command(ActionCommand.of(CommandId.random(), new CreateAccount("id1", "username1")))
                         .build())
                 .action(builder -> builder
                         .id(action2)
                         .status(ActionStatus.Completed)
-                        .command(new ActionCommand<>(CommandId.random(), new CreateAccount("id2", "username2")))
+                        .command(ActionCommand.of(CommandId.random(), new CreateAccount("id2", "username2")))
                         .build())
                 .action(builder -> builder
                         .id(action3)
                         .status(ActionStatus.Completed)
-                        .command(new ActionCommand<>(CommandId.random(), new CreateAccount("id3", "username3")))
+                        .command(ActionCommand.of(CommandId.random(), new CreateAccount("id3", "username3")))
                         .build())
                 .build();
         SagaStateTransition transition = new SagaStateTransition.SagaStatusChanged(sagaId, SagaStatus.Completed, Collections.emptyList());
@@ -413,17 +413,17 @@ class SagaUtilsTest {
                 .action(builder -> builder
                         .id(action1)
                         .status(ActionStatus.Pending)
-                        .command(new ActionCommand<>(CommandId.random(), new CreateAccount("id1", "username1")))
+                        .command(ActionCommand.of(CommandId.random(), new CreateAccount("id1", "username1")))
                         .build())
                 .action(builder -> builder
                         .id(action2)
                         .status(ActionStatus.Pending)
-                        .command(new ActionCommand<>(CommandId.random(), new CreateAccount("id2", "username2")))
+                        .command(ActionCommand.of(CommandId.random(), new CreateAccount("id2", "username2")))
                         .build())
                 .action(builder -> builder
                         .id(action3)
                         .status(ActionStatus.Pending)
-                        .command(new ActionCommand<>(CommandId.random(), new CreateAccount("id3", "username3")))
+                        .command(ActionCommand.of(CommandId.random(), new CreateAccount("id3", "username3")))
                         .build())
                 .build();
         List<SagaStateTransition.SagaActionStatusChanged> transitions = Stream.of(
@@ -449,7 +449,7 @@ class SagaUtilsTest {
         return new SagaAction<>(
                 ActionId.random(),
                 "testAction",
-                new ActionCommand<>(CommandId.random(), new CreateAccount("id", "username")),
+                ActionCommand.of(CommandId.random(), new CreateAccount("id", "username")),
                 Optional.empty(),
                 Collections.emptySet(),
                 status,

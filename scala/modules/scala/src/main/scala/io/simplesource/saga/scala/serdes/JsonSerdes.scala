@@ -86,7 +86,7 @@ object JsonSerdes {
           .builder[A]()
           .sagaId(SagaId.of(sId))
           .actionId(ActionId.of(aId))
-          .actionCommand(new ActionCommand[A](CommandId.of(cId), c))
+          .actionCommand(ActionCommand.of[A](CommandId.of(cId), c))
           .actionType(at)
           .build()
     ).asSerde
@@ -131,7 +131,7 @@ object JsonSerdes {
     implicit val (acEnc, acDec) =
       productCodecs2[UUID, A, ActionCommand[A]]("commandId", "command")(
         x => (x.commandId.id, x.command),
-        (cid, c) => new ActionCommand[A](CommandId.of(cid), c))
+        (cid, c) => ActionCommand.of[A](CommandId.of(cid), c))
 
     Set(1).map(identity)
 
