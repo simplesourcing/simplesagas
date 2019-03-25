@@ -2,7 +2,19 @@ language:
   - scala
   - java
 
+jdk: oraclejdk8
+sudo: false
+dist: trusty
+
 scala:
   - 2.12.7
 
 script: make build
+
+deploy:
+  provider: script
+  script: make decrypt && make deploy
+  on:
+    tags: true
+
+after_deploy: rm -rf .deploy/keys ; rm .deploy/keys.tar ; rm ${HOME}/.ssh/docs_deploy_key
