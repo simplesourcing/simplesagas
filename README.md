@@ -1,5 +1,5 @@
 # Simple Sagas
-
+[![Latest version](https://maven-badges.herokuapp.com/maven-central/io.simplesource/simplesaga-saga/badge.svg)](https://maven-badges.herokuapp.com/maven-central/io.simplesource/simplesaga-saga)
 [![Build Status](https://travis-ci.com/simplesourcing/simplesagas.svg?branch=master)](https://travis-ci.com/simplesourcing/simplesagas)
 
 ## Caveat
