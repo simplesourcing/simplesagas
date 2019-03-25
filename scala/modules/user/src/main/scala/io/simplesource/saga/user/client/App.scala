@@ -90,19 +90,13 @@ object App {
     val addUser = builder.addAction(
       ActionId.random(),
       constants.userActionType,
-      new ActionCommand(
-        CommandId.random(),
-        (UserCommand.Insert(userId = UUID.randomUUID(), firstName, lastName): UserCommand).asJson)
-    )
+      (UserCommand.Insert(userId = UUID.randomUUID(), firstName, lastName): UserCommand).asJson)
 
     val createAccount = builder.addAction(
       ActionId.random(),
       constants.accountActionType,
-      new ActionCommand(CommandId.random(),
-                        (AccountCommand
-                          .CreateAccount(accountId = accountId,
-                                         userName = s"$firstName $lastName",
-                                         funds = 1000): AccountCommand).asJson)
+      (AccountCommand
+        .CreateAccount(accountId = accountId, userName = s"$firstName $lastName", funds = 1000): AccountCommand).asJson
     )
 
     val amountsWithIds = amounts.map((_, ActionId.random(), UUID.randomUUID()))
@@ -112,17 +106,12 @@ object App {
         builder.addAction(
           actionId,
           constants.accountActionType,
-          new ActionCommand(
-            CommandId.random(),
-            (AccountCommand.ReserveFunds(accountId = accountId,
-                                         reservationId = resId,
-                                         description = s"res-${resId.toString.take(4)}",
-                                         amount = amount): AccountCommand).asJson
-          ),
-          new ActionCommand(
-            CommandId.random(),
-            (AccountCommand
-              .CancelReservation(accountId = accountId, reservationId = resId): AccountCommand).asJson)
+          (AccountCommand.ReserveFunds(accountId = accountId,
+                                       reservationId = resId,
+                                       description = s"res-${resId.toString.take(4)}",
+                                       amount = amount): AccountCommand).asJson,
+          (AccountCommand
+            .CancelReservation(accountId = accountId, reservationId = resId): AccountCommand).asJson
         )
     }
 
@@ -131,21 +120,16 @@ object App {
         builder.addAction(
           ActionId.random(),
           constants.accountActionType,
-          new ActionCommand(
-            CommandId.random(),
-            (AccountCommand.ConfirmReservation(accountId = accountId,
-                                               reservationId = resId,
-                                               finalAmount = amount + adjustment): AccountCommand).asJson)
+          (AccountCommand.ConfirmReservation(accountId = accountId,
+                                             reservationId = resId,
+                                             finalAmount = amount + adjustment): AccountCommand).asJson
         )
     }
 
     val testAsyncInvoke: SubSaga[Json] = builder.addAction(
       ActionId.random(),
       "async_test_action_type",
-      new ActionCommand(
-        CommandId.random(),
-        s"Hello World, time is: ${LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)}".asJson)
-    )
+      s"Hello World, time is: ${LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)}".asJson)
 
     val v: HttpRequest[Key, String] = HttpRequest.ofWithBody[Key, String](
       Key("fx"),
@@ -158,14 +142,7 @@ object App {
     implicit val encoder: Encoder[HttpRequest[Key, String]] =
       HttpClient.httpRequest[Key, String]._1
 
-    val testHttpInvoke: SubSaga[Json] = builder.addAction(
-      ActionId.random(),
-      "http_action_type",
-      new ActionCommand(
-        CommandId.random(),
-        v.asJson
-      )
-    )
+    val testHttpInvoke: SubSaga[Json] = builder.addAction(ActionId.random(), "http_action_type", v.asJson)
 
     testAsyncInvoke
       .andThen(testHttpInvoke)

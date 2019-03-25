@@ -102,7 +102,7 @@ class SourcingStreamTests {
     }
 
     private static ActionRequest<SpecificRecord> createRequest(SagaId sagaId, AccountCommand accountCommand, CommandId commandId) {
-        ActionCommand<SpecificRecord> actionCommand = new ActionCommand<>(commandId, accountCommand);
+        ActionCommand<SpecificRecord> actionCommand = ActionCommand.of(commandId, accountCommand);
         return ActionRequest.<SpecificRecord>builder()
                 .sagaId(sagaId)
                 .actionId(ActionId.random())

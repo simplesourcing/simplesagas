@@ -95,15 +95,6 @@ final class AsyncActionProcessor {
         }
     }
 
-    // execute lazy code and wraps exceptions in a result
-    private static <X> Result<Throwable, X> tryPure(Supplier<X> xSupplier) {
-        try {
-            return Result.success(xSupplier.get());
-        } catch (Throwable e) {
-            return Result.failure(e);
-        }
-    }
-
     // evaluates code returning a Result that may throw an exception,
     // and turns it into a Result that is guaranteed not to throw
     // (i.e. absorbs exceptions into the failure mode)

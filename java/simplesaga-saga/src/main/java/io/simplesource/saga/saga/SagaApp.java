@@ -3,7 +3,7 @@ package io.simplesource.saga.saga;
 import io.simplesource.saga.model.specs.ActionProcessorSpec;
 import io.simplesource.saga.model.specs.SagaSpec;
 import io.simplesource.saga.saga.app.SagaContext;
-import io.simplesource.saga.saga.app.SagaCoordinatorTopologyBuilder;
+import io.simplesource.saga.saga.app.SagaTopologyBuilder;
 import io.simplesource.saga.saga.app.SagaStream;
 import io.simplesource.saga.shared.topics.TopicConfig;
 import io.simplesource.saga.shared.topics.TopicConfigBuilder;
@@ -43,7 +43,7 @@ final public class SagaApp<A> {
     private static Logger logger = LoggerFactory.getLogger(SagaApp.class);
     private final SagaSpec<A> sagaSpec;
     private final TopicConfig sagaTopicConfig;
-    private final SagaCoordinatorTopologyBuilder<A> topologyBuilder;
+    private final SagaTopologyBuilder<A> topologyBuilder;
     private final List<TopicCreation> topics;
 
     public SagaApp(SagaSpec<A> sagaSpec, TopicConfigBuilder.BuildSteps topicBuildFn) {
@@ -56,7 +56,7 @@ final public class SagaApp<A> {
                         org.apache.kafka.common.config.TopicConfig.CLEANUP_POLICY_COMPACT
                 )),
                 topicBuildFn);
-        topologyBuilder = new SagaCoordinatorTopologyBuilder<>(sagaSpec, sagaTopicConfig);
+        topologyBuilder = new SagaTopologyBuilder<>(sagaSpec, sagaTopicConfig);
         topics = TopicCreation.allTopics(sagaTopicConfig);
     }
 

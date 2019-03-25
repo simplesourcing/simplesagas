@@ -42,9 +42,8 @@ class JsonActionTests extends WordSpec with Matchers {
           .builder()
           .sagaId(SagaId.random())
           .actionId(ActionId.random())
-          .actionCommand(
-            new ActionCommand(CommandId.random(),
-                              (UserCommand.Insert(UUID.randomUUID(), "", ""): UserCommand).asJson))
+          .actionCommand(ActionCommand
+            .of(CommandId.random(), (UserCommand.Insert(UUID.randomUUID(), "", ""): UserCommand).asJson))
           .actionType("action")
           .build()
 

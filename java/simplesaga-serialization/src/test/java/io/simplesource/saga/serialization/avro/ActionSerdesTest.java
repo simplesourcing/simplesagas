@@ -49,7 +49,7 @@ class ActionSerdesTest {
         ActionSerdes<User> serdes = AvroSerdes.actionSerdes(payloadSerde, SCHEMA_URL, true);
         User testUser = new User("Albus", "Dumbledore", 1732);
 
-        ActionCommand<User> actionCommand = new ActionCommand<>(CommandId.random(), testUser);
+        ActionCommand<User> actionCommand = ActionCommand.of(CommandId.random(), testUser);
 
         ActionRequest<User> original = ActionRequest.<User>builder()
                 .sagaId(SagaId.random())
@@ -76,7 +76,7 @@ class ActionSerdesTest {
         ActionSerdes<User> serdes = AvroSerdes.Specific.actionSerdes(SCHEMA_URL, true);
         User testUser = new User("Albus", "Dumbledore", 1732);
 
-        ActionCommand<User> actionCommand = new ActionCommand<>(CommandId.random(), testUser);
+        ActionCommand<User> actionCommand = ActionCommand.of(CommandId.random(), testUser);
 
         ActionRequest<User> original = ActionRequest.<User>builder()
                 .sagaId(SagaId.random())
@@ -129,7 +129,7 @@ class ActionSerdesTest {
         ActionSerdes<User> serdes = AvroSerdes.actionSerdes(payloadSerde, SCHEMA_URL, true);
         User testUser = new User("Albus", "Dumbledore", 1732);
 
-        ActionCommand<User> actionCommand = new ActionCommand<>(CommandId.random(), testUser);
+        ActionCommand<User> actionCommand = ActionCommand.of(CommandId.random(), testUser);
 
         ActionRequest<User> request = ActionRequest.<User>builder()
                 .sagaId(SagaId.random())

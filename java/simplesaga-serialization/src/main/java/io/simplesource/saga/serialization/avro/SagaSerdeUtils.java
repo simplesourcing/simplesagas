@@ -90,7 +90,7 @@ public class SagaSerdeUtils {
     static <A> ActionCommand<A> actionCommandFromAvro(Serde<A> payloadSerde, String payloadTopic, String actionType, AvroActionCommand ac) {
         if (ac == null) return null;
         A command = payloadSerde.deserializer().deserialize(getSubjectName(payloadTopic, actionType), ac.getCommand().array());
-        return new ActionCommand<>(CommandId.of(UUID.fromString(ac.getCommandId())), command);
+        return ActionCommand.of(CommandId.of(UUID.fromString(ac.getCommandId())), command);
     }
 
     static String getSubjectName(String topic, String actionType) {

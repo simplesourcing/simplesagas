@@ -5,9 +5,9 @@ import io.simplesource.data.NonEmptyList;
 import io.simplesource.data.Result;
 import io.simplesource.kafka.spec.WindowSpec;
 import io.simplesource.saga.client.dsl.SagaDsl;
-import io.simplesource.saga.model.action.ActionCommand;
 import io.simplesource.saga.model.action.ActionId;
 import io.simplesource.saga.model.action.ActionStatus;
+import io.simplesource.saga.model.action.SagaAction;
 import io.simplesource.saga.model.messages.*;
 import io.simplesource.saga.model.saga.Saga;
 import io.simplesource.saga.model.saga.SagaError;
@@ -29,7 +29,9 @@ import org.apache.avro.specific.SpecificRecord;
 import org.apache.kafka.streams.Topology;
 import org.junit.jupiter.api.Test;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static io.simplesource.saga.client.dsl.SagaDsl.inParallel;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -98,32 +100,25 @@ class SagaStreamTests {
         }
     }
 
-    private ActionId action1 = ActionId.random();
-    private ActionId action2 = ActionId.random();
-    private ActionId action3 = ActionId.random();
-    private CommandId createAccountId1 = CommandId.random();
-    private CommandId createAccountId2 = CommandId.random();
-    private CommandId addFundsId1 = CommandId.random();
-    private CommandId undoFundsId1 = CommandId.random();
-    private CommandId addFundsId2 = CommandId.random();
-    private CommandId undoFundsId2 = CommandId.random();
-    private CommandId transferId = CommandId.random();
-    private CommandId undoTransferId = CommandId.random();
+    private ActionId createAccountId = ActionId.random();
+    private ActionId addFundsId1 = ActionId.random();
+    private ActionId addFundsId2 = ActionId.random();
+    private ActionId transferFundsId = ActionId.random();
 
     Saga<SpecificRecord> getBasicSaga() {
         SagaDsl.SagaBuilder<SpecificRecord> builder = SagaDsl.SagaBuilder.create();
 
         SagaDsl.SubSaga<SpecificRecord> createAccount = builder.addAction(
-                action1,
+                createAccountId,
                 "createAccount",
-                new ActionCommand<>(createAccountId1, new CreateAccount("id1", "User 1")));
+                new CreateAccount("id1", "User 1"));
 
         SagaDsl.SubSaga<SpecificRecord> addFunds = builder.addAction(
-                action2,
+                addFundsId1,
                 "addFunds",
-                new ActionCommand<>(addFundsId1, new AddFunds("id1", 1000.0)),
+                new AddFunds("id1", 1000.0),
                 // this will never undo since it's in the last sub-saga
-                new ActionCommand<>(undoFundsId1, new AddFunds("id1", -1000.0)));
+                new AddFunds("id1", -1000.0));
 
         createAccount.andThen(addFunds);
 
@@ -137,38 +132,53 @@ class SagaStreamTests {
         SagaDsl.SagaBuilder<SpecificRecord> builder = SagaDsl.SagaBuilder.create();
 
         SagaDsl.SubSaga<SpecificRecord> addFunds = builder.addAction(
-                action1,
+                addFundsId1,
                 "addFunds",
-                new ActionCommand<>(addFundsId1, new AddFunds("id1", 1000.0)),
-                new ActionCommand<>(undoFundsId1, new AddFunds("id1", -1000.0)));
+                new AddFunds("id1", 1000.0),
+                new AddFunds("id1", -1000.0));
 
         SagaDsl.SubSaga<SpecificRecord> transferFunds = builder.addAction(
-                action2,
+                transferFundsId,
                 "transferFunds",
-                new ActionCommand<>(transferId, new TransferFunds("id1", "id2", 50.0)),
-                new ActionCommand<>(undoTransferId, new TransferFunds("id2", "id1", -50.0)));
+                new TransferFunds("id1", "id2", 50.0),
+                new TransferFunds("id2", "id1", -50.0));
 
         addFunds.andThen(transferFunds);
 
         Result<SagaError, Saga<SpecificRecord>> sagaBuildResult = builder.build();
         assertThat(sagaBuildResult.isSuccess()).isEqualTo(true);
 
-        return sagaBuildResult.getOrElse(null);
+        Saga<SpecificRecord> saga = sagaBuildResult.getOrElse(null);
+        return saga;
+    }
+
+    @Value
+    static class CommandIds {
+        CommandId action;
+        CommandId undoAction;
+    }
+
+    Map<ActionId, CommandIds> getCommandIds(Saga<SpecificRecord> saga) {
+        HashMap<ActionId, CommandIds> commandIdsHashMap = new HashMap<>();
+        for (SagaAction<SpecificRecord>a: saga.actions.values()) {
+            commandIdsHashMap.put(a.actionId, new CommandIds(a.command.commandId, a.undoCommand.map(c -> c.commandId).orElse(null)));
+        }
+        return commandIdsHashMap;
     }
 
     Saga<SpecificRecord> getParallelSaga() {
         SagaDsl.SagaBuilder<SpecificRecord> builder = SagaDsl.SagaBuilder.create();
 
         SagaDsl.SubSaga<SpecificRecord> addFunds1 = builder.addAction(
-                action1,
+                addFundsId1,
                 "addFunds",
-                new ActionCommand<>(addFundsId1, new AddFunds("id1", 1000.0)),
-                new ActionCommand<>(undoFundsId1, new AddFunds("id1", -1000.0)));
+                new AddFunds("id1", 1000.0),
+                new AddFunds("id1", -1000.0));
         SagaDsl.SubSaga<SpecificRecord> addFunds2 = builder.addAction(
-                action2,
+                addFundsId2,
                 "addFunds",
-                new ActionCommand<>(addFundsId2, new AddFunds("id2", 1000.0)),
-                new ActionCommand<>(undoFundsId2, new AddFunds("id2", -1000.0)));
+                new AddFunds("id2", 1000.0),
+                new AddFunds("id2", -1000.0));
 
         inParallel(addFunds1, addFunds2);
 
@@ -182,20 +192,20 @@ class SagaStreamTests {
         SagaDsl.SagaBuilder<SpecificRecord> builder = SagaDsl.SagaBuilder.create();
 
         SagaDsl.SubSaga<SpecificRecord> addFunds1 = builder.addAction(
-                action1,
+                addFundsId1,
                 "addFunds",
-                new ActionCommand<>(addFundsId1, new AddFunds("id1", 1000.0)),
-                new ActionCommand<>(undoFundsId1, new AddFunds("id1", -1000.0)));
+                new AddFunds("id1", 1000.0),
+                new AddFunds("id1", -1000.0));
         SagaDsl.SubSaga<SpecificRecord> addFunds2 = builder.addAction(
-                action2,
+                addFundsId2,
                 "addFunds",
-                new ActionCommand<>(addFundsId2, new AddFunds("id2", 1000.0)),
-                new ActionCommand<>(undoFundsId2, new AddFunds("id2", -1000.0)));
+                new AddFunds("id2", 1000.0),
+                new AddFunds("id2", -1000.0));
         SagaDsl.SubSaga<SpecificRecord> transferFunds = builder.addAction(
-                action3,
+                transferFundsId,
                 "transferFunds",
-                new ActionCommand<>(transferId, new TransferFunds("id3", "id4", 10.0)),
-                new ActionCommand<>(undoTransferId, new TransferFunds("id4", "id3", 10.0)));
+                new TransferFunds("id3", "id4", 10.0),
+                new TransferFunds("id4", "id3", 10.0));
 
         inParallel(addFunds1, addFunds2, transferFunds);
 
@@ -211,13 +221,15 @@ class SagaStreamTests {
 
         SagaId sagaRequestId = SagaId.random();
         Saga<SpecificRecord> saga = getBasicSaga();
+        Map<ActionId, CommandIds> commandIds = getCommandIds(saga);
+
         scc.sagaRequestPublisher.publish(saga.sagaId, new SagaRequest<>(sagaRequestId, saga));
 
         scc.actionRequestVerifier.verifySingle((id, actionRequest) -> {
             assertThat(id).isEqualTo(saga.sagaId);
             assertThat(actionRequest.actionType).isEqualTo("createAccount");
-            assertThat(actionRequest.actionId).isEqualTo(action1);
-            assertThat(actionRequest.actionCommand.commandId).isEqualTo(createAccountId1);
+            assertThat(actionRequest.actionId).isEqualTo(createAccountId);
+            assertThat(actionRequest.actionCommand.commandId).isEqualTo(commandIds.get(createAccountId).action);
         });
         scc.actionRequestVerifier.verifyNoRecords();
 
@@ -227,7 +239,7 @@ class SagaStreamTests {
                 Saga s = ((SagaStateTransition.SetInitialState) stateTransition).sagaState;
                 assertThat(s.status).isEqualTo(SagaStatus.NotStarted);
                 assertThat(s.sequence.getSeq()).isEqualTo(0);
-                assertThat(s.actions).containsKeys(action1, action2);
+                assertThat(s.actions).containsKeys(createAccountId, addFundsId1);
             } else if (i == 1) {
                 assertThat(stateTransition).isInstanceOf(SagaStateTransition.TransitionList.class);
                 SagaStateTransition.TransitionList transitionList = ((SagaStateTransition.TransitionList) stateTransition);
@@ -241,25 +253,25 @@ class SagaStreamTests {
             if (i == 0) {
                 assertThat(state.sequence.getSeq()).isEqualTo(0);
                 assertThat(state.status).isEqualTo(SagaStatus.InProgress);
-                assertThat(state.actions.get(action1).status).isEqualTo(ActionStatus.Pending);
-                assertThat(state.actions.get(action2).status).isEqualTo(ActionStatus.Pending);
+                assertThat(state.actions.get(createAccountId).status).isEqualTo(ActionStatus.Pending);
+                assertThat(state.actions.get(addFundsId1).status).isEqualTo(ActionStatus.Pending);
             } else if (i == 1) {
                 assertThat(state.sequence.getSeq()).isEqualTo(1);
                 assertThat(state.status).isEqualTo(SagaStatus.InProgress);
-                assertThat(state.actions.get(action1).status).isEqualTo(ActionStatus.InProgress);
-                assertThat(state.actions.get(action2).status).isEqualTo(ActionStatus.Pending);
+                assertThat(state.actions.get(createAccountId).status).isEqualTo(ActionStatus.InProgress);
+                assertThat(state.actions.get(addFundsId1).status).isEqualTo(ActionStatus.Pending);
             }
         });
         scc.sagaStateVerifier.verifyNoRecords();
 
         // create account successful
-        scc.actionResponsePublisher.publish(saga.sagaId, new ActionResponse(saga.sagaId, action1, createAccountId1, Result.success(true)));
+        scc.actionResponsePublisher.publish(saga.sagaId, new ActionResponse(saga.sagaId, createAccountId, commandIds.get(createAccountId).action, Result.success(true)));
 
         scc.sagaStateTransitionVerifier.verifyMultiple(2, (i, id, stateTransition) -> {
             if (i == 0) {
                 assertThat(stateTransition).isInstanceOf(SagaStateTransition.SagaActionStatusChanged.class);
                 SagaStateTransition.SagaActionStatusChanged c = ((SagaStateTransition.SagaActionStatusChanged) stateTransition);
-                assertThat(c.actionId).isEqualTo(action1);
+                assertThat(c.actionId).isEqualTo(createAccountId);
                 assertThat(c.actionStatus).isEqualTo(ActionStatus.Completed);
             } else if (i == 1) {
                 assertThat(stateTransition).isInstanceOf(SagaStateTransition.TransitionList.class);
@@ -274,13 +286,13 @@ class SagaStreamTests {
             if (i == 0) {
                 assertThat(state.sequence.getSeq()).isEqualTo(2);
                 assertThat(state.status).isEqualTo(SagaStatus.InProgress);
-                assertThat(state.actions.get(action1).status).isEqualTo(ActionStatus.Completed);
-                assertThat(state.actions.get(action2).status).isEqualTo(ActionStatus.Pending);
+                assertThat(state.actions.get(createAccountId).status).isEqualTo(ActionStatus.Completed);
+                assertThat(state.actions.get(addFundsId1).status).isEqualTo(ActionStatus.Pending);
             } else if (i == 1) {
                 assertThat(state.sequence.getSeq()).isEqualTo(3);
                 assertThat(state.status).isEqualTo(SagaStatus.InProgress);
-                assertThat(state.actions.get(action1).status).isEqualTo(ActionStatus.Completed);
-                assertThat(state.actions.get(action2).status).isEqualTo(ActionStatus.InProgress);
+                assertThat(state.actions.get(createAccountId).status).isEqualTo(ActionStatus.Completed);
+                assertThat(state.actions.get(addFundsId1).status).isEqualTo(ActionStatus.InProgress);
             }
         });
         scc.sagaStateVerifier.verifyNoRecords();
@@ -289,19 +301,19 @@ class SagaStreamTests {
             assertThat(id).isEqualTo(saga.sagaId);
             assertThat(actionRequest.sagaId).isEqualTo(saga.sagaId);
             assertThat(actionRequest.actionType).isEqualTo("addFunds");
-            assertThat(actionRequest.actionId).isEqualTo(action2);
-            assertThat(actionRequest.actionCommand.commandId).isEqualTo(addFundsId1);
+            assertThat(actionRequest.actionId).isEqualTo(addFundsId1);
+            assertThat(actionRequest.actionCommand.commandId).isEqualTo(commandIds.get(addFundsId1).action);
         });
         scc.actionRequestVerifier.verifyNoRecords();
 
         // add funds successful
-        scc.actionResponsePublisher.publish(saga.sagaId, new ActionResponse(saga.sagaId, action2, addFundsId1, Result.success(true)));
+        scc.actionResponsePublisher.publish(saga.sagaId, new ActionResponse(saga.sagaId, addFundsId1, commandIds.get(addFundsId1).action, Result.success(true)));
 
         scc.sagaStateTransitionVerifier.verifyMultiple(2, (i, id, stateTransition) -> {
             if (i == 0) {
                 assertThat(stateTransition).isInstanceOf(SagaStateTransition.SagaActionStatusChanged.class);
                 SagaStateTransition.SagaActionStatusChanged c = ((SagaStateTransition.SagaActionStatusChanged) stateTransition);
-                assertThat(c.actionId).isEqualTo(action2);
+                assertThat(c.actionId).isEqualTo(addFundsId1);
                 assertThat(c.actionStatus).isEqualTo(ActionStatus.Completed);
             } else if (i == 1) {
                 assertThat(stateTransition).isInstanceOf(SagaStateTransition.SagaStatusChanged.class);
@@ -316,13 +328,13 @@ class SagaStreamTests {
             if (i == 0) {
                 assertThat(state.sequence.getSeq()).isEqualTo(4);
                 assertThat(state.status).isEqualTo(SagaStatus.InProgress);
-                assertThat(state.actions.get(action1).status).isEqualTo(ActionStatus.Completed);
-                assertThat(state.actions.get(action2).status).isEqualTo(ActionStatus.Completed);
+                assertThat(state.actions.get(createAccountId).status).isEqualTo(ActionStatus.Completed);
+                assertThat(state.actions.get(addFundsId1).status).isEqualTo(ActionStatus.Completed);
             } else if (i == 1) {
                 assertThat(state.sequence.getSeq()).isEqualTo(5);
                 assertThat(state.status).isEqualTo(SagaStatus.Completed);
-                assertThat(state.actions.get(action1).status).isEqualTo(ActionStatus.Completed);
-                assertThat(state.actions.get(action2).status).isEqualTo(ActionStatus.Completed);
+                assertThat(state.actions.get(createAccountId).status).isEqualTo(ActionStatus.Completed);
+                assertThat(state.actions.get(addFundsId1).status).isEqualTo(ActionStatus.Completed);
             }
         });
         scc.sagaStateVerifier.verifyNoRecords();
@@ -340,6 +352,7 @@ class SagaStreamTests {
 
         SagaId sagaRequestId = SagaId.random();
         Saga<SpecificRecord> saga = getBasicSaga();
+        Map<ActionId, CommandIds> commandIds = getCommandIds(saga);
         scc.sagaRequestPublisher.publish(saga.sagaId, new SagaRequest<>(sagaRequestId, saga));
 
         // already verified in above test
@@ -349,13 +362,13 @@ class SagaStreamTests {
 
         // create account failed
         SagaError sagaError = SagaError.of(SagaError.Reason.CommandError, "Oh noes");
-        scc.actionResponsePublisher.publish(saga.sagaId, new ActionResponse(saga.sagaId, action1, createAccountId1, Result.failure(sagaError)));
+        scc.actionResponsePublisher.publish(saga.sagaId, new ActionResponse(saga.sagaId, createAccountId, commandIds.get(createAccountId).action, Result.failure(sagaError)));
 
         scc.sagaStateTransitionVerifier.verifyMultiple(2, (i, id, stateTransition) -> {
             if (i == 0) {
                 assertThat(stateTransition).isInstanceOf(SagaStateTransition.SagaActionStatusChanged.class);
                 SagaStateTransition.SagaActionStatusChanged c = ((SagaStateTransition.SagaActionStatusChanged) stateTransition);
-                assertThat(c.actionId).isEqualTo(action1);
+                assertThat(c.actionId).isEqualTo(createAccountId);
                 assertThat(c.actionStatus).isEqualTo(ActionStatus.Failed);
             } else if (i == 1) {
                 assertThat(stateTransition).isInstanceOf(SagaStateTransition.SagaStatusChanged.class);
@@ -369,13 +382,13 @@ class SagaStreamTests {
             if (i == 0) {
                 assertThat(state.sequence.getSeq()).isEqualTo(2);
                 assertThat(state.status).isEqualTo(SagaStatus.InProgress);
-                assertThat(state.actions.get(action1).status).isEqualTo(ActionStatus.Failed);
-                assertThat(state.actions.get(action2).status).isEqualTo(ActionStatus.Pending);
+                assertThat(state.actions.get(createAccountId).status).isEqualTo(ActionStatus.Failed);
+                assertThat(state.actions.get(addFundsId1).status).isEqualTo(ActionStatus.Pending);
             } else if (i == 1) {
                 assertThat(state.sequence.getSeq()).isEqualTo(3);
                 assertThat(state.status).isEqualTo(SagaStatus.Failed);
-                assertThat(state.actions.get(action1).status).isEqualTo(ActionStatus.Failed);
-                assertThat(state.actions.get(action2).status).isEqualTo(ActionStatus.Pending);
+                assertThat(state.actions.get(createAccountId).status).isEqualTo(ActionStatus.Failed);
+                assertThat(state.actions.get(addFundsId1).status).isEqualTo(ActionStatus.Pending);
             }
         });
         scc.sagaStateVerifier.verifyNoRecords();
@@ -395,10 +408,11 @@ class SagaStreamTests {
 
         SagaId sagaRequestId = SagaId.random();
         Saga<SpecificRecord> saga = getBasicSaga();
+        Map<ActionId, CommandIds> commandIds = getCommandIds(saga);
         scc.sagaRequestPublisher.publish(saga.sagaId, new SagaRequest<>(sagaRequestId, saga));
 
         // create account successful
-        scc.actionResponsePublisher.publish(saga.sagaId, new ActionResponse(saga.sagaId, action1, createAccountId1, Result.success(true)));
+        scc.actionResponsePublisher.publish(saga.sagaId, new ActionResponse(saga.sagaId, createAccountId, commandIds.get(createAccountId).action, Result.success(true)));
 
         scc.actionRequestVerifier.drainAll();
         scc.sagaStateTransitionVerifier.drainAll();
@@ -406,13 +420,13 @@ class SagaStreamTests {
 
         // add funds failed
         SagaError sagaError = SagaError.of(SagaError.Reason.CommandError, "Oh noes");
-        scc.actionResponsePublisher.publish(saga.sagaId, new ActionResponse(saga.sagaId, action2, addFundsId1, Result.failure(sagaError)));
+        scc.actionResponsePublisher.publish(saga.sagaId, new ActionResponse(saga.sagaId, addFundsId1, commandIds.get(addFundsId1).action, Result.failure(sagaError)));
 
         scc.sagaStateTransitionVerifier.verifyMultiple(4, (i, id, stateTransition) -> {
             if (i == 0) {
                 assertThat(stateTransition).isInstanceOf(SagaStateTransition.SagaActionStatusChanged.class);
                 SagaStateTransition.SagaActionStatusChanged c = ((SagaStateTransition.SagaActionStatusChanged) stateTransition);
-                assertThat(c.actionId).isEqualTo(action2);
+                assertThat(c.actionId).isEqualTo(addFundsId1);
                 assertThat(c.actionStatus).isEqualTo(ActionStatus.Failed);
             } else if (i == 1) {
                 assertThat(stateTransition).isInstanceOf(SagaStateTransition.SagaStatusChanged.class);
@@ -435,23 +449,23 @@ class SagaStreamTests {
             if (i == 0) {
                 assertThat(state.sequence.getSeq()).isEqualTo(4);
                 assertThat(state.status).isEqualTo(SagaStatus.InProgress);
-                assertThat(state.actions.get(action1).status).isEqualTo(ActionStatus.Completed);
-                assertThat(state.actions.get(action2).status).isEqualTo(ActionStatus.Failed);
+                assertThat(state.actions.get(createAccountId).status).isEqualTo(ActionStatus.Completed);
+                assertThat(state.actions.get(addFundsId1).status).isEqualTo(ActionStatus.Failed);
             } else if (i == 1) {
                 assertThat(state.sequence.getSeq()).isEqualTo(5);
                 assertThat(state.status).isEqualTo(SagaStatus.InFailure);
-                assertThat(state.actions.get(action1).status).isEqualTo(ActionStatus.Completed);
-                assertThat(state.actions.get(action2).status).isEqualTo(ActionStatus.Failed);
+                assertThat(state.actions.get(createAccountId).status).isEqualTo(ActionStatus.Completed);
+                assertThat(state.actions.get(addFundsId1).status).isEqualTo(ActionStatus.Failed);
             } else if (i == 2) {
                 assertThat(state.sequence.getSeq()).isEqualTo(6);
                 assertThat(state.status).isEqualTo(SagaStatus.InFailure);
-                assertThat(state.actions.get(action1).status).isEqualTo(ActionStatus.UndoBypassed);
-                assertThat(state.actions.get(action2).status).isEqualTo(ActionStatus.Failed);
+                assertThat(state.actions.get(createAccountId).status).isEqualTo(ActionStatus.UndoBypassed);
+                assertThat(state.actions.get(addFundsId1).status).isEqualTo(ActionStatus.Failed);
             } else if (i == 3) {
                 assertThat(state.sequence.getSeq()).isEqualTo(7);
                 assertThat(state.status).isEqualTo(SagaStatus.Failed);
-                assertThat(state.actions.get(action1).status).isEqualTo(ActionStatus.UndoBypassed);
-                assertThat(state.actions.get(action2).status).isEqualTo(ActionStatus.Failed);
+                assertThat(state.actions.get(createAccountId).status).isEqualTo(ActionStatus.UndoBypassed);
+                assertThat(state.actions.get(addFundsId1).status).isEqualTo(ActionStatus.Failed);
             }
         });
         scc.sagaStateVerifier.verifyNoRecords();
@@ -471,10 +485,11 @@ class SagaStreamTests {
 
         SagaId sagaRequestId = SagaId.random();
         Saga<SpecificRecord> saga = getSagaWithUndo();
+        Map<ActionId, CommandIds> commandIds = getCommandIds(saga);
         scc.sagaRequestPublisher.publish(saga.sagaId, new SagaRequest<>(sagaRequestId, saga));
 
         // add funds successful
-        scc.actionResponsePublisher.publish(saga.sagaId, new ActionResponse(saga.sagaId, action1, addFundsId1, Result.success(true)));
+        scc.actionResponsePublisher.publish(saga.sagaId, new ActionResponse(saga.sagaId, addFundsId1, commandIds.get(addFundsId1).action, Result.success(true)));
 
         scc.actionRequestVerifier.drainAll();
         scc.sagaStateTransitionVerifier.drainAll();
@@ -482,13 +497,13 @@ class SagaStreamTests {
 
         // transfer funds failed
         SagaError sagaError = SagaError.of(SagaError.Reason.CommandError, "Oh noes");
-        scc.actionResponsePublisher.publish(saga.sagaId, new ActionResponse(saga.sagaId, action2, transferId, Result.failure(sagaError)));
+        scc.actionResponsePublisher.publish(saga.sagaId, new ActionResponse(saga.sagaId, transferFundsId, commandIds.get(transferFundsId).action, Result.failure(sagaError)));
 
         scc.sagaStateTransitionVerifier.verifyMultiple(3, (i, id, stateTransition) -> {
             if (i == 0) {
                 assertThat(stateTransition).isInstanceOf(SagaStateTransition.SagaActionStatusChanged.class);
                 SagaStateTransition.SagaActionStatusChanged c = ((SagaStateTransition.SagaActionStatusChanged) stateTransition);
-                assertThat(c.actionId).isEqualTo(action2);
+                assertThat(c.actionId).isEqualTo(transferFundsId);
                 assertThat(c.actionStatus).isEqualTo(ActionStatus.Failed);
             } else if (i == 1) {
                 assertThat(stateTransition).isInstanceOf(SagaStateTransition.SagaStatusChanged.class);
@@ -507,18 +522,18 @@ class SagaStreamTests {
             if (i == 0) {
                 assertThat(state.sequence.getSeq()).isEqualTo(4);
                 assertThat(state.status).isEqualTo(SagaStatus.InProgress);
-                assertThat(state.actions.get(action1).status).isEqualTo(ActionStatus.Completed);
-                assertThat(state.actions.get(action2).status).isEqualTo(ActionStatus.Failed);
+                assertThat(state.actions.get(addFundsId1).status).isEqualTo(ActionStatus.Completed);
+                assertThat(state.actions.get(transferFundsId).status).isEqualTo(ActionStatus.Failed);
             } else if (i == 1) {
                 assertThat(state.sequence.getSeq()).isEqualTo(5);
                 assertThat(state.status).isEqualTo(SagaStatus.InFailure);
-                assertThat(state.actions.get(action1).status).isEqualTo(ActionStatus.Completed);
-                assertThat(state.actions.get(action2).status).isEqualTo(ActionStatus.Failed);
+                assertThat(state.actions.get(addFundsId1).status).isEqualTo(ActionStatus.Completed);
+                assertThat(state.actions.get(transferFundsId).status).isEqualTo(ActionStatus.Failed);
             } else if (i == 2) {
                 assertThat(state.sequence.getSeq()).isEqualTo(6);
                 assertThat(state.status).isEqualTo(SagaStatus.InFailure);
-                assertThat(state.actions.get(action1).status).isEqualTo(ActionStatus.InUndo);
-                assertThat(state.actions.get(action2).status).isEqualTo(ActionStatus.Failed);
+                assertThat(state.actions.get(addFundsId1).status).isEqualTo(ActionStatus.InUndo);
+                assertThat(state.actions.get(transferFundsId).status).isEqualTo(ActionStatus.Failed);
             }
         });
         scc.sagaStateVerifier.verifyNoRecords();
@@ -527,19 +542,19 @@ class SagaStreamTests {
             assertThat(id).isEqualTo(saga.sagaId);
             assertThat(actionRequest.sagaId).isEqualTo(saga.sagaId);
             assertThat(actionRequest.actionType).isEqualTo("addFunds");
-            assertThat(actionRequest.actionId).isEqualTo(action1);
-            assertThat(actionRequest.actionCommand.commandId).isEqualTo(undoFundsId1);
+            assertThat(actionRequest.actionId).isEqualTo(addFundsId1);
+            assertThat(actionRequest.actionCommand.commandId).isEqualTo(commandIds.get(addFundsId1).undoAction);
         });
         scc.actionRequestVerifier.verifyNoRecords();
 
         // undo add funds successful
-        scc.actionResponsePublisher.publish(saga.sagaId, new ActionResponse(saga.sagaId, action1, undoFundsId1, Result.success(true)));
+        scc.actionResponsePublisher.publish(saga.sagaId, new ActionResponse(saga.sagaId, addFundsId1, commandIds.get(addFundsId1).undoAction, Result.success(true)));
 
         scc.sagaStateTransitionVerifier.verifyMultiple(2, (i, id, stateTransition) -> {
             if (i == 0) {
                 assertThat(stateTransition).isInstanceOf(SagaStateTransition.SagaActionStatusChanged.class);
                 SagaStateTransition.SagaActionStatusChanged c = ((SagaStateTransition.SagaActionStatusChanged) stateTransition);
-                assertThat(c.actionId).isEqualTo(action1);
+                assertThat(c.actionId).isEqualTo(addFundsId1);
                 assertThat(c.actionStatus).isEqualTo(ActionStatus.Completed);
             } else if (i == 1) {
                 assertThat(stateTransition).isInstanceOf(SagaStateTransition.SagaStatusChanged.class);
@@ -553,13 +568,13 @@ class SagaStreamTests {
             if (i == 0) {
                 assertThat(state.sequence.getSeq()).isEqualTo(7);
                 assertThat(state.status).isEqualTo(SagaStatus.InFailure);
-                assertThat(state.actions.get(action1).status).isEqualTo(ActionStatus.Undone);
-                assertThat(state.actions.get(action2).status).isEqualTo(ActionStatus.Failed);
+                assertThat(state.actions.get(addFundsId1).status).isEqualTo(ActionStatus.Undone);
+                assertThat(state.actions.get(transferFundsId).status).isEqualTo(ActionStatus.Failed);
             } else if (i == 1) {
                 assertThat(state.sequence.getSeq()).isEqualTo(8);
                 assertThat(state.status).isEqualTo(SagaStatus.Failed);
-                assertThat(state.actions.get(action1).status).isEqualTo(ActionStatus.Undone);
-                assertThat(state.actions.get(action2).status).isEqualTo(ActionStatus.Failed);
+                assertThat(state.actions.get(addFundsId1).status).isEqualTo(ActionStatus.Undone);
+                assertThat(state.actions.get(transferFundsId).status).isEqualTo(ActionStatus.Failed);
             }
         });
         scc.sagaStateVerifier.verifyNoRecords();
@@ -576,12 +591,13 @@ class SagaStreamTests {
         SagaCoordinatorContext scc = new SagaCoordinatorContext();
 
         Saga<SpecificRecord> saga = getParallelSaga();
+        Map<ActionId, CommandIds> commandIds = getCommandIds(saga);
         scc.sagaRequestPublisher.publish(saga.sagaId, new SagaRequest<>(SagaId.random() , saga));
 
         scc.actionRequestVerifier.verifyMultiple(2, (i, id, actionRequest) -> {
             assertThat(id).isEqualTo(saga.sagaId);
             assertThat(actionRequest.actionType).isEqualTo("addFunds");
-            assertThat(actionRequest.actionId).isIn(action1, action2);
+            assertThat(actionRequest.actionId).isIn(addFundsId1, addFundsId2);
         });
         scc.actionRequestVerifier.verifyNoRecords();
 
@@ -593,8 +609,8 @@ class SagaStreamTests {
         });
         scc.sagaStateVerifier.verifyNoRecords();
 
-        scc.actionResponsePublisher.publish(saga.sagaId, new ActionResponse(saga.sagaId, action1, createAccountId1, Result.success(true)));
-        scc.actionResponsePublisher.publish(saga.sagaId, new ActionResponse(saga.sagaId, action2, createAccountId2, Result.success(true)));
+        scc.actionResponsePublisher.publish(saga.sagaId, new ActionResponse(saga.sagaId, addFundsId1, commandIds.get(addFundsId1).action, Result.success(true)));
+        scc.actionResponsePublisher.publish(saga.sagaId, new ActionResponse(saga.sagaId, addFundsId2, commandIds.get(addFundsId2).action, Result.success(true)));
 
         scc.sagaStateTransitionVerifier.verifyMultiple(3, (i, id, stateTransition) -> {
         });
@@ -614,12 +630,13 @@ class SagaStreamTests {
         SagaCoordinatorContext scc = new SagaCoordinatorContext();
 
         Saga<SpecificRecord> saga = getParallelSaga();
+        Map<ActionId, CommandIds> commandIds = getCommandIds(saga);
         scc.sagaRequestPublisher.publish(saga.sagaId, new SagaRequest<>(SagaId.random(), saga));
 
         scc.actionRequestVerifier.verifyMultiple(2, (i, id, actionRequest) -> {
             assertThat(id).isEqualTo(saga.sagaId);
             assertThat(actionRequest.actionType).isEqualTo("addFunds");
-            assertThat(actionRequest.actionId).isIn(action1, action2);
+            assertThat(actionRequest.actionId).isIn(addFundsId1, addFundsId2);
         });
         scc.actionRequestVerifier.verifyNoRecords();
 
@@ -631,9 +648,9 @@ class SagaStreamTests {
         });
         scc.sagaStateVerifier.verifyNoRecords();
 
-        scc.actionResponsePublisher.publish(saga.sagaId, new ActionResponse(saga.sagaId, action1, addFundsId1, Result.success(true)));
+        scc.actionResponsePublisher.publish(saga.sagaId, new ActionResponse(saga.sagaId, addFundsId1, commandIds.get(addFundsId1).action, Result.success(true)));
         SagaError sagaError = SagaError.of(SagaError.Reason.CommandError, "Oh noes");
-        scc.actionResponsePublisher.publish(saga.sagaId, new ActionResponse(saga.sagaId, action2, addFundsId2, Result.failure(sagaError)));
+        scc.actionResponsePublisher.publish(saga.sagaId, new ActionResponse(saga.sagaId, addFundsId2, commandIds.get(addFundsId2).action, Result.failure(sagaError)));
 
         scc.sagaStateTransitionVerifier.verifyMultiple(4, (i, id, stateTransition) -> {
         });
@@ -648,13 +665,13 @@ class SagaStreamTests {
             assertThat(id).isEqualTo(saga.sagaId);
             assertThat(actionRequest.sagaId).isEqualTo(saga.sagaId);
             assertThat(actionRequest.actionType).isEqualTo("addFunds");
-            assertThat(actionRequest.actionId).isEqualTo(action1);
-            assertThat(actionRequest.actionCommand.commandId).isEqualTo(undoFundsId1);
+            assertThat(actionRequest.actionId).isEqualTo(addFundsId1);
+            assertThat(actionRequest.actionCommand.commandId).isEqualTo(commandIds.get(addFundsId1).undoAction);
         });
         scc.actionRequestVerifier.verifyNoRecords();
 
         // undo successful
-        scc.actionResponsePublisher.publish(saga.sagaId, new ActionResponse(saga.sagaId, action1, undoFundsId1, Result.success(true)));
+        scc.actionResponsePublisher.publish(saga.sagaId, new ActionResponse(saga.sagaId, addFundsId1, commandIds.get(addFundsId1).undoAction, Result.success(true)));
 
         scc.sagaResponseVerifier.verifySingle((id, response) -> {
             assertThat(response.sagaId).isEqualTo(saga.sagaId);
@@ -668,18 +685,19 @@ class SagaStreamTests {
         SagaCoordinatorContext scc = new SagaCoordinatorContext();
 
         Saga<SpecificRecord> saga = getParallelSaga3Actions();
+        Map<ActionId, CommandIds> commandIds = getCommandIds(saga);
         scc.sagaRequestPublisher.publish(saga.sagaId, new SagaRequest<>(SagaId.random(), saga));
 
         scc.actionRequestVerifier.verifyMultiple(3, (i, id, actionRequest) -> {
             assertThat(id).isEqualTo(saga.sagaId);
-            assertThat(actionRequest.actionId).isIn(action1, action2, action3);
+            assertThat(actionRequest.actionId).isIn(addFundsId1, addFundsId2, transferFundsId);
         });
         scc.actionRequestVerifier.verifyNoRecords();
 
         scc.sagaStateTransitionVerifier.drainAll();
         scc.sagaStateVerifier.drainAll();
 
-        scc.actionResponsePublisher.publish(saga.sagaId, new ActionResponse(saga.sagaId, action1, addFundsId1, Result.success(true)));
+        scc.actionResponsePublisher.publish(saga.sagaId, new ActionResponse(saga.sagaId, addFundsId1, commandIds.get(addFundsId1).undoAction, Result.success(true)));
 
         scc.sagaStateVerifier.verifySingle((id, sagaState) -> {
             assertThat(sagaState.status).isEqualTo(SagaStatus.InProgress);
@@ -687,44 +705,44 @@ class SagaStreamTests {
         scc.sagaStateVerifier.verifyNoRecords();
 
         SagaError sagaError = SagaError.of(SagaError.Reason.CommandError, "Oh noes");
-        scc.actionResponsePublisher.publish(saga.sagaId, new ActionResponse(saga.sagaId, action2, addFundsId2, Result.failure(sagaError)));
+        scc.actionResponsePublisher.publish(saga.sagaId, new ActionResponse(saga.sagaId, addFundsId2, commandIds.get(addFundsId2).undoAction, Result.failure(sagaError)));
 
         scc.sagaStateVerifier.verifyMultiple(2, (i, id, state) -> {
             if (i == 0) {
                 assertThat(state.status).isEqualTo(SagaStatus.InProgress);
-                assertThat(state.actions.get(action1).status).isEqualTo(ActionStatus.Completed);
-                assertThat(state.actions.get(action2).status).isEqualTo(ActionStatus.Failed);
-                assertThat(state.actions.get(action3).status).isEqualTo(ActionStatus.InProgress);
+                assertThat(state.actions.get(addFundsId1).status).isEqualTo(ActionStatus.Completed);
+                assertThat(state.actions.get(addFundsId2).status).isEqualTo(ActionStatus.Failed);
+                assertThat(state.actions.get(transferFundsId).status).isEqualTo(ActionStatus.InProgress);
             } else if (i == 1) {
                 assertThat(state.status).isEqualTo(SagaStatus.FailurePending);
-                assertThat(state.actions.get(action1).status).isEqualTo(ActionStatus.Completed);
-                assertThat(state.actions.get(action2).status).isEqualTo(ActionStatus.Failed);
-                assertThat(state.actions.get(action3).status).isEqualTo(ActionStatus.InProgress);
+                assertThat(state.actions.get(addFundsId1).status).isEqualTo(ActionStatus.Completed);
+                assertThat(state.actions.get(addFundsId2).status).isEqualTo(ActionStatus.Failed);
+                assertThat(state.actions.get(transferFundsId).status).isEqualTo(ActionStatus.InProgress);
             }
         });
         scc.sagaStateVerifier.verifyNoRecords();
         scc.actionRequestVerifier.verifyNoRecords();
 
         // final action completes
-        scc.actionResponsePublisher.publish(saga.sagaId, new ActionResponse(saga.sagaId, action3, transferId, Result.success(true)));
+        scc.actionResponsePublisher.publish(saga.sagaId, new ActionResponse(saga.sagaId, transferFundsId, commandIds.get(transferFundsId).action, Result.success(true)));
 
 
         List<Saga<SpecificRecord>> s2 = scc.sagaStateVerifier.verifyMultiple(3, (i, id, state) -> {
             if (i == 0) {
                 assertThat(state.status).isEqualTo(SagaStatus.FailurePending);
-                assertThat(state.actions.get(action1).status).isEqualTo(ActionStatus.Completed);
-                assertThat(state.actions.get(action2).status).isEqualTo(ActionStatus.Failed);
-                assertThat(state.actions.get(action3).status).isEqualTo(ActionStatus.Completed);
+                assertThat(state.actions.get(addFundsId1).status).isEqualTo(ActionStatus.Completed);
+                assertThat(state.actions.get(addFundsId2).status).isEqualTo(ActionStatus.Failed);
+                assertThat(state.actions.get(transferFundsId).status).isEqualTo(ActionStatus.Completed);
             } else if (i == 1) {
                 assertThat(state.status).isEqualTo(SagaStatus.InFailure);
-                assertThat(state.actions.get(action1).status).isEqualTo(ActionStatus.Completed);
-                assertThat(state.actions.get(action2).status).isEqualTo(ActionStatus.Failed);
-                assertThat(state.actions.get(action3).status).isEqualTo(ActionStatus.Completed);
+                assertThat(state.actions.get(addFundsId1).status).isEqualTo(ActionStatus.Completed);
+                assertThat(state.actions.get(addFundsId2).status).isEqualTo(ActionStatus.Failed);
+                assertThat(state.actions.get(transferFundsId).status).isEqualTo(ActionStatus.Completed);
             } else if (i == 2) {
                 assertThat(state.status).isEqualTo(SagaStatus.InFailure);
-                assertThat(state.actions.get(action1).status).isEqualTo(ActionStatus.InUndo);
-                assertThat(state.actions.get(action2).status).isEqualTo(ActionStatus.Failed);
-                assertThat(state.actions.get(action3).status).isEqualTo(ActionStatus.InUndo);
+                assertThat(state.actions.get(addFundsId1).status).isEqualTo(ActionStatus.InUndo);
+                assertThat(state.actions.get(addFundsId2).status).isEqualTo(ActionStatus.Failed);
+                assertThat(state.actions.get(transferFundsId).status).isEqualTo(ActionStatus.InUndo);
             }
         });
         scc.sagaStateVerifier.verifyNoRecords();
@@ -734,13 +752,13 @@ class SagaStreamTests {
             assertThat(id).isEqualTo(saga.sagaId);
             assertThat(actionRequest.sagaId).isEqualTo(saga.sagaId);
             assertThat(actionRequest.actionType).isIn("addFunds", "transferFunds");
-            assertThat(actionRequest.actionCommand.commandId).isIn(undoFundsId1, undoTransferId);
+            assertThat(actionRequest.actionCommand.commandId).isIn(commandIds.get(addFundsId1).undoAction, commandIds.get(transferFundsId).undoAction);
         });
         scc.actionRequestVerifier.verifyNoRecords();
 
         // undo successful
-        scc.actionResponsePublisher.publish(saga.sagaId, new ActionResponse(saga.sagaId, action1, undoFundsId1, Result.success(true)));
-        scc.actionResponsePublisher.publish(saga.sagaId, new ActionResponse(saga.sagaId, action3, undoTransferId, Result.success(true)));
+        scc.actionResponsePublisher.publish(saga.sagaId, new ActionResponse(saga.sagaId, addFundsId1, commandIds.get(addFundsId1).undoAction, Result.success(true)));
+        scc.actionResponsePublisher.publish(saga.sagaId, new ActionResponse(saga.sagaId, transferFundsId, commandIds.get(transferFundsId).undoAction, Result.success(true)));
 
         scc.sagaResponseVerifier.verifySingle((id, response) -> {
             assertThat(response.sagaId).isEqualTo(saga.sagaId);

@@ -48,7 +48,7 @@ class ActionSerdesPropsTest {
         Arbitrary<ActionCommand<User>> actionCommand = Combinators.combine(
             commandId,
             user
-        ).as(ActionCommand::new);
+        ).as(ActionCommand::of);
         return Combinators.combine(sagaId, actionId, actionCommand, strings).as(
                 (sId,aId, command, actionType) -> ActionRequest.<User>builder()
             .sagaId(sId)
