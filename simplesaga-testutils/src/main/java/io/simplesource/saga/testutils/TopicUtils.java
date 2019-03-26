@@ -6,6 +6,6 @@ import io.simplesource.saga.shared.topics.TopicNamer;
 public class TopicUtils {
     public static TopicConfigBuilder.BuildSteps buildSteps(String prefix, String baseName) {
         return builder -> builder.withTopicNamer(TopicNamer.forPrefix(prefix, baseName))
-                .withDefaultConfig(Constants.partitions, Constants.replication, Constants.retentionDays);
+                .withDefaultConfig(Constants.PARTITIONS, Constants.REPLICATION, Constants.RETENTION_DAYS);
     }
 }

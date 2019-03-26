@@ -2,27 +2,23 @@ package io.simplesource.saga.testutils;
 
 public class Constants {
     // sagas
-    public static final String sagaTopicPrefix = "saga_coordinator_";
-    public static final String sagaBaseName    = "saga";
+    public static final String SAGA_TOPIC_PREFIX = "saga_coordinator_";
+    public static final String SAGA_BASE_NAME = "saga";
 
     // action processors
-    public static final String actionTopicPrefix  = "saga_action_processor_";
-    public static final String sagaActionBaseName = "saga_action";
+    public static final String ACTION_TOPIC_PREFIX = "saga_action_processor_";
+    public static final String SAGA_ACTION_BASE_NAME = "saga_action";
 
     // commands (simple sourcing)
-    public static final String commandTopicPrefix = "saga_command_";
-    // user aggregate
-    public static final String userAggregateName = "user";
-    public static final String userActionType    = "sourcing_action_user";
+    public static final String COMMAND_TOPIC_PREFIX = "saga_command_";
+
     // account aggregate
-    public static final String accountAggregateName = "account";
-    public static final String accountActionType    = "sourcing_action_account";
+    public static final String ACCOUNT_AGGREGATE_NAME = "account";
+    public static final String ACCOUNT_ACTION_TYPE = "sourcing_action_account";
 
-    public static final String asyncTestActionType    = "async_action_test";
+    public static final String ASYNC_TEST_ACTION_TYPE = "async_action_test";
 
-    public static final String kafkaBootstrap = "localhost:9092";
-
-    public static final int partitions    = 6;
-    public static final int replication   = 1;
-    public static final int retentionDays = 7;
+    static final int PARTITIONS = 6;
+    static final int REPLICATION = 1;
+    static final int RETENTION_DAYS = 7;
 }

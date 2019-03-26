@@ -13,6 +13,13 @@ final class SagaProducer {
 
     static <A> void publishActionRequests(SagaContext<A> ctx, KStream<SagaId, ActionRequest<A>> actionRequests) {
         actionRequests
+                .to((x, actionRequest, z) -> {
+                            String actionType = actionRequest.actionType();
+                            String name = ctx.actionTopicNamer.apply(TopicTypes.ActionTopic.request + "-" + actionType.toLowerCase());
+                            return name;
+                    },
+                        Produced.with(ctx.sSerdes.sagaId(), ctx.aSerdes.request()));
+        actionRequests
                 .to(ctx.actionTopicNamer.apply(TopicTypes.ActionTopic.request),
                         Produced.with(ctx.sSerdes.sagaId(), ctx.aSerdes.request()));
     }

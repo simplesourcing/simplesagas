@@ -12,10 +12,10 @@ import org.apache.kafka.streams.kstream.KStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-final class ActionConsumer {
+public final class ActionConsumer {
     private static Logger logger = LoggerFactory.getLogger(ActionConsumer.class);
 
-    static <A> KStream<SagaId, ActionRequest<A>> actionRequestStream(ActionProcessorSpec<A> spec,
+    public static <A> KStream<SagaId, ActionRequest<A>> actionRequestStream(ActionProcessorSpec<A> spec,
                                                                      TopicNamer actionTopicNamer,
                                                                      StreamsBuilder builder) {
         return builder.stream(
@@ -24,7 +24,7 @@ final class ActionConsumer {
         ).peek(Utils.logValues(logger, "actionRequestStream"));
     }
 
-    static <A> KStream<SagaId, ActionResponse> actionResponseStream(ActionProcessorSpec<A> spec,
+    public static <A> KStream<SagaId, ActionResponse> actionResponseStream(ActionProcessorSpec<A> spec,
                                                                   TopicNamer actionTopicNamer,
                                                                   StreamsBuilder builder) {
         return builder.stream(

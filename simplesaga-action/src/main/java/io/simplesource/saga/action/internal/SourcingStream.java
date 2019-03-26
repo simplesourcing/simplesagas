@@ -33,7 +33,7 @@ public final class SourcingStream {
      * @param topologyContext topology context.
      * @param sourcing        sourcing context.
      */
-    public static <A, D, K, C> void addSubTopology(ActionTopologyBuilder.ActionTopologyContext<A> topologyContext,
+    public static <A, D, K, C> void addSubTopology(ActionTopologyContext<A> topologyContext,
                                                    SourcingContext<A, D, K, C> sourcing) {
         KStream<K, CommandResponse<K>> commandResponseStream = CommandConsumer.commandResponseStream(
                 sourcing.commandSpec, sourcing.commandTopicNamer, topologyContext.builder);

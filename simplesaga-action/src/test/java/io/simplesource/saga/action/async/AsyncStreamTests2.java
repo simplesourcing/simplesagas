@@ -4,9 +4,12 @@ import io.confluent.kafka.schemaregistry.client.MockSchemaRegistryClient;
 import io.simplesource.api.CommandId;
 import io.simplesource.data.Result;
 import io.simplesource.kafka.spec.TopicSpec;
+import io.simplesource.saga.action.common.StreamApp;
 import io.simplesource.saga.action.internal.AsyncActionProcessorProxy;
 import io.simplesource.saga.action.internal.AsyncPublisher;
-import io.simplesource.saga.avro.avro.generated.test.*;
+import io.simplesource.saga.avro.avro.generated.test.AsyncTestCommand;
+import io.simplesource.saga.avro.avro.generated.test.AsyncTestId;
+import io.simplesource.saga.avro.avro.generated.test.AsyncTestOutput;
 import io.simplesource.saga.model.action.ActionCommand;
 import io.simplesource.saga.model.action.ActionId;
 import io.simplesource.saga.model.messages.ActionRequest;
@@ -34,16 +37,16 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class AsyncStreamTests {
+class AsyncStreamTests2 {
 
-    private static String BROKER_URL = "http://localhost:9092";
     private static String SCHEMA_URL = "http://localhost:8081/";
 
-    private static String TOPIC_BASE_NAME = "topic-base-name";
     private static String ASYNC_TEST_OUTPUT_TOPIC = "async_test_topic";
+    private static String ASYNC_ACTION_BASE_NAME = "async-" + Constants.ASYNC_TEST_ACTION_TYPE;
 
     private static ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
 
@@ -55,6 +58,7 @@ class AsyncStreamTests {
     @Value
     private static class AsyncTestContext {
         final TestContext testContext;
+        final Set<String> expectedTopics;
 
         // serdes
         final ActionSerdes<SpecificRecord> actionSerdes = AvroSerdes.Specific.actionSerdes(SCHEMA_URL, true);
@@ -81,7 +85,7 @@ class AsyncStreamTests {
                     (i, callBack) -> executor.schedule(() ->
                             callBack.complete(Result.success(i.getValue() * i.getValue())), executionDelayMillis, TimeUnit.MILLISECONDS);
 
-            AsyncSpec<SpecificRecord, AsyncTestCommand, AsyncTestId, Integer, AsyncTestOutput> asyncSpec = new AsyncSpec<>(Constants.asyncTestActionType,
+            AsyncSpec<SpecificRecord, AsyncTestCommand, AsyncTestId, Integer, AsyncTestOutput> asyncSpec = new AsyncSpec<>(Constants.ASYNC_TEST_ACTION_TYPE,
                     a -> Result.success((AsyncTestCommand) a),
                     asyncFunction,
                     "group_id",
@@ -94,22 +98,29 @@ class AsyncStreamTests {
                             ))),
                     timeout);
 
-            AsyncApp<SpecificRecord> asyncApp = new AsyncApp<>(actionSerdes,
-                    TopicUtils.buildSteps(Constants.actionTopicPrefix, TOPIC_BASE_NAME));
-            asyncApp.addAsync(asyncSpec);
-            Topology topology = asyncApp.buildTopology(new StreamAppConfig("app-id", BROKER_URL));
-            topology.addSource("TO", ASYNC_TEST_OUTPUT_TOPIC);
+            StreamApp<ActionProcessorSpec<SpecificRecord>> streamApp = new StreamApp<>(ActionProcessorSpec.of(actionSerdes));
+
+            streamApp.addTopologyStep(AsyncBuilder.processorBuildSteps(
+                    asyncSpec,
+                    TopicUtils.buildSteps(Constants.ACTION_TOPIC_PREFIX, ASYNC_ACTION_BASE_NAME)));
+
+            Properties config = StreamAppConfig.getConfig(new StreamAppConfig("app-id", "http://localhost:9092"));
+
+            StreamApp<?>.StreamBuild sb = streamApp.build(config);
+            Topology topology = sb.topologySupplier.get();
+            expectedTopics = sb.topicCreations.stream().map(x -> x.topicName).collect(Collectors.toSet());
+
             testContext = TestContextBuilder.of(topology).build();
 
             // get actionRequestPublisher
             actionRequestPublisher = testContext.publisher(
-                    TopicNamer.forPrefix(Constants.actionTopicPrefix, TOPIC_BASE_NAME)
+                    TopicNamer.forPrefix(Constants.ACTION_TOPIC_PREFIX, ASYNC_ACTION_BASE_NAME)
                             .apply(TopicTypes.ActionTopic.request),
                     actionSerdes.sagaId(),
                     actionSerdes.request());
 
             actionResponsePublisher = testContext.publisher(
-                    TopicNamer.forPrefix(Constants.actionTopicPrefix, TOPIC_BASE_NAME)
+                    TopicNamer.forPrefix(Constants.ACTION_TOPIC_PREFIX, ASYNC_ACTION_BASE_NAME)
                             .apply(TopicTypes.ActionTopic.response),
                     actionSerdes.sagaId(),
                     actionSerdes.response());
@@ -120,14 +131,14 @@ class AsyncStreamTests {
                     asyncSerdes.output);
 
             actionUnprocessedRequestVerifier = testContext.verifier(
-                    TopicNamer.forPrefix(Constants.actionTopicPrefix, TOPIC_BASE_NAME)
+                    TopicNamer.forPrefix(Constants.ACTION_TOPIC_PREFIX, ASYNC_ACTION_BASE_NAME)
                             .apply(TopicTypes.ActionTopic.requestUnprocessed),
                     actionSerdes.sagaId(),
                     actionSerdes.request());
 
             asyncContext = new AsyncContext<>(
-                    new ActionProcessorSpec<>(actionSerdes),
-                    TopicNamer.forPrefix(Constants.actionTopicPrefix, TOPIC_BASE_NAME),
+                    ActionProcessorSpec.of(actionSerdes),
+                    TopicNamer.forPrefix(Constants.ACTION_TOPIC_PREFIX, ASYNC_ACTION_BASE_NAME),
                     asyncSpec,
                     executor);
         }
@@ -151,7 +162,7 @@ class AsyncStreamTests {
                 .sagaId(SagaId.random())
                 .actionId(ActionId.random())
                 .actionCommand(actionCommand)
-                .actionType(Constants.asyncTestActionType)
+                .actionType(Constants.ASYNC_TEST_ACTION_TYPE)
                 .build();
     }
 
@@ -166,7 +177,7 @@ class AsyncStreamTests {
     private static class AsyncValidation {
         final List<ValidationRecord<SagaId, ActionResponse>> responseRecords = new ArrayList<>();
         final List<ValidationRecord<AsyncTestId, AsyncTestOutput>> outputRecords = new ArrayList<>();
-        final String responseTopic = TopicNamer.forPrefix(Constants.actionTopicPrefix, TOPIC_BASE_NAME)
+        final String responseTopic = TopicNamer.forPrefix(Constants.ACTION_TOPIC_PREFIX, ASYNC_ACTION_BASE_NAME)
                 .apply(TopicTypes.ActionTopic.response);
 
         private final RecordPublisher<SagaId, ActionResponse> actionResponsePublisher;
@@ -219,6 +230,12 @@ class AsyncStreamTests {
     @Test
     void publishesResponseAndOutput() {
         AsyncTestContext acc = AsyncTestContext.of(100);
+
+        assertThat(acc.expectedTopics).containsExactlyInAnyOrder(
+                "saga_action_processor_async-async_action_test-action_response",
+                "saga_action_processor_async-async_action_test-action_request",
+                "saga_action_processor_async-async_action_test-action_request_unprocessed");
+
         AsyncValidation validation = AsyncValidation.create();
 
         AsyncTestCommand accountCommand = new AsyncTestCommand(new AsyncTestId("id"), 12);

@@ -7,6 +7,7 @@ import io.simplesource.kafka.api.CommandSerdes;
 import io.simplesource.kafka.model.CommandRequest;
 import io.simplesource.kafka.model.CommandResponse;
 import io.simplesource.kafka.serialization.avro.AvroCommandSerdes;
+import io.simplesource.saga.action.common.StreamApp;
 import io.simplesource.saga.avro.avro.generated.test.*;
 import io.simplesource.saga.model.action.ActionCommand;
 import io.simplesource.saga.model.action.ActionId;
@@ -14,6 +15,7 @@ import io.simplesource.saga.model.messages.ActionRequest;
 import io.simplesource.saga.model.messages.ActionResponse;
 import io.simplesource.saga.model.saga.SagaId;
 import io.simplesource.saga.model.serdes.ActionSerdes;
+import io.simplesource.saga.model.specs.ActionProcessorSpec;
 import io.simplesource.saga.serialization.avro.AvroSerdes;
 import io.simplesource.saga.shared.topics.TopicNamer;
 import io.simplesource.saga.shared.topics.TopicTypes;
@@ -24,14 +26,17 @@ import org.apache.avro.specific.SpecificRecord;
 import org.apache.kafka.streams.Topology;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+import java.util.Properties;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
-class SourcingStreamTests {
+class SourcingStreamTests2 {
 
     private static String SCHEMA_URL = "http://localhost:8081/";
-    private static String TOPIC_BASE_NAME = "topic-base-name";
     private static String ACCOUNT_ID = "account id";
-    private static String ACCOUNT_ID_2 = "account id 2";
 
     @Value
     private static class AccountContext {
@@ -50,9 +55,11 @@ class SourcingStreamTests {
         final RecordVerifier<AccountId, CommandRequest<AccountId, AccountCommand>> commandRequestVerifier;
         final RecordVerifier<SagaId, ActionResponse> actionResponseVerifier;
 
+        final Set<String> expectedTopics;
+
         AccountContext() {
             CommandSpec<SpecificRecord, AccountCommand, AccountId, AccountCommand> commandSpec = new CommandSpec<>(
-                    Constants.accountActionType,
+                    Constants.ACCOUNT_ACTION_TYPE,
                     a -> Result.success((AccountCommand) a),
                     c -> c,
                     AccountCommand::getId,
@@ -60,40 +67,51 @@ class SourcingStreamTests {
                     commandSerdes,
                     2000);
 
-            SourcingApp<SpecificRecord> sourcingApp = new SourcingApp<>(actionSerdes,
-                    TopicUtils.buildSteps(Constants.actionTopicPrefix, TOPIC_BASE_NAME));
-            sourcingApp.addCommand(commandSpec, TopicUtils.buildSteps(Constants.commandTopicPrefix, Constants.accountAggregateName));
-            Topology topology = sourcingApp.buildTopology(new StreamAppConfig("app-id", "http://localhost:9092"));
+            StreamApp<ActionProcessorSpec<SpecificRecord>> streamApp = new StreamApp<>(ActionProcessorSpec.of(actionSerdes));
+
+            String accountActionBaseName = "sourcing-" + Constants.ACCOUNT_AGGREGATE_NAME;
+
+            streamApp.addTopologyStep(SourcingBuilder.sourcingSteps(
+                    commandSpec,
+                    TopicUtils.buildSteps(Constants.ACTION_TOPIC_PREFIX, accountActionBaseName),
+                    TopicUtils.buildSteps(Constants.COMMAND_TOPIC_PREFIX, Constants.ACCOUNT_AGGREGATE_NAME)));
+
+            Properties config = StreamAppConfig.getConfig(new StreamAppConfig("app-id", "http://localhost:9092"));
+
+            StreamApp<?>.StreamBuild sb = streamApp.build(config);
+            Topology topology = sb.topologySupplier.get();
+            expectedTopics = sb.topicCreations.stream().map(x -> x.topicName).collect(Collectors.toSet());
+
             testContext = TestContextBuilder.of(topology).build();
 
             // get actionRequestPublisher
             actionRequestPublisher = testContext.publisher(
-                    TopicNamer.forPrefix(Constants.actionTopicPrefix, TOPIC_BASE_NAME)
+                    TopicNamer.forPrefix(Constants.ACTION_TOPIC_PREFIX, accountActionBaseName)
                             .apply(TopicTypes.ActionTopic.request),
                     actionSerdes.sagaId(),
                     actionSerdes.request());
 
             commandResponsePublisher = testContext.publisher(
-                    TopicNamer.forPrefix(Constants.commandTopicPrefix, Constants.accountAggregateName)
+                    TopicNamer.forPrefix(Constants.COMMAND_TOPIC_PREFIX, Constants.ACCOUNT_AGGREGATE_NAME)
                             .apply(TopicTypes.CommandTopic.response),
                     commandSerdes.aggregateKey(),
                     commandSerdes.commandResponse());
 
             actionResponsePublisher = testContext.publisher(
-                    TopicNamer.forPrefix(Constants.actionTopicPrefix, TOPIC_BASE_NAME)
+                    TopicNamer.forPrefix(Constants.ACTION_TOPIC_PREFIX, accountActionBaseName)
                             .apply(TopicTypes.ActionTopic.response),
                     actionSerdes.sagaId(),
                     actionSerdes.response());
 
             // get commandRequestVerifier
             commandRequestVerifier = testContext.verifier(
-                    TopicNamer.forPrefix(Constants.commandTopicPrefix, Constants.accountAggregateName)
+                    TopicNamer.forPrefix(Constants.COMMAND_TOPIC_PREFIX, Constants.ACCOUNT_AGGREGATE_NAME)
                             .apply(TopicTypes.CommandTopic.request),
                     commandSerdes.aggregateKey(),
                     commandSerdes.commandRequest());
 
             actionResponseVerifier = testContext.verifier(
-                    TopicNamer.forPrefix(Constants.actionTopicPrefix, TOPIC_BASE_NAME)
+                    TopicNamer.forPrefix(Constants.ACTION_TOPIC_PREFIX, accountActionBaseName)
                             .apply(TopicTypes.ActionTopic.response),
                     actionSerdes.sagaId(),
                     actionSerdes.response());
@@ -107,7 +125,7 @@ class SourcingStreamTests {
                 .sagaId(sagaId)
                 .actionId(ActionId.random())
                 .actionCommand(actionCommand)
-                .actionType(Constants.accountActionType)
+                .actionType(Constants.ACCOUNT_ACTION_TYPE)
                 .build();
     }
 
@@ -115,6 +133,12 @@ class SourcingStreamTests {
     void actionRequestGeneratesCommandRequest() {
 
         AccountContext acc = new AccountContext();
+
+        assertThat(acc.expectedTopics).containsExactlyInAnyOrder(
+                "saga_action_processor_sourcing-account-action_response",
+                "saga_action_processor_sourcing-account-action_request",
+                "saga_command_account-command_response",
+                "saga_command_account-command_request");
 
         CreateAccount createAccount = new CreateAccount(ACCOUNT_ID, "user name");
         AccountCommand accountCommand = new AccountCommand(new AccountId(createAccount.getId()), 200L, createAccount);
@@ -174,7 +198,8 @@ class SourcingStreamTests {
         CommandResponse commandResponse = new CommandResponse<>(commandId, accountCommand.getId(), Sequence.position(201L), Result.success(Sequence.position(202L)));
         acc.commandResponsePublisher.publish(new AccountId(createAccount.getId()), commandResponse);
 
-        acc.actionResponseVerifier.verifySingle((sagaId, actionResponse) -> {});
+        acc.actionResponseVerifier.verifySingle((sagaId, actionResponse) -> {
+        });
         acc.actionResponseVerifier.verifyNoRecords();
 
         acc.actionRequestPublisher.publish(actionRequest.sagaId, actionRequest);
@@ -218,8 +243,8 @@ class SourcingStreamTests {
 
         // let another saga try (or the same saga if isSameSaga = true)
         CommandId transferCommandId = CommandId.random();
-        SagaId sagaId2 = isSameSaga? sagaId : SagaId.random();
-        AccountCommand transferCommand = new AccountCommand(createCommand.getId(), 186L, new TransferFunds(ACCOUNT_ID, ACCOUNT_ID_2, 50.0));
+        SagaId sagaId2 = isSameSaga ? sagaId : SagaId.random();
+        AccountCommand transferCommand = new AccountCommand(createCommand.getId(), 186L, new TransferFunds(ACCOUNT_ID, "account id 2", 50.0));
         ActionRequest<SpecificRecord> transferRequest = createRequest(sagaId2, transferCommand, transferCommandId);
         acc.actionRequestPublisher.publish(sagaId2, transferRequest);
 
