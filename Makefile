@@ -1,5 +1,5 @@
 build:
-	mvn -f java/pom.xml install
+	mvn install
 
 decrypt:	
 	openssl aes-256-cbc -K ${encrypted_9365a57c80a0_key} -iv ${encrypted_9365a57c80a0_iv} -in .deploy/keys.tar.enc -out .deploy/keys.tar -d
@@ -7,8 +7,8 @@ decrypt:
 
 deploy:
 	gpg --import .deploy/keys/private-key.gpg
-	mvn -f java/pom.xml install versions:set -DnewVersion=${TRAVIS_TAG}
-	mvn -f java/pom.xml install clean deploy -DskipTests -P release --settings .deploy/settings.xml
+	mvn install versions:set -DnewVersion=${TRAVIS_TAG}
+	mvn install clean deploy -DskipTests -P release --settings .deploy/settings.xml
 
 docs:
 	mvn install -DskipTests
@@ -27,10 +27,10 @@ docs:
 	rm -rf simplesourcing.github.io
 	git clone --quiet git@github.com:simplesourcing/simplesourcing.github.io.git > /dev/null
 	cd simplesourcing.github.io && \
-	    rm -rf apidocs && \
-	    cp -Rf ../target/site/apidocs apidocs && \
+	    rm -rf apidocs-sagas && \
+	    cp -Rf ../target/site/apidocs apidocs-sagas && \
 	    git add . && \
-	    git commit -m "Lastest javadoc on successful travis deploy ${TRAVIS_BUILD_NUMBER} auto-pushed to simplesourcing.github.io" && \
+	    git commit -m "Lastest Simple Saga javadoc on successful travis deploy ${TRAVIS_BUILD_NUMBER} auto-pushed to simplesourcing.github.io" && \
 	    git push -fq > /dev/null
 
 	rm -rf simplesourcing.github.io
