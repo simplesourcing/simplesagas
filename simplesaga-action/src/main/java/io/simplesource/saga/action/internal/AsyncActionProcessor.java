@@ -2,7 +2,7 @@ package io.simplesource.saga.action.internal;
 
 import io.simplesource.data.Result;
 import io.simplesource.saga.action.async.AsyncContext;
-import io.simplesource.saga.action.async.AsyncSerdes;
+import io.simplesource.saga.model.serdes.TopicSerdes;
 import io.simplesource.saga.action.async.AsyncSpec;
 import io.simplesource.saga.action.async.Callback;
 import io.simplesource.saga.model.messages.ActionRequest;
@@ -25,15 +25,15 @@ final class AsyncActionProcessor {
     private static class ResultGeneration<K, R> {
         public final K key;
         public final String topicName;
-        public final AsyncSerdes<K, R> outputSerdes;
+        public final TopicSerdes<K, R> outputSerdes;
         public final R result;
     }
 
-    public static <A, D, K, O, R> void processRecord(
+    static <A, D, K, O, R> void processRecord(
             AsyncContext<A, D, K, O, R> asyncContext,
             SagaId sagaId, ActionRequest<A> request,
             AsyncPublisher<SagaId, ActionResponse> responsePublisher,
-            Function<AsyncSerdes<K, R>, AsyncPublisher<K, R>> outputPublisher) {
+            Function<TopicSerdes<K, R>, AsyncPublisher<K, R>> outputPublisher) {
         AsyncSpec<A, D, K, O, R> asyncSpec = asyncContext.asyncSpec;
         Result<Throwable, D> decodedInputResult = tryWrap(() ->
                 asyncSpec.inputDecoder.apply(request.actionCommand.command));
@@ -49,7 +49,7 @@ final class AsyncActionProcessor {
                                         Optional<String> topicNameOpt = oSpec.topicName.apply(input);
                                         return topicNameOpt.flatMap(tName ->
                                                 oSpec.outputDecoder.apply(output)).map(t ->
-                                                t.map(r -> new ResultGeneration<>(outputKey, topicNameOpt.get(), oSpec.serdes, r)));
+                                                t.map(r -> new ResultGeneration<>(outputKey, topicNameOpt.get(), oSpec.outputSerdes, r)));
                                     });
 
                             // this is just `sequence` in FP - swapping Result and Option

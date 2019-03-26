@@ -31,8 +31,7 @@ public final class AsyncBuilder {
             List<String> expectedTopicList = new ArrayList<>(TopicTypes.ActionTopic.all);
             expectedTopicList.add(TopicTypes.ActionTopic.requestUnprocessed);
 
-            TopicConfig actionTopicConfig = TopicConfigBuilder.buildTopics(expectedTopicList, topicBuildFn);
-
+            TopicConfig actionTopicConfig = TopicConfigBuilder.build(expectedTopicList, topicBuildFn);
             List<TopicCreation> topics = TopicCreation.allTopics(actionTopicConfig);
 
             return new StreamBuildSpec(topics, builder -> {

@@ -6,7 +6,7 @@ import io.simplesource.saga.shared.topics.TopicTypes;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.Produced;
 
-class CommandPublisher {
+final class CommandPublisher {
 
     static <A, D, K, C> void publishCommandRequest(SourcingContext<A, D, K, C> ctx,
                                                    KStream<K, CommandRequest<K, C>> commandRequestStream) {

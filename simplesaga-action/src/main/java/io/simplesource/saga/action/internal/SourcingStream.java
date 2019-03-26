@@ -16,6 +16,7 @@ import io.simplesource.saga.model.saga.SagaError;
 import io.simplesource.saga.model.saga.SagaId;
 import io.simplesource.saga.model.serdes.ActionSerdes;
 import io.simplesource.saga.shared.serialization.TupleSerdes;
+import io.simplesource.saga.shared.streams.StreamUtils;
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KeyValue;
@@ -87,7 +88,7 @@ public final class SourcingStream {
         KStream<SagaId, Tuple2<ActionRequest<A>, Result<Throwable, D>>> reqsWithDecoded =
                 actionRequests
                         .mapValues((k, ar) -> Tuple2.of(ar, ctx.commandSpec.decode.apply(ar.actionCommand.command)))
-                        .peek(Utils.logValues(logger, "reqsWithDecoded"));
+                        .peek(StreamUtils.logValues(logger, "reqsWithDecoded"));
 
         KStream<SagaId, Tuple2<ActionRequest<A>, Result<Throwable, D>>>[] branchSuccessFailure = reqsWithDecoded.branch((k, v) -> v.v2().isSuccess(), (k, v) -> v.v2().isFailure());
 
@@ -130,7 +131,7 @@ public final class SourcingStream {
                 .leftJoin(latestSequenceNumbers, valueJoiner,
                         Joined.with(TupleSerdes.tuple2(ctx.cSerdes().aggregateKey(), ctx.aSerdes().sagaId()), ctx.aSerdes().request(), Serdes.Long()))
                 .selectKey((k, v) -> v.aggregateKey())
-                .peek(Utils.logValues(logger, "commandRequestByAggregate"));
+                .peek(StreamUtils.logValues(logger, "commandRequestByAggregate"));
 
         return Tuple2.of(errorActionResponses, commandRequestByAggregate);
     }
@@ -183,7 +184,7 @@ public final class SourcingStream {
                                 JoinWindows.of(timeOutMillis).until(timeOutMillis * 2 + 1),
                                 Joined.with(ctx.cSerdes().commandId(), ctx.aSerdes().request(), ctx.cSerdes().commandResponse())
                         )
-                        .peek(Utils.logValues(logger, "joinActionRequestAndCommandResponse"));
+                        .peek(StreamUtils.logValues(logger, "joinActionRequestAndCommandResponse"));
 
         // turn the pair into an ActionResponse
         return actionRequestWithResponse
@@ -209,7 +210,7 @@ public final class SourcingStream {
                         }
                 )
                 .selectKey((k, resp) -> resp.sagaId)
-                .peek(Utils.logValues(logger, "resultStream"));
+                .peek(StreamUtils.logValues(logger, "resultStream"));
     }
 
 }

@@ -15,16 +15,16 @@ import java.util.Optional;
 public final class SourcingBuilder {
 
     public static <A, D, K, C> StreamBuildStep<ActionProcessorSpec<A>> apply(
-            CommandSpec<A, D, K, C> cSpec,
+            SourcingSpec<A, D, K, C> cSpec,
             TopicConfigBuilder.BuildSteps actionTopicBuilder,
             TopicConfigBuilder.BuildSteps commandTopicBuilder) {
         return streamBuildContext -> {
             ActionProcessorSpec<A> actionSpec = streamBuildContext.appInput;
 
-            TopicConfig actionTopicConfig = TopicConfigBuilder.buildTopics(TopicTypes.ActionTopic.all, actionTopicBuilder);
+            TopicConfig actionTopicConfig = TopicConfigBuilder.build(TopicTypes.ActionTopic.all, actionTopicBuilder);
             List<TopicCreation> topics = TopicCreation.allTopics(actionTopicConfig);
 
-            TopicConfig commandTopicConfig = TopicConfigBuilder.buildTopics(TopicTypes.CommandTopic.all, commandTopicBuilder);
+            TopicConfig commandTopicConfig = TopicConfigBuilder.build(TopicTypes.CommandTopic.all, commandTopicBuilder);
             topics.addAll(TopicCreation.allTopics(commandTopicConfig));
 
             return new StreamBuildSpec(topics, builder -> {

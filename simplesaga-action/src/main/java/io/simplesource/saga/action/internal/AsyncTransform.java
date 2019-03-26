@@ -4,7 +4,7 @@ import java.util.Properties;
 import java.util.function.Function;
 
 import io.simplesource.saga.action.async.AsyncContext;
-import io.simplesource.saga.action.async.AsyncSerdes;
+import io.simplesource.saga.model.serdes.TopicSerdes;
 import io.simplesource.saga.action.async.AsyncSpec;
 import io.simplesource.saga.model.messages.ActionResponse;
 import io.simplesource.saga.model.saga.SagaId;
@@ -16,7 +16,7 @@ import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serdes;
 
 final class AsyncTransform {
-    static final boolean useTransactions = false;
+    private static final boolean useTransactions = false;
 
     static <K, V> ProducerRecord<byte[], byte[]> toBytes(
             ProducerRecord<K, V> record,
@@ -60,7 +60,7 @@ final class AsyncTransform {
             producer.initTransactions();
 
         AsyncPublisher<SagaId, ActionResponse> responsePublisher = new KafkaAsyncPublisher<>(producer, asyncContext.actionSpec.serdes.sagaId(), asyncContext.actionSpec.serdes.response());
-        Function<AsyncSerdes<K, R>, AsyncPublisher<K, R>> outputPublisher = serdes -> new KafkaAsyncPublisher<>(producer, serdes.key, serdes.output);
+        Function<TopicSerdes<K, R>, AsyncPublisher<K, R>> outputPublisher = serdes -> new KafkaAsyncPublisher<>(producer, serdes.key, serdes.value);
 
         final AsyncConsumerRunner<A, D, K, O, R> runner = new AsyncConsumerRunner<A, D, K, O, R>(asyncContext, consumerConfig, responsePublisher, outputPublisher, closed -> {
             producer.flush();

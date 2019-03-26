@@ -58,7 +58,7 @@ class SourcingStreamTests {
         final Set<String> expectedTopics;
 
         AccountContext() {
-            CommandSpec<SpecificRecord, AccountCommand, AccountId, AccountCommand> commandSpec = new CommandSpec<>(
+            SourcingSpec<SpecificRecord, AccountCommand, AccountId, AccountCommand> commandSpec = new SourcingSpec<>(
                     Constants.ACCOUNT_ACTION_TYPE,
                     a -> Result.success((AccountCommand) a),
                     c -> c,

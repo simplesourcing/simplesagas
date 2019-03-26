@@ -4,7 +4,7 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.Serde;
 
-class KafkaAsyncPublisher<K, V> implements AsyncPublisher<K, V> {
+final class KafkaAsyncPublisher<K, V> implements AsyncPublisher<K, V> {
     private final KafkaProducer<byte[], byte[]> producer;
     private final Serde<K> keySerdes;
     private final Serde<V> valueSerdes;

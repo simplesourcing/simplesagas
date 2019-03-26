@@ -9,7 +9,7 @@ import io.simplesource.saga.model.specs.ActionProcessorSpec;
 import lombok.Value;
 import org.apache.kafka.streams.kstream.*;
 
-class IdempotentStream {
+final class IdempotentStream {
 
     @Value
     public static class IdempotentAction<A> {

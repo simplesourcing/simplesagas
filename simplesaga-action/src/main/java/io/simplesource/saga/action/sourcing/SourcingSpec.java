@@ -18,7 +18,7 @@ import java.util.function.Function;
 @Value
 @Builder
 @AllArgsConstructor
-public final class CommandSpec<A, D, K, C> {
+public final class SourcingSpec<A, D, K, C> {
     public final String actionType;
     public final Function<A, Result<Throwable, D>> decode;
     public final Function<D, C> commandMapper;

@@ -17,7 +17,7 @@ import lombok.Value;
 @Value(staticConstructor = "of")
 public final class SourcingContext<A, D, K, C> {
     public final ActionProcessorSpec<A> actionSpec;
-    public final CommandSpec<A, D, K, C> commandSpec;
+    public final SourcingSpec<A, D, K, C> commandSpec;
     public final TopicNamer actionTopicNamer;
     public final TopicNamer commandTopicNamer;
 

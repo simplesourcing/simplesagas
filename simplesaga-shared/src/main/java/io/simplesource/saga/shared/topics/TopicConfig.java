@@ -11,4 +11,6 @@ public final class TopicConfig {
     public final TopicNamer namer;
     public final List<String> topicTypes;
     public final Map<String, TopicSpec> topicSpecs;
+
+    public final List<TopicCreation> allTopics() { return TopicCreation.allTopics(this); }
 }

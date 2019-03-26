@@ -75,20 +75,19 @@ public class TopicConfigBuilder {
         return new TopicSpec(partitions, (short) replication, dMap);
     }
 
-    public static TopicConfig buildTopics(List<String> topicTypes,
-                                          BuildSteps buildSteps) {
+    public static TopicConfig build(List<String> topicTypes,
+                                    BuildSteps buildSteps) {
         TopicConfigBuilder topicBuilder = new TopicConfigBuilder(topicTypes, Collections.emptyMap(), Collections.emptyMap());
         buildSteps.applyStep(topicBuilder);
         return topicBuilder.build();
     }
 
-    public static TopicConfig buildTopics(List<String> topicTypes,
-                                          Map<String, String> defaultConfigs,
-                                          Map<String, Map<String, String>> defaultOverrides,
-                                          BuildSteps buildSteps) {
+    public static TopicConfig build(List<String> topicTypes,
+                                    Map<String, String> defaultConfigs,
+                                    Map<String, Map<String, String>> defaultOverrides,
+                                    BuildSteps buildSteps) {
         TopicConfigBuilder topicBuilder = new TopicConfigBuilder(topicTypes, defaultConfigs, defaultOverrides);
         buildSteps.applyStep(topicBuilder);
         return topicBuilder.build();
     }
-
 }

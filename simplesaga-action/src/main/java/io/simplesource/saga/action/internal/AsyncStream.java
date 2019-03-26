@@ -22,7 +22,7 @@ public final class AsyncStream {
         IdempotentStream.IdempotentAction<A> idempotentAction = IdempotentStream.getActionRequestsWithResponse(
                 ctx.actionSpec, actionRequest, actionResponse, ctx.asyncSpec.actionType);
 
-        // publish to output topics
+        // publish to value topics
         ActionPublisher.publishActionResponse(ctx.getActionContext(), idempotentAction.priorResponses);
         ActionPublisher.publishActionRequest(ctx.getActionContext(), idempotentAction.unprocessedRequests, true);
     }

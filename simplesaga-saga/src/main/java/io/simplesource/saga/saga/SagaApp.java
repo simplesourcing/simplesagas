@@ -48,7 +48,7 @@ final public class SagaApp<A> {
 
     public SagaApp(SagaSpec<A> sagaSpec, TopicConfigBuilder.BuildSteps topicBuildFn) {
         this.sagaSpec = sagaSpec;
-        sagaTopicConfig = TopicConfigBuilder.buildTopics(
+        sagaTopicConfig = TopicConfigBuilder.build(
                 TopicTypes.SagaTopic.all,
                 Collections.emptyMap(),
                 Collections.singletonMap(TopicTypes.SagaTopic.state, Collections.singletonMap(
@@ -61,7 +61,7 @@ final public class SagaApp<A> {
     }
 
     public SagaApp<A> addActionProcessor(ActionProcessorSpec<A> actionSpec, TopicConfigBuilder.BuildSteps buildFn) {
-        TopicConfig topicConfig = TopicConfigBuilder.buildTopics(TopicTypes.ActionTopic.all, buildFn);
+        TopicConfig topicConfig = TopicConfigBuilder.build(TopicTypes.ActionTopic.all, buildFn);
         topics.addAll(TopicCreation.allTopics(topicConfig));
 
         topologyBuilder.onBuildTopology((topologyContext) -> {

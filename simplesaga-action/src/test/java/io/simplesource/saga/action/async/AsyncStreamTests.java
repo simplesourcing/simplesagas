@@ -4,6 +4,7 @@ import io.confluent.kafka.schemaregistry.client.MockSchemaRegistryClient;
 import io.simplesource.api.CommandId;
 import io.simplesource.data.Result;
 import io.simplesource.kafka.spec.TopicSpec;
+import io.simplesource.saga.model.serdes.TopicSerdes;
 import io.simplesource.saga.shared.streams.StreamApp;
 import io.simplesource.saga.action.internal.AsyncActionProcessorProxy;
 import io.simplesource.saga.action.internal.AsyncPublisher;
@@ -74,11 +75,11 @@ class AsyncStreamTests {
 
         final MockSchemaRegistryClient regClient = new MockSchemaRegistryClient();
 
-        private final AsyncSerdes<AsyncTestId, AsyncTestOutput> asyncSerdes;
+        private final TopicSerdes<AsyncTestId, AsyncTestOutput> asyncSerdes;
         private final AsyncContext<SpecificRecord, AsyncTestCommand, AsyncTestId, Integer, AsyncTestOutput> asyncContext;
 
         private AsyncTestContext(int executionDelayMillis, Optional<Duration> timeout, BiConsumer<AsyncTestCommand, Callback<Integer>> asyncFunctionOverride) {
-            asyncSerdes = new AsyncSerdes<>(SpecificSerdeUtils.specificAvroSerde(SCHEMA_URL, true, regClient),
+            asyncSerdes = new TopicSerdes<>(SpecificSerdeUtils.specificAvroSerde(SCHEMA_URL, true, regClient),
                     SpecificSerdeUtils.specificAvroSerde(SCHEMA_URL, false, regClient));
 
             BiConsumer<AsyncTestCommand, Callback<Integer>> asyncFunction = (asyncFunctionOverride != null) ?
@@ -129,7 +130,7 @@ class AsyncStreamTests {
             actionOutputPublisher = testContext.publisher(
                     ASYNC_TEST_OUTPUT_TOPIC,
                     asyncSerdes.key,
-                    asyncSerdes.output);
+                    asyncSerdes.value);
 
             actionUnprocessedRequestVerifier = testContext.verifier(
                     TopicNamer.forPrefix(Constants.ACTION_TOPIC_PREFIX, ASYNC_ACTION_BASE_NAME)
@@ -184,7 +185,7 @@ class AsyncStreamTests {
         private final RecordPublisher<SagaId, ActionResponse> actionResponsePublisher;
         final AsyncPublisher<SagaId, ActionResponse> responseProducer;
 
-        final Function<AsyncSerdes<AsyncTestId, AsyncTestOutput>, AsyncPublisher<AsyncTestId, AsyncTestOutput>> outputProducer;
+        final Function<TopicSerdes<AsyncTestId, AsyncTestOutput>, AsyncPublisher<AsyncTestId, AsyncTestOutput>> outputProducer;
 
         AsyncValidation(RecordPublisher<SagaId, ActionResponse> actionResponsePublisher) {
             this.actionResponsePublisher = actionResponsePublisher;

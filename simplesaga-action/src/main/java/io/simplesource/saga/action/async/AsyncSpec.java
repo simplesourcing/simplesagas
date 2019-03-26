@@ -11,9 +11,9 @@ import java.util.function.Function;
 /**
   * @param <A> - common representation form for all action commands (typically Json / GenericRecord for Avro)
  * @param  <D> - intermediate decoded input type
-  * @param <K> - key for the output topic
-  * @param <O> - output returned by async function
-  * @param <R> - final result type that ends up in output topic
+  * @param <K> - key for the value topic
+  * @param <O> - value returned by async function
+  * @param <R> - final result type that ends up in value topic
   */
 @Value
 @Builder
