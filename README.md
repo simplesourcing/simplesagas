@@ -2,9 +2,9 @@
 [![Latest version](https://maven-badges.herokuapp.com/maven-central/io.simplesource/simplesaga-saga/badge.svg)](https://maven-badges.herokuapp.com/maven-central/io.simplesource/simplesaga-saga)
 [![Build Status](https://travis-ci.com/simplesourcing/simplesagas.svg?branch=master)](https://travis-ci.com/simplesourcing/simplesagas)
 
-## Caveat
+## Scala DSL
 
-***Please note:** This repo is **experimental***.
+The Scala DSL and other Scala code has been moved to [its own repo.](https://github.com/simplesourcing/simplesagas-scala)
 
 ## Introduction
 
@@ -35,6 +35,10 @@ make build
 ### Running Sample Code
 
 Build as above.
+
+The Sample code is now in the [Scala Repo](https://github.com/simplesourcing/simplesagas-scala)
+
+Follow the directions below from this project folder for this repo.
 
 In separate terminal windows in the `scala` folder:
 
