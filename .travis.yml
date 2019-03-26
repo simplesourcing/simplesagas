@@ -1,19 +1,11 @@
 language:
-  - scala
   - java
-
-jdk: oraclejdk8
-sudo: false
-dist: trusty
-
-scala:
-  - 2.12.7
 
 script: make build
 
 deploy:
   provider: script
-  script: make decrypt && make deploy
+  script: make decrypt && make deploy && make docs
   on:
     tags: true
 
