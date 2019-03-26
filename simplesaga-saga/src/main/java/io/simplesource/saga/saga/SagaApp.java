@@ -9,8 +9,8 @@ import io.simplesource.saga.shared.topics.TopicConfig;
 import io.simplesource.saga.shared.topics.TopicConfigBuilder;
 import io.simplesource.saga.shared.topics.TopicCreation;
 import io.simplesource.saga.shared.topics.TopicTypes;
-import io.simplesource.saga.shared.utils.StreamAppConfig;
-import io.simplesource.saga.shared.utils.StreamAppUtils;
+import io.simplesource.saga.shared.streams.StreamAppConfig;
+import io.simplesource.saga.shared.streams.StreamAppUtils;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.streams.Topology;
 import org.slf4j.Logger;
@@ -61,7 +61,7 @@ final public class SagaApp<A> {
     }
 
     public SagaApp<A> addActionProcessor(ActionProcessorSpec<A> actionSpec, TopicConfigBuilder.BuildSteps buildFn) {
-        TopicConfig topicConfig = TopicConfigBuilder.buildTopics(TopicTypes.ActionTopic.all, Collections.emptyMap(), Collections.emptyMap(), buildFn);
+        TopicConfig topicConfig = TopicConfigBuilder.buildTopics(TopicTypes.ActionTopic.all, buildFn);
         topics.addAll(TopicCreation.allTopics(topicConfig));
 
         topologyBuilder.onBuildTopology((topologyContext) -> {

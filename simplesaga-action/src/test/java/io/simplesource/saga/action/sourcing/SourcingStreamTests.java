@@ -7,7 +7,7 @@ import io.simplesource.kafka.api.CommandSerdes;
 import io.simplesource.kafka.model.CommandRequest;
 import io.simplesource.kafka.model.CommandResponse;
 import io.simplesource.kafka.serialization.avro.AvroCommandSerdes;
-import io.simplesource.saga.action.common.StreamApp;
+import io.simplesource.saga.shared.streams.StreamApp;
 import io.simplesource.saga.avro.avro.generated.test.*;
 import io.simplesource.saga.model.action.ActionCommand;
 import io.simplesource.saga.model.action.ActionId;
@@ -19,21 +19,20 @@ import io.simplesource.saga.model.specs.ActionProcessorSpec;
 import io.simplesource.saga.serialization.avro.AvroSerdes;
 import io.simplesource.saga.shared.topics.TopicNamer;
 import io.simplesource.saga.shared.topics.TopicTypes;
-import io.simplesource.saga.shared.utils.StreamAppConfig;
+import io.simplesource.saga.shared.streams.StreamAppConfig;
 import io.simplesource.saga.testutils.*;
 import lombok.Value;
 import org.apache.avro.specific.SpecificRecord;
 import org.apache.kafka.streams.Topology;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class SourcingStreamTests2 {
+class SourcingStreamTests {
 
     private static String SCHEMA_URL = "http://localhost:8081/";
     private static String ACCOUNT_ID = "account id";
@@ -71,7 +70,7 @@ class SourcingStreamTests2 {
 
             String accountActionBaseName = "sourcing-" + Constants.ACCOUNT_AGGREGATE_NAME;
 
-            streamApp.addTopologyStep(SourcingBuilder.sourcingSteps(
+            streamApp.withBuildStep(SourcingBuilder.apply(
                     commandSpec,
                     TopicUtils.buildSteps(Constants.ACTION_TOPIC_PREFIX, accountActionBaseName),
                     TopicUtils.buildSteps(Constants.COMMAND_TOPIC_PREFIX, Constants.ACCOUNT_AGGREGATE_NAME)));
@@ -256,7 +255,7 @@ class SourcingStreamTests2 {
         CommandResponse<AccountId> transferCommandResponse = new CommandResponse<>(transferCommandId, transferCommand.getId(), Sequence.position(186L), Result.success(Sequence.position(187L)));
         acc.commandResponsePublisher.publish(new AccountId(createAccount.getId()), transferCommandResponse);
 
-        // add another request, but don't know about the saga, so use the previous sequence number
+        // apply another request, but don't know about the saga, so use the previous sequence number
         AccountCommand addCommand = new AccountCommand(createCommand.getId(), 0L, new AddFunds(ACCOUNT_ID, 100.0));
         ActionRequest<SpecificRecord> addRequest = createRequest(sagaId, addCommand, CommandId.random());
         acc.actionRequestPublisher.publish(sagaId, addRequest);

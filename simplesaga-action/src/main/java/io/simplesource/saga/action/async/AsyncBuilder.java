@@ -1,14 +1,14 @@
 package io.simplesource.saga.action.async;
 
-import io.simplesource.saga.action.common.StreamApp;
-import io.simplesource.saga.action.common.StreamBuildSpec;
+import io.simplesource.saga.shared.streams.StreamApp;
+import io.simplesource.saga.shared.streams.StreamBuildSpec;
 import io.simplesource.saga.action.internal.*;
 import io.simplesource.saga.model.specs.ActionProcessorSpec;
 import io.simplesource.saga.shared.topics.TopicConfig;
 import io.simplesource.saga.shared.topics.TopicConfigBuilder;
 import io.simplesource.saga.shared.topics.TopicCreation;
 import io.simplesource.saga.shared.topics.TopicTypes;
-import io.simplesource.saga.shared.utils.StreamAppUtils;
+import io.simplesource.saga.shared.streams.StreamAppUtils;
 import org.apache.kafka.streams.StreamsBuilder;
 
 import java.util.*;
@@ -18,18 +18,23 @@ import java.util.function.Function;
 
 public final class AsyncBuilder {
 
-    public static <A, D, K, O, R> StreamApp.BuildStep<ActionProcessorSpec<A>> processorBuildSteps(AsyncSpec<A, D, K, O, R> spec, TopicConfigBuilder.BuildSteps topicBuildFn) {
-        return processorBuildSteps(spec, topicBuildFn, null);
+    public static <A, D, K, O, R> StreamApp.BuildStep<ActionProcessorSpec<A>> apply(
+            AsyncSpec<A, D, K, O, R> spec,
+            TopicConfigBuilder.BuildSteps topicBuildFn) {
+        return apply(spec, topicBuildFn, null);
     }
 
-    public static <A, D, K, O, R> StreamApp.BuildStep<ActionProcessorSpec<A>> processorBuildSteps(AsyncSpec<A, D, K, O, R> spec, TopicConfigBuilder.BuildSteps topicBuildFn, ScheduledExecutorService executor) {
+    public static <A, D, K, O, R> StreamApp.BuildStep<ActionProcessorSpec<A>> apply(
+            AsyncSpec<A, D, K, O, R> spec,
+            TopicConfigBuilder.BuildSteps topicBuildFn,
+            ScheduledExecutorService executor) {
         return topologyBuildContext -> {
             ActionProcessorSpec<A> actionSpec = topologyBuildContext.buildInput;
 
             List<String> expectedTopicList = new ArrayList<>(TopicTypes.ActionTopic.all);
             expectedTopicList.add(TopicTypes.ActionTopic.requestUnprocessed);
 
-            TopicConfig actionTopicConfig = TopicConfigBuilder.buildTopics(expectedTopicList, new HashMap<>(), new HashMap<>(), topicBuildFn);
+            TopicConfig actionTopicConfig = TopicConfigBuilder.buildTopics(expectedTopicList, topicBuildFn);
 
             List<TopicCreation> topics = TopicCreation.allTopics(actionTopicConfig);
 

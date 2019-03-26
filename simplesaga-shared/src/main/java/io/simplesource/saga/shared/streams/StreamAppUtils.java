@@ -1,4 +1,4 @@
-package io.simplesource.saga.shared.utils;
+package io.simplesource.saga.shared.streams;
 
 import io.simplesource.kafka.spec.TopicSpec;
 import io.simplesource.saga.shared.topics.TopicCreation;

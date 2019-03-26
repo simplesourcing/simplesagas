@@ -6,7 +6,7 @@
 //import io.simplesource.saga.action.async.AsyncSpec;
 //import io.simplesource.saga.model.serdes.ActionSerdes;
 //import io.simplesource.saga.shared.topics.TopicConfigBuilder;
-//import io.simplesource.saga.shared.utils.StreamAppConfig;
+//import io.simplesource.saga.shared.streams.StreamAppConfig;
 //
 //import java.util.function.Supplier;
 //

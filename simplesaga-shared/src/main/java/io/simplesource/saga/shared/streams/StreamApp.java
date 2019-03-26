@@ -1,9 +1,6 @@
-package io.simplesource.saga.action.common;
+package io.simplesource.saga.shared.streams;
 
-import io.simplesource.saga.shared.topics.TopicConfigBuilder;
 import io.simplesource.saga.shared.topics.TopicCreation;
-import io.simplesource.saga.shared.utils.StreamAppConfig;
-import io.simplesource.saga.shared.utils.StreamAppUtils;
 import lombok.Value;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.streams.StreamsBuilder;
@@ -15,7 +12,6 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * StreamApp is an action processor that turns saga action requests into Simple Sourcing action requests.
@@ -30,7 +26,7 @@ public final class StreamApp<I> {
     private final I streamBuildInput;
 
     public interface BuildStep<I> {
-        StreamBuildSpec applyStep(TopologyBuildContext<I> context);
+        StreamBuildSpec applyStep(StreamBuildContext<I> context);
     }
 
     @Value
@@ -46,7 +42,7 @@ public final class StreamApp<I> {
         this.streamBuildInput = streamBuildInput;
     }
 
-    public final StreamApp<I> addTopologyStep(BuildStep<I> buildStep) {
+    public final StreamApp<I> withBuildStep(BuildStep<I> buildStep) {
         buildSteps.add(buildStep);
         return this;
     }
@@ -55,7 +51,7 @@ public final class StreamApp<I> {
 
         StreamsBuilder builder = new StreamsBuilder();
 
-        TopologyBuildContext<I> context = new TopologyBuildContext<I>(streamBuildInput, properties);
+        StreamBuildContext<I> context = new StreamBuildContext<I>(streamBuildInput, properties);
 
         List<StreamBuildSpec> streamBuilders = buildSteps.stream().map(x -> x.applyStep(context)).collect(Collectors.toList());
 

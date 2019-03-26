@@ -2,6 +2,7 @@ package io.simplesource.saga.shared.topics;
 
 import io.simplesource.kafka.spec.TopicSpec;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -72,6 +73,13 @@ public class TopicConfigBuilder {
         Map<String, String> usedMap = defaultOverrides.getOrDefault(topicType, defaultConfigs);
         usedMap.forEach(dMap::put);
         return new TopicSpec(partitions, (short) replication, dMap);
+    }
+
+    public static TopicConfig buildTopics(List<String> topicTypes,
+                                          BuildSteps buildSteps) {
+        TopicConfigBuilder topicBuilder = new TopicConfigBuilder(topicTypes, Collections.emptyMap(), Collections.emptyMap());
+        buildSteps.applyStep(topicBuilder);
+        return topicBuilder.build();
     }
 
     public static TopicConfig buildTopics(List<String> topicTypes,

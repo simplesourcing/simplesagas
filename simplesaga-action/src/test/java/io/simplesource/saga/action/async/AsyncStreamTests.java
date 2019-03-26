@@ -4,7 +4,7 @@ import io.confluent.kafka.schemaregistry.client.MockSchemaRegistryClient;
 import io.simplesource.api.CommandId;
 import io.simplesource.data.Result;
 import io.simplesource.kafka.spec.TopicSpec;
-import io.simplesource.saga.action.common.StreamApp;
+import io.simplesource.saga.shared.streams.StreamApp;
 import io.simplesource.saga.action.internal.AsyncActionProcessorProxy;
 import io.simplesource.saga.action.internal.AsyncPublisher;
 import io.simplesource.saga.avro.avro.generated.test.AsyncTestCommand;
@@ -22,7 +22,7 @@ import io.simplesource.saga.serialization.avro.SpecificSerdeUtils;
 import io.simplesource.saga.shared.topics.TopicCreation;
 import io.simplesource.saga.shared.topics.TopicNamer;
 import io.simplesource.saga.shared.topics.TopicTypes;
-import io.simplesource.saga.shared.utils.StreamAppConfig;
+import io.simplesource.saga.shared.streams.StreamAppConfig;
 import io.simplesource.saga.testutils.*;
 import lombok.Value;
 import org.apache.avro.specific.SpecificRecord;
@@ -41,7 +41,7 @@ import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class AsyncStreamTests2 {
+class AsyncStreamTests {
 
     private static String SCHEMA_URL = "http://localhost:8081/";
 
@@ -100,7 +100,7 @@ class AsyncStreamTests2 {
 
             StreamApp<ActionProcessorSpec<SpecificRecord>> streamApp = new StreamApp<>(ActionProcessorSpec.of(actionSerdes));
 
-            streamApp.addTopologyStep(AsyncBuilder.processorBuildSteps(
+            streamApp.withBuildStep(AsyncBuilder.apply(
                     asyncSpec,
                     TopicUtils.buildSteps(Constants.ACTION_TOPIC_PREFIX, ASYNC_ACTION_BASE_NAME)));
 

@@ -1,12 +1,10 @@
-package io.simplesource.saga.action.common;
+package io.simplesource.saga.shared.streams;
 
 import io.simplesource.saga.shared.topics.TopicCreation;
-import io.simplesource.saga.shared.utils.StreamAppUtils;
 import lombok.Value;
 import org.apache.kafka.streams.StreamsBuilder;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.function.Function;
 
 @Value
