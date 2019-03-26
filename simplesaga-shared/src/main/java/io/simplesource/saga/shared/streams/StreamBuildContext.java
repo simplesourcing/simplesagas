@@ -4,8 +4,8 @@ import lombok.Value;
 
 import java.util.Properties;
 
-@Value
+@Value(staticConstructor = "of")
 public class StreamBuildContext<I> {
-    public final I buildInput;
-    public final Properties config;
+    public final I appInput;
+    public final Properties properties;
 }

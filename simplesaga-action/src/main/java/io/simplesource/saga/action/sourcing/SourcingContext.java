@@ -14,7 +14,7 @@ import lombok.Value;
   * @param <C> - simple sourcing command type
   */
 
-@Value
+@Value(staticConstructor = "of")
 public final class SourcingContext<A, D, K, C> {
     public final ActionProcessorSpec<A> actionSpec;
     public final CommandSpec<A, D, K, C> commandSpec;

@@ -19,6 +19,7 @@ import io.simplesource.saga.model.serdes.ActionSerdes;
 import io.simplesource.saga.model.specs.ActionProcessorSpec;
 import io.simplesource.saga.serialization.avro.AvroSerdes;
 import io.simplesource.saga.serialization.avro.SpecificSerdeUtils;
+import io.simplesource.saga.shared.streams.StreamBuildResult;
 import io.simplesource.saga.shared.topics.TopicCreation;
 import io.simplesource.saga.shared.topics.TopicNamer;
 import io.simplesource.saga.shared.topics.TopicTypes;
@@ -106,7 +107,7 @@ class AsyncStreamTests {
 
             Properties config = StreamAppConfig.getConfig(new StreamAppConfig("app-id", "http://localhost:9092"));
 
-            StreamApp<?>.StreamBuild sb = streamApp.build(config);
+            StreamBuildResult sb = streamApp.build(config);
             Topology topology = sb.topologySupplier.get();
             expectedTopics = sb.topicCreations.stream().map(x -> x.topicName).collect(Collectors.toSet());
 

@@ -1,7 +1,6 @@
 package io.simplesource.saga.shared.streams;
 
 import io.simplesource.saga.shared.topics.TopicCreation;
-import lombok.Value;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.Topology;
@@ -23,35 +22,24 @@ import java.util.stream.Collectors;
 public final class StreamApp<I> {
 
     private final Logger logger = LoggerFactory.getLogger(StreamApp.class);
-    private final I streamBuildInput;
+    private final I streamAppInput;
 
-    public interface BuildStep<I> {
-        StreamBuildSpec applyStep(StreamBuildContext<I> context);
+    private final List<StreamBuildStep> buildSteps = new ArrayList<>();
+
+    public StreamApp(I streamAppInput) {
+        this.streamAppInput = streamAppInput;
     }
 
-    @Value
-    public class StreamBuild {
-        public final List<TopicCreation> topicCreations;
-        public final Supplier<Topology> topologySupplier;
-        public final List<StreamAppUtils.ShutdownHandler> shutdownHandlers;
-    }
-
-    private final List<BuildStep> buildSteps = new ArrayList<>();
-
-    public StreamApp(I streamBuildInput) {
-        this.streamBuildInput = streamBuildInput;
-    }
-
-    public final StreamApp<I> withBuildStep(BuildStep<I> buildStep) {
+    public final StreamApp<I> withBuildStep(StreamBuildStep<I> buildStep) {
         buildSteps.add(buildStep);
         return this;
     }
 
-    public StreamBuild build(Properties properties) {
+    public StreamBuildResult build(Properties properties) {
 
         StreamsBuilder builder = new StreamsBuilder();
 
-        StreamBuildContext<I> context = new StreamBuildContext<I>(streamBuildInput, properties);
+        StreamBuildContext<I> context = StreamBuildContext.of(streamAppInput, properties);
 
         List<StreamBuildSpec> streamBuilders = buildSteps.stream().map(x -> x.applyStep(context)).collect(Collectors.toList());
 
@@ -60,6 +48,8 @@ public final class StreamApp<I> {
 
         List<StreamAppUtils.ShutdownHandler> shutdownHandlers = streamBuilders.stream()
                 .map(sb -> sb.topologyBuildStep.apply(builder))
+                .filter(sh -> sh.isPresent())
+                .map(sb -> sb.orElse(null))
                 .collect(Collectors.toList());
 
         Supplier<Topology> topologySupplier = () -> {
@@ -68,7 +58,7 @@ public final class StreamApp<I> {
             return topology;
         };
 
-        return new StreamBuild(topicCreations, topologySupplier, shutdownHandlers);
+        return new StreamBuildResult(topicCreations, topologySupplier, shutdownHandlers);
     }
 
     /**
@@ -78,22 +68,22 @@ public final class StreamApp<I> {
     public void run(StreamAppConfig appConfig) {
         Properties config = StreamAppConfig.getConfig(appConfig);
 
-        StreamBuild streamBuild = build(config);
+        StreamBuildResult streamBuildResult = build(config);
 
         // List topic names
-        streamBuild.topicCreations.stream().map(x -> x.topicName).forEach(logger::info);
+        streamBuildResult.topicCreations.stream().map(x -> x.topicName).forEach(logger::info);
 
         try {
             StreamAppUtils
-                    .createMissingTopics(AdminClient.create(config), streamBuild.topicCreations)
+                    .createMissingTopics(AdminClient.create(config), streamBuildResult.topicCreations)
                     .all()
                     .get(30L, TimeUnit.SECONDS);
         } catch (Exception e) {
             throw new RuntimeException("Unable to create all the topics");
         }
 
-        StreamAppUtils.runStreamApp(config, streamBuild.topologySupplier.get());
+        StreamAppUtils.runStreamApp(config, streamBuildResult.topologySupplier.get());
 
-        streamBuild.shutdownHandlers.forEach(StreamAppUtils.ShutdownHandler::shutDown);
+        streamBuildResult.shutdownHandlers.forEach(StreamAppUtils.ShutdownHandler::shutDown);
     }
 }

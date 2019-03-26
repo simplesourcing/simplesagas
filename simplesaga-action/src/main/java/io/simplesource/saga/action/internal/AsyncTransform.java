@@ -39,7 +39,7 @@ final class AsyncTransform {
         };
 
         Properties consumerConfig = copyProperties.apply(config);
-        //consumerConfig.putAll(spec.config)
+        //consumerConfig.putAll(spec.properties)
         consumerConfig.setProperty(ConsumerConfig.GROUP_ID_CONFIG,
                 asyncSpec.groupId + "_async_consumer_" + asyncSpec.actionType);
         // For now automatic - probably rather do this manually
