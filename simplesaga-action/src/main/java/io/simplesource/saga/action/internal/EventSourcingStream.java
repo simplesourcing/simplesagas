@@ -9,13 +9,14 @@ import io.simplesource.kafka.api.CommandSerdes;
 import io.simplesource.kafka.internal.util.Tuple2;
 import io.simplesource.kafka.model.CommandRequest;
 import io.simplesource.kafka.model.CommandResponse;
-import io.simplesource.saga.action.sourcing.SourcingContext;
+import io.simplesource.saga.action.eventsourcing.EventSourcingContext;
 import io.simplesource.saga.model.messages.ActionRequest;
 import io.simplesource.saga.model.messages.ActionResponse;
 import io.simplesource.saga.model.saga.SagaError;
 import io.simplesource.saga.model.saga.SagaId;
 import io.simplesource.saga.model.serdes.ActionSerdes;
 import io.simplesource.saga.shared.serialization.TupleSerdes;
+import io.simplesource.saga.shared.streams.StreamUtils;
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KeyValue;
@@ -23,9 +24,11 @@ import org.apache.kafka.streams.kstream.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class SourcingStream {
+import java.time.Duration;
 
-    private static Logger logger = LoggerFactory.getLogger(SourcingStream.class);
+public final class EventSourcingStream {
+
+    private static Logger logger = LoggerFactory.getLogger(EventSourcingStream.class);
 
     /**
      * Add a sub-topology for a simple sourcing command topic, including all the saga actions that map to that topic.
@@ -33,14 +36,14 @@ public final class SourcingStream {
      * @param topologyContext topology context.
      * @param sourcing        sourcing context.
      */
-    public static <A, D, K, C> void addSubTopology(ActionTopologyBuilder.ActionTopologyContext<A> topologyContext,
-                                                   SourcingContext<A, D, K, C> sourcing) {
-        KStream<K, CommandResponse<K>> commandResponseStream = CommandConsumer.commandResponseStream(
+    public static <A, D, K, C> void addSubTopology(ActionTopologyContext<A> topologyContext,
+                                                   EventSourcingContext<A, D, K, C> sourcing) {
+        KStream<K, CommandResponse<K>> commandResponseStream = EventSourcingConsumer.commandResponseStream(
                 sourcing.commandSpec, sourcing.commandTopicNamer, topologyContext.builder);
         addSubTopology(sourcing, topologyContext.actionRequests, topologyContext.actionResponses, commandResponseStream);
     }
 
-    private static <A, D, K, C> void addSubTopology(SourcingContext<A, D, K, C> ctx,
+    private static <A, D, K, C> void addSubTopology(EventSourcingContext<A, D, K, C> ctx,
                                                     KStream<SagaId, ActionRequest<A>> actionRequest,
                                                     KStream<SagaId, ActionResponse> actionResponse,
                                                     KStream<K, CommandResponse<K>> commandResponseByAggregate) {
@@ -48,10 +51,12 @@ public final class SourcingStream {
 
         IdempotentStream.IdempotentAction<A> idempotentAction = IdempotentStream.getActionRequestsWithResponse(ctx.actionSpec,
                 actionRequest,
-                actionResponse,
-                ctx.commandSpec.actionType);
+                actionResponse);
+
         // get new command requests
-        Tuple2<KStream<SagaId, ActionResponse>, KStream<K, CommandRequest<K, C>>> requestResp = handleActionRequest(ctx, idempotentAction.unprocessedRequests, commandResponseByAggregate);
+        Tuple2<KStream<SagaId, ActionResponse>, KStream<K, CommandRequest<K, C>>> requestResp =
+                handleActionRequest(ctx, idempotentAction.unprocessedRequests, commandResponseByAggregate);
+
         KStream<SagaId, ActionResponse> requestErrorResponses = requestResp.v1();
         KStream<K, CommandRequest<K, C>> commandRequests = requestResp.v2();
 
@@ -60,17 +65,16 @@ public final class SourcingStream {
 
         ActionContext<A> actionCtx = ctx.getActionContext();
 
-        CommandPublisher.publishCommandRequest(ctx, commandRequests);
+        EventSourcingPublisher.publishCommandRequest(ctx, commandRequests);
         ActionPublisher.publishActionResponse(actionCtx, idempotentAction.priorResponses);
         ActionPublisher.publishActionResponse(actionCtx, newActionResponses);
         ActionPublisher.publishActionResponse(actionCtx, requestErrorResponses);
     }
 
-
     /**
      * Unfortunately we have to keep invoking this decoder step
      */
-    private static <A, D> D getDecoded(SourcingContext<A, D, ?, ?> ctx, ActionRequest<A> aReq) {
+    private static <A, D> D getDecoded(EventSourcingContext<A, D, ?, ?> ctx, ActionRequest<A> aReq) {
         D d = ctx.commandSpec.decode.apply(aReq.actionCommand.command).getOrElse(null);
         assert d != null; // this should have already been checked
         return d;
@@ -80,14 +84,14 @@ public final class SourcingStream {
      * Translate simplesaga action requests to simplesourcing command requests.
      */
     private static <A, D, K, C> Tuple2<KStream<SagaId, ActionResponse>, KStream<K, CommandRequest<K, C>>> handleActionRequest(
-            SourcingContext<A, D, K, C> ctx,
+            EventSourcingContext<A, D, K, C> ctx,
             KStream<SagaId, ActionRequest<A>> actionRequests,
             KStream<K, CommandResponse<K>> commandResponseByAggregate) {
 
         KStream<SagaId, Tuple2<ActionRequest<A>, Result<Throwable, D>>> reqsWithDecoded =
                 actionRequests
                         .mapValues((k, ar) -> Tuple2.of(ar, ctx.commandSpec.decode.apply(ar.actionCommand.command)))
-                        .peek(Utils.logValues(logger, "reqsWithDecoded"));
+                        .peek(StreamUtils.logValues(logger, "reqsWithDecoded"));
 
         KStream<SagaId, Tuple2<ActionRequest<A>, Result<Throwable, D>>>[] branchSuccessFailure = reqsWithDecoded.branch((k, v) -> v.v2().isSuccess(), (k, v) -> v.v2().isFailure());
 
@@ -130,13 +134,13 @@ public final class SourcingStream {
                 .leftJoin(latestSequenceNumbers, valueJoiner,
                         Joined.with(TupleSerdes.tuple2(ctx.cSerdes().aggregateKey(), ctx.aSerdes().sagaId()), ctx.aSerdes().request(), Serdes.Long()))
                 .selectKey((k, v) -> v.aggregateKey())
-                .peek(Utils.logValues(logger, "commandRequestByAggregate"));
+                .peek(StreamUtils.logValues(logger, "commandRequestByAggregate"));
 
         return Tuple2.of(errorActionResponses, commandRequestByAggregate);
     }
 
     private static <A, K> KTable<Tuple2<K, SagaId>, Long> latestSequenceNumbersForSagaAggregate(
-            SourcingContext<A, ?, K, ?> ctx,
+            EventSourcingContext<A, ?, K, ?> ctx,
             KStream<SagaId, ActionRequest<A>> actionRequests,
             KStream<K, CommandResponse<K>> commandResponseByAggregate) {
         CommandSerdes<K, ?> cSerdes = ctx.cSerdes();
@@ -148,7 +152,7 @@ public final class SourcingStream {
         // Join the action request and command response by commandID
         KStream<CommandId, Tuple2<CommandResponse<K>, ActionRequest<A>>> crArByCi = commandResponseByAggregate
                 .selectKey((k, v) -> v.commandId())
-                .join(actionRequests.selectKey((k, v) -> v.actionCommand.commandId), Tuple2::of, JoinWindows.of(0L),
+                .join(actionRequests.selectKey((k, v) -> v.actionCommand.commandId), Tuple2::of, JoinWindows.of(ctx.actionSpec().sagaDuration),
                         Joined.with(cSerdes.commandId(), cSerdes.commandResponse(), aSerdes.request()));
 
 
@@ -167,10 +171,10 @@ public final class SourcingStream {
      * Receives command response from simplesourcing, and convert to simplesaga action response.
      */
     private static <A, D, K, C> KStream<SagaId, ActionResponse> handleCommandResponse(
-            SourcingContext<A, D, K, C> ctx,
+            EventSourcingContext<A, D, K, C> ctx,
             KStream<SagaId, ActionRequest<A>> actionRequests,
             KStream<CommandId, CommandResponse<K>> responseByCommandId) {
-        long timeOutMillis = ctx.commandSpec.timeOutMillis;
+        Duration timeout = ctx.commandSpec.timeout;
         // find the response for the request
         KStream<CommandId, Tuple2<ActionRequest<A>, CommandResponse<K>>> actionRequestWithResponse =
                 // join command response to action request by the command / action ID
@@ -180,10 +184,10 @@ public final class SourcingStream {
                         .join(
                                 responseByCommandId,
                                 Tuple2::of,
-                                JoinWindows.of(timeOutMillis).until(timeOutMillis * 2 + 1),
+                                JoinWindows.of(timeout),
                                 Joined.with(ctx.cSerdes().commandId(), ctx.aSerdes().request(), ctx.cSerdes().commandResponse())
                         )
-                        .peek(Utils.logValues(logger, "joinActionRequestAndCommandResponse"));
+                        .peek(StreamUtils.logValues(logger, "joinActionRequestAndCommandResponse"));
 
         // turn the pair into an ActionResponse
         return actionRequestWithResponse
@@ -209,7 +213,7 @@ public final class SourcingStream {
                         }
                 )
                 .selectKey((k, resp) -> resp.sagaId)
-                .peek(Utils.logValues(logger, "resultStream"));
+                .peek(StreamUtils.logValues(logger, "resultStream"));
     }
 
 }

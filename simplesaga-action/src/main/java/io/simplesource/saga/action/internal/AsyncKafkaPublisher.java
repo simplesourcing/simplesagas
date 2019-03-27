@@ -4,12 +4,12 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.Serde;
 
-class KafkaAsyncPublisher<K, V> implements AsyncPublisher<K, V> {
+final class AsyncKafkaPublisher<K, V> implements AsyncPublisher<K, V> {
     private final KafkaProducer<byte[], byte[]> producer;
     private final Serde<K> keySerdes;
     private final Serde<V> valueSerdes;
 
-    KafkaAsyncPublisher(KafkaProducer<byte[], byte[]> kafkaProducer, Serde<K> keySerdes, Serde<V> valueSerdes) {
+    AsyncKafkaPublisher(KafkaProducer<byte[], byte[]> kafkaProducer, Serde<K> keySerdes, Serde<V> valueSerdes) {
         producer = kafkaProducer;
         this.keySerdes = keySerdes;
         this.valueSerdes = valueSerdes;

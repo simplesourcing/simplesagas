@@ -5,11 +5,11 @@ import io.simplesource.kafka.internal.util.Tuple2;
 import io.simplesource.saga.model.messages.ActionRequest;
 import io.simplesource.saga.model.messages.ActionResponse;
 import io.simplesource.saga.model.saga.SagaId;
-import io.simplesource.saga.model.specs.ActionProcessorSpec;
+import io.simplesource.saga.model.specs.ActionSpec;
 import lombok.Value;
 import org.apache.kafka.streams.kstream.*;
 
-class IdempotentStream {
+final class IdempotentStream {
 
     @Value
     public static class IdempotentAction<A> {
@@ -18,10 +18,9 @@ class IdempotentStream {
     }
 
     static <A> IdempotentAction<A> getActionRequestsWithResponse
-            (ActionProcessorSpec<A> aSpec,
+            (ActionSpec<A> aSpec,
              KStream<SagaId, ActionRequest<A>> actionRequests,
-             KStream<SagaId, ActionResponse> actionResponse,
-             String actionType) {
+             KStream<SagaId, ActionResponse> actionResponse) {
 
         KTable<CommandId, ActionResponse> actionByCommandId =
                 actionResponse
@@ -30,10 +29,9 @@ class IdempotentStream {
                         .reduce((cr1, cr2) -> cr2, Materialized.with(aSpec.serdes.commandId(), aSpec.serdes.response()));
 
         KStream<SagaId, Tuple2<ActionRequest<A>, ActionResponse>> actionRequestWithResponse = actionRequests
-                .filter((k, aReq) -> aReq.actionType.equals(actionType))
                 .selectKey((k, v) -> v.actionCommand.commandId)
                 .leftJoin(actionByCommandId,
-                        (k, v) -> Tuple2.of(k, v),
+                        Tuple2::of,
                         Joined.with(aSpec.serdes.commandId(), aSpec.serdes.request(), aSpec.serdes.response()))
                 .selectKey(((k, v) -> v.v1().sagaId));
 

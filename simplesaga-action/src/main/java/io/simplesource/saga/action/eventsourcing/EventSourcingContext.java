@@ -1,9 +1,9 @@
-package io.simplesource.saga.action.sourcing;
+package io.simplesource.saga.action.eventsourcing;
 
 import io.simplesource.kafka.api.CommandSerdes;
 import io.simplesource.saga.action.internal.ActionContext;
 import io.simplesource.saga.model.serdes.ActionSerdes;
-import io.simplesource.saga.model.specs.ActionProcessorSpec;
+import io.simplesource.saga.model.specs.ActionSpec;
 import io.simplesource.saga.shared.topics.TopicNamer;
 import lombok.Value;
 
@@ -14,10 +14,10 @@ import lombok.Value;
   * @param <C> - simple sourcing command type
   */
 
-@Value
-public final class SourcingContext<A, D, K, C> {
-    public final ActionProcessorSpec<A> actionSpec;
-    public final CommandSpec<A, D, K, C> commandSpec;
+@Value(staticConstructor = "of")
+public final class EventSourcingContext<A, D, K, C> {
+    public final ActionSpec<A> actionSpec;
+    public final EventSourcingSpec<A, D, K, C> commandSpec;
     public final TopicNamer actionTopicNamer;
     public final TopicNamer commandTopicNamer;
 

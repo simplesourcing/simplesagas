@@ -1,4 +1,4 @@
-package io.simplesource.saga.shared.utils;
+package io.simplesource.saga.shared.streams;
 
 import io.simplesource.kafka.spec.TopicSpec;
 import io.simplesource.saga.shared.topics.TopicCreation;
@@ -20,6 +20,17 @@ public final class StreamAppUtils {
     @FunctionalInterface
     public interface ShutdownHandler {
         void shutDown();
+    }
+
+    public static void createMissingTopics(Properties config, List<TopicCreation> topics) {
+        try {
+            StreamAppUtils
+                    .createMissingTopics(AdminClient.create(config), topics)
+                    .all()
+                    .get(30L, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            throw new RuntimeException("Unable to add missing topics", e);
+        }
     }
 
     public static CreateTopicsResult createMissingTopics(AdminClient adminClient, List<TopicCreation> topics){

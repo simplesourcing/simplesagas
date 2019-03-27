@@ -1,4 +1,4 @@
-package io.simplesource.saga.action.sourcing;
+package io.simplesource.saga.action.eventsourcing;
 
 import io.simplesource.data.Result;
 import io.simplesource.data.Sequence;
@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Value;
 
+import java.time.Duration;
 import java.util.function.Function;
 
 /**
@@ -18,12 +19,13 @@ import java.util.function.Function;
 @Value
 @Builder
 @AllArgsConstructor
-public final class CommandSpec<A, D, K, C> {
+public final class EventSourcingSpec<A, D, K, C> {
     public final String actionType;
     public final Function<A, Result<Throwable, D>> decode;
     public final Function<D, C> commandMapper;
     public final Function<D, K> keyMapper;
     public final Function<D, Sequence> sequenceMapper;
     public final CommandSerdes<K, C> commandSerdes;
-    public final long timeOutMillis;
+    public final Duration timeout;
+    public final String aggregateName;
 }

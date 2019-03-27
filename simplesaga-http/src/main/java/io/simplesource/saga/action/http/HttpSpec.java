@@ -9,10 +9,10 @@ import java.util.function.BiConsumer;
 
 /**
   * @param <A> - common representation type for all action commands (typically Json / GenericRecord for Avro)
-  * @param <K> - key for the output topic
+  * @param <K> - key for the value topic
   * @param <B> - body for Http request
-  * @param <O> - output returned by the Http request - also normally quite generic
-  * @param <R> - final result type that ends up in output topic
+  * @param <O> - value returned by the Http request - also normally quite generic
+  * @param <R> - final result type that ends up in value topic
   */
 @Value
 public final class HttpSpec<A, K, B, O, R> {

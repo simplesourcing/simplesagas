@@ -1,25 +1,18 @@
 package io.simplesource.saga.saga;
 
-import io.simplesource.saga.model.specs.ActionProcessorSpec;
+import io.simplesource.saga.model.specs.ActionSpec;
 import io.simplesource.saga.model.specs.SagaSpec;
 import io.simplesource.saga.saga.app.SagaContext;
 import io.simplesource.saga.saga.app.SagaTopologyBuilder;
-import io.simplesource.saga.saga.app.SagaStream;
-import io.simplesource.saga.shared.topics.TopicConfig;
-import io.simplesource.saga.shared.topics.TopicConfigBuilder;
-import io.simplesource.saga.shared.topics.TopicCreation;
-import io.simplesource.saga.shared.topics.TopicTypes;
-import io.simplesource.saga.shared.utils.StreamAppConfig;
-import io.simplesource.saga.shared.utils.StreamAppUtils;
-import org.apache.kafka.clients.admin.AdminClient;
+import io.simplesource.saga.shared.topics.*;
+import io.simplesource.saga.shared.streams.StreamAppConfig;
+import io.simplesource.saga.shared.streams.StreamAppUtils;
+import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.Topology;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Properties;
-import java.util.concurrent.TimeUnit;
+import java.util.*;
 
 /**
  * SagaApp (the "Saga Coordinator") accepts a dependency graph of saga actions.
@@ -42,32 +35,36 @@ final public class SagaApp<A> {
 
     private static Logger logger = LoggerFactory.getLogger(SagaApp.class);
     private final SagaSpec<A> sagaSpec;
+    private final ActionSpec<A> actionSpec;
     private final TopicConfig sagaTopicConfig;
-    private final SagaTopologyBuilder<A> topologyBuilder;
-    private final List<TopicCreation> topics;
+    private final List<TopicCreation> topics = new ArrayList<>();
+    private final Map<String, TopicNamer> topicNamers = new HashMap<>();
 
-    public SagaApp(SagaSpec<A> sagaSpec, TopicConfigBuilder.BuildSteps topicBuildFn) {
+    public SagaApp(SagaSpec<A> sagaSpec, ActionSpec<A> actionSpec, TopicConfigBuilder.BuildSteps topicBuildFn) {
         this.sagaSpec = sagaSpec;
-        sagaTopicConfig = TopicConfigBuilder.buildTopics(
+        this.actionSpec = actionSpec;
+        sagaTopicConfig = TopicConfigBuilder.build(
                 TopicTypes.SagaTopic.all,
                 Collections.emptyMap(),
-                Collections.singletonMap(TopicTypes.SagaTopic.state, Collections.singletonMap(
+                Collections.singletonMap(TopicTypes.SagaTopic.SAGA_STATE, Collections.singletonMap(
                         org.apache.kafka.common.config.TopicConfig.CLEANUP_POLICY_CONFIG,
                         org.apache.kafka.common.config.TopicConfig.CLEANUP_POLICY_COMPACT
                 )),
-                topicBuildFn);
-        topologyBuilder = new SagaTopologyBuilder<>(sagaSpec, sagaTopicConfig);
-        topics = TopicCreation.allTopics(sagaTopicConfig);
+                topicBuildFn.withInitialStep(b -> b.withTopicBaseName(TopicTypes.SagaTopic.SAGA_BASE_NAME)));
+
+        topics.addAll(sagaTopicConfig.allTopics());
     }
 
-    public SagaApp<A> addActionProcessor(ActionProcessorSpec<A> actionSpec, TopicConfigBuilder.BuildSteps buildFn) {
-        TopicConfig topicConfig = TopicConfigBuilder.buildTopics(TopicTypes.ActionTopic.all, Collections.emptyMap(), Collections.emptyMap(), buildFn);
-        topics.addAll(TopicCreation.allTopics(topicConfig));
+    public SagaApp<A> addActionProcessor(String actionType, TopicConfigBuilder.BuildSteps buildFn) {
+        String atlc = actionType.toLowerCase();
+        if (topicNamers.containsKey(atlc)) throw new RuntimeException("ActionType has already been added");
 
-        topologyBuilder.onBuildTopology((topologyContext) -> {
-            SagaContext<A> saga = new SagaContext<>(sagaSpec, actionSpec, sagaTopicConfig.namer, topicConfig.namer);
-            SagaStream.addSubTopology(topologyContext, saga);
-        });
+        TopicConfig actionTopicConfig = TopicConfigBuilder.build(
+                TopicTypes.ActionTopic.all,
+                buildFn.withInitialStep(builder -> builder.withTopicBaseName(atlc)));
+
+        topics.addAll(TopicCreation.allTopics(actionTopicConfig));
+        topicNamers.put(atlc, actionTopicConfig.namer);
         return this;
     }
 
@@ -77,20 +74,16 @@ final public class SagaApp<A> {
      */
     public void run(StreamAppConfig appConfig) {
         Properties config = StreamAppConfig.getConfig(appConfig);
-        try {
-            StreamAppUtils
-                    .createMissingTopics(AdminClient.create(config), topics)
-                    .all()
-                    .get(30L, TimeUnit.SECONDS);
-        } catch (Exception e) {
-            throw new RuntimeException("Unable to add missing topics", e);
-        }
+        StreamAppUtils.createMissingTopics(config, topics);
         Topology topology = buildTopology();
         logger.info("Topology description {}", topology.describe());
         StreamAppUtils.runStreamApp(config, topology);
     }
 
     Topology buildTopology() {
-        return topologyBuilder.build();
+        SagaContext<A> sagaContext = new SagaContext<>(sagaSpec, actionSpec, sagaTopicConfig.namer, topicNamers);
+        StreamsBuilder builder = new StreamsBuilder();
+        SagaTopologyBuilder.addSubTopology(sagaContext, builder);
+        return builder.build();
     }
 }

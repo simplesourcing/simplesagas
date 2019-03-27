@@ -1,7 +1,7 @@
 package io.simplesource.saga.action.internal;
 
 import io.simplesource.saga.action.async.AsyncContext;
-import io.simplesource.saga.action.async.AsyncSerdes;
+import io.simplesource.saga.model.serdes.TopicSerdes;
 import io.simplesource.saga.model.messages.ActionRequest;
 import io.simplesource.saga.model.messages.ActionResponse;
 import io.simplesource.saga.model.saga.SagaId;
@@ -16,7 +16,7 @@ public final class AsyncActionProcessorProxy {
             SagaId sagaId,
             ActionRequest<A> request,
             AsyncPublisher<SagaId, ActionResponse> responsePublisher,
-            Function<AsyncSerdes<K, R>, AsyncPublisher<K, R>> outputPublisher) {
+            Function<TopicSerdes<K, R>, AsyncPublisher<K, R>> outputPublisher) {
         AsyncActionProcessor.processRecord(asyncContext, sagaId, request, responsePublisher, outputPublisher);
     }
 }

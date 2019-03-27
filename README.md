@@ -101,7 +101,7 @@ The components are:
 * A command processor (typically Simple Sourcing App)
 * A saga coordinator
 * Action processor (an adaptor between the saga coordinator and the command processor)
-* A simprle example implementation of the above components
+* A simple example implementation of the above components
 * A saga requester that sends saga requests to the saga request topic
 
 All communication between each of these processes is via Kafka topics.

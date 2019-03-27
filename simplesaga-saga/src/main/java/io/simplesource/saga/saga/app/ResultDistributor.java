@@ -7,6 +7,7 @@ import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.*;
 import org.apache.kafka.streams.processor.TopicNameExtractor;
 
+import java.time.Duration;
 import java.util.UUID;
 
 
@@ -21,7 +22,7 @@ public class ResultDistributor {
                        KStream<K, V> resultStream,
                        KStream<K, String> topicNameStream) {
       DistributorSerdes<K, V> serdes          = ctx.serdes;
-    long retentionMillis = ctx.responseWindowSpec.retentionInSeconds() * 1000L;
+    Duration retention = Duration.ofSeconds(ctx.responseWindowSpec.retentionInSeconds());
 
       TopicNameExtractor<String, V> topicNameExtractor = (key, v, c) ->
         key.substring(0, key.length() - 37);
@@ -30,7 +31,7 @@ public class ResultDistributor {
               .selectKey((k, v) -> ctx.idMapper.apply(v))
               .join(topicNameStream,
                       Tuple2::of,
-                      JoinWindows.of(retentionMillis).until(retentionMillis * 2 + 1),
+                      JoinWindows.of(retention),
                       Joined.with(serdes.key, serdes.value, Serdes.String()))
               .map((key, tuple) -> KeyValue.pair(String.format("%s:%s", tuple.v2(), ctx.keyToUuid.apply(key).toString()), tuple.v1()));
     joined.to(topicNameExtractor, Produced.with(Serdes.String(), serdes.value));

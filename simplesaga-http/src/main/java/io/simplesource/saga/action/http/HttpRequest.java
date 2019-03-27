@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
-  * @param <K> - key for the output topic
+  * @param <K> - key for the value topic
   * @param <B> - body for Http request
   */
 @Value

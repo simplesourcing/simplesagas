@@ -55,6 +55,7 @@ public class SagaError {
 
     // TODO: flesh out error cases
     public enum Reason {
+        InvalidSaga,
         Timeout,
         CommandError,
         InternalError,

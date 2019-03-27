@@ -1,4 +1,4 @@
-package io.simplesource.saga.shared.utils;
+package io.simplesource.saga.shared.streams;
 
 import lombok.Value;
 import org.apache.kafka.clients.consumer.ConsumerConfig;

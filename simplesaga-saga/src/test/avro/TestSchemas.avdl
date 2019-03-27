@@ -1,6 +1,6 @@
 @namespace("io.simplesource.saga.saga.avro.generated.test")
 protocol Schemas {
-  record User {
+  record CreateUser {
     string firstName;
     string lastName;
     int yearOfBirth;
