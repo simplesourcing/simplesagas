@@ -15,12 +15,7 @@ import java.util.Optional;
 public final class EventSourcingBuilder {
 
     public static <A, D, K, C> ActionProcessor<A> apply(
-            EventSourcingSpec<A, D, K, C> cSpec) {
-        return apply(cSpec, a -> a, c -> c);
-    }
-
-    public static <A, D, K, C> ActionProcessor<A> apply(
-            EventSourcingSpec<A, D, K, C> cSpec,
+            EventSourcingSpec<A, D, K, C> esSpec,
             TopicConfigBuilder.BuildSteps actionTopicBuilder,
             TopicConfigBuilder.BuildSteps commandTopicBuilder) {
         return streamBuildContext -> {
@@ -28,22 +23,27 @@ public final class EventSourcingBuilder {
 
             TopicConfig actionTopicConfig = TopicConfigBuilder.build(
                     TopicTypes.ActionTopic.all,
-                    actionTopicBuilder.withInitialStep(builder -> builder.withTopicBaseName(cSpec.actionType.toLowerCase())));
+                    actionTopicBuilder.withInitialStep(builder -> builder.withTopicBaseName(esSpec.actionType.toLowerCase())));
 
             TopicConfig commandTopicConfig = TopicConfigBuilder.build(
                     TopicTypes.CommandTopic.all,
-                    commandTopicBuilder.withInitialStep(builder -> builder.withTopicBaseName(cSpec.aggregateName.toLowerCase())));
+                    commandTopicBuilder.withInitialStep(builder -> builder.withTopicBaseName(esSpec.aggregateName.toLowerCase())));
 
             List<TopicCreation> topics = actionTopicConfig.allTopics();
             topics.addAll(commandTopicConfig.allTopics());
 
             return new StreamBuildSpec(topics, builder -> {
-                EventSourcingContext<A, D, K, C> eventSourcingContext = EventSourcingContext.of(actionSpec, cSpec, actionTopicConfig.namer, commandTopicConfig.namer);
+                EventSourcingContext<A, D, K, C> eventSourcingContext = EventSourcingContext.of(actionSpec, esSpec, actionTopicConfig.namer, commandTopicConfig.namer);
                 ActionTopologyContext<A> topologyContext = ActionTopologyContext.of(actionSpec, actionTopicConfig.namer, streamBuildContext.properties, builder);
                 EventSourcingStream.addSubTopology(topologyContext, eventSourcingContext);
 
                 return Optional.empty();
             });
         };
+    }
+
+    public static <A, D, K, C> ActionProcessor<A> apply(
+            EventSourcingSpec<A, D, K, C> esSpec) {
+        return apply(esSpec, a -> a, c -> c);
     }
 }

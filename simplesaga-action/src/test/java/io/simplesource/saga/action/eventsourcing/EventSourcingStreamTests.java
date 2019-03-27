@@ -58,7 +58,7 @@ class EventSourcingStreamTests {
         final Set<String> expectedTopics;
 
         AccountContext() {
-            EventSourcingSpec<SpecificRecord, AccountCommand, AccountId, AccountCommand> commandSpec = new EventSourcingSpec<>(
+            EventSourcingSpec<SpecificRecord, AccountCommand, AccountId, AccountCommand> sourcingSpec = new EventSourcingSpec<>(
                     Constants.ACCOUNT_ACTION_TYPE,
                     a -> Result.success((AccountCommand) a),
                     c -> c,
@@ -71,7 +71,7 @@ class EventSourcingStreamTests {
             ActionApp<SpecificRecord> streamApp = ActionApp.of(actionSerdes);
 
             streamApp.withActionProcessor(EventSourcingBuilder.apply(
-                    commandSpec,
+                    sourcingSpec,
                     topicBuilder -> topicBuilder.withTopicPrefix(Constants.ACTION_TOPIC_PREFIX),
                     topicBuilder -> topicBuilder.withTopicPrefix((Constants.COMMAND_TOPIC_PREFIX))));
 

@@ -17,7 +17,7 @@ import lombok.Value;
 @Value(staticConstructor = "of")
 public final class EventSourcingContext<A, D, K, C> {
     public final ActionSpec<A> actionSpec;
-    public final EventSourcingSpec<A, D, K, C> commandSpec;
+    public final EventSourcingSpec<A, D, K, C> eventSourcingSpec;
     public final TopicNamer actionTopicNamer;
     public final TopicNamer commandTopicNamer;
 
@@ -25,6 +25,6 @@ public final class EventSourcingContext<A, D, K, C> {
         return new ActionContext<>(actionSpec, actionTopicNamer);
     }
 
-    public final CommandSerdes<K, C> cSerdes() { return commandSpec.commandSerdes; }
+    public final CommandSerdes<K, C> cSerdes() { return eventSourcingSpec.commandSerdes; }
     public final ActionSerdes<A> aSerdes() { return actionSpec.serdes; }
 }
