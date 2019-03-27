@@ -70,8 +70,6 @@ class SourcingStreamTests {
 
             StreamApp<ActionProcessorSpec<SpecificRecord>> streamApp = new StreamApp<>(ActionProcessorSpec.of(actionSerdes));
 
-            String accountActionBaseName = Constants.ACCOUNT_ACTION_TYPE;
-
             streamApp.withBuildStep(SourcingBuilder.apply(
                     commandSpec,
                     topicBuilder -> topicBuilder.withTopicPrefix(Constants.ACTION_TOPIC_PREFIX),
@@ -87,7 +85,7 @@ class SourcingStreamTests {
 
             // get actionRequestPublisher
             actionRequestPublisher = testContext.publisher(
-                    TopicNamer.forPrefix(Constants.ACTION_TOPIC_PREFIX, accountActionBaseName)
+                    TopicNamer.forPrefix(Constants.ACTION_TOPIC_PREFIX, Constants.ACCOUNT_ACTION_TYPE)
                             .apply(TopicTypes.ActionTopic.request),
                     actionSerdes.sagaId(),
                     actionSerdes.request());
@@ -99,7 +97,7 @@ class SourcingStreamTests {
                     commandSerdes.commandResponse());
 
             actionResponsePublisher = testContext.publisher(
-                    TopicNamer.forPrefix(Constants.ACTION_TOPIC_PREFIX, accountActionBaseName)
+                    TopicNamer.forPrefix(Constants.ACTION_TOPIC_PREFIX, Constants.ACCOUNT_ACTION_TYPE)
                             .apply(TopicTypes.ActionTopic.response),
                     actionSerdes.sagaId(),
                     actionSerdes.response());
@@ -112,7 +110,7 @@ class SourcingStreamTests {
                     commandSerdes.commandRequest());
 
             actionResponseVerifier = testContext.verifier(
-                    TopicNamer.forPrefix(Constants.ACTION_TOPIC_PREFIX, accountActionBaseName)
+                    TopicNamer.forPrefix(Constants.ACTION_TOPIC_PREFIX, Constants.ACCOUNT_ACTION_TYPE)
                             .apply(TopicTypes.ActionTopic.response),
                     actionSerdes.sagaId(),
                     actionSerdes.response());
