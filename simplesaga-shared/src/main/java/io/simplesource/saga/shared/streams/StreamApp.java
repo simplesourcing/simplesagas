@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
  *
  * @param <I> Input into
  */
-public final class StreamApp<I> {
+public class StreamApp<I> {
 
     private final Logger logger = LoggerFactory.getLogger(StreamApp.class);
     private final I streamAppInput;

@@ -7,7 +7,7 @@ import io.simplesource.kafka.api.CommandSerdes;
 import io.simplesource.kafka.model.CommandRequest;
 import io.simplesource.kafka.model.CommandResponse;
 import io.simplesource.kafka.serialization.avro.AvroCommandSerdes;
-import io.simplesource.saga.shared.streams.StreamApp;
+import io.simplesource.saga.action.ActionProcessorApp;
 import io.simplesource.saga.avro.avro.generated.test.*;
 import io.simplesource.saga.model.action.ActionCommand;
 import io.simplesource.saga.model.action.ActionId;
@@ -15,7 +15,6 @@ import io.simplesource.saga.model.messages.ActionRequest;
 import io.simplesource.saga.model.messages.ActionResponse;
 import io.simplesource.saga.model.saga.SagaId;
 import io.simplesource.saga.model.serdes.ActionSerdes;
-import io.simplesource.saga.model.specs.ActionProcessorSpec;
 import io.simplesource.saga.serialization.avro.AvroSerdes;
 import io.simplesource.saga.shared.streams.StreamBuildResult;
 import io.simplesource.saga.shared.topics.TopicNamer;
@@ -68,9 +67,9 @@ class SourcingStreamTests {
                     2000,
                     Constants.ACCOUNT_AGGREGATE_NAME);
 
-            StreamApp<ActionProcessorSpec<SpecificRecord>> streamApp = new StreamApp<>(ActionProcessorSpec.of(actionSerdes));
+            ActionProcessorApp<SpecificRecord> streamApp = ActionProcessorApp.of(actionSerdes);
 
-            streamApp.withBuildStep(SourcingBuilder.apply(
+            streamApp.withActionProcessor(SourcingBuilder.apply(
                     commandSpec,
                     topicBuilder -> topicBuilder.withTopicPrefix(Constants.ACTION_TOPIC_PREFIX),
                     topicBuilder -> topicBuilder.withTopicPrefix((Constants.COMMAND_TOPIC_PREFIX))));

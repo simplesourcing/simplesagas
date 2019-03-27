@@ -4,8 +4,8 @@ import io.confluent.kafka.schemaregistry.client.MockSchemaRegistryClient;
 import io.simplesource.api.CommandId;
 import io.simplesource.data.Result;
 import io.simplesource.kafka.spec.TopicSpec;
+import io.simplesource.saga.action.ActionProcessorApp;
 import io.simplesource.saga.model.serdes.TopicSerdes;
-import io.simplesource.saga.shared.streams.StreamApp;
 import io.simplesource.saga.action.internal.AsyncActionProcessorProxy;
 import io.simplesource.saga.action.internal.AsyncPublisher;
 import io.simplesource.saga.avro.avro.generated.test.AsyncTestCommand;
@@ -100,9 +100,9 @@ class AsyncStreamTests {
                             ))),
                     timeout);
 
-            StreamApp<ActionProcessorSpec<SpecificRecord>> streamApp = new StreamApp<>(ActionProcessorSpec.of(actionSerdes));
+            ActionProcessorApp<SpecificRecord> streamApp = ActionProcessorApp.of(actionSerdes);
 
-            streamApp.withBuildStep(AsyncBuilder.apply(
+            streamApp.withActionProcessor(AsyncBuilder.apply(
                     asyncSpec,
                     topicBuilder -> topicBuilder.withTopicPrefix(Constants.ACTION_TOPIC_PREFIX)));
 

@@ -1,10 +1,9 @@
 package io.simplesource.saga.action.http;
 
+import io.simplesource.saga.action.app.ActionProcessorBuildStep;
 import io.simplesource.saga.action.async.AsyncBuilder;
 import io.simplesource.saga.action.async.AsyncOutput;
 import io.simplesource.saga.action.async.AsyncSpec;
-import io.simplesource.saga.model.specs.ActionProcessorSpec;
-import io.simplesource.saga.shared.streams.StreamBuildStep;
 import io.simplesource.saga.shared.topics.TopicConfigBuilder;
 
 import java.util.concurrent.ScheduledExecutorService;
@@ -12,7 +11,7 @@ import java.util.concurrent.ScheduledExecutorService;
 // TODO: does this belong in userland?
 public final class HttpBuilder {
 
-    public static <A, K, B, O, R> StreamBuildStep<ActionProcessorSpec<A>> apply(
+    public static <A, K, B, O, R> ActionProcessorBuildStep<A> apply(
             HttpSpec<A, K, B, O, R> httpSpec,
             TopicConfigBuilder.BuildSteps topicBuildFn,
             ScheduledExecutorService executor) {

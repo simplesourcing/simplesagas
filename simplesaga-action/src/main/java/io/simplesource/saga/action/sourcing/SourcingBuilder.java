@@ -1,9 +1,9 @@
 package io.simplesource.saga.action.sourcing;
 
+import io.simplesource.saga.action.app.ActionProcessorBuildStep;
 import io.simplesource.saga.shared.streams.StreamBuildSpec;
 import io.simplesource.saga.action.internal.*;
 import io.simplesource.saga.model.specs.ActionProcessorSpec;
-import io.simplesource.saga.shared.streams.StreamBuildStep;
 import io.simplesource.saga.shared.topics.TopicConfig;
 import io.simplesource.saga.shared.topics.TopicConfigBuilder;
 import io.simplesource.saga.shared.topics.TopicCreation;
@@ -14,12 +14,12 @@ import java.util.Optional;
 
 public final class SourcingBuilder {
 
-    public static <A, D, K, C> StreamBuildStep<ActionProcessorSpec<A>> apply(
+    public static <A, D, K, C> ActionProcessorBuildStep<A> apply(
             SourcingSpec<A, D, K, C> cSpec,
             TopicConfigBuilder.BuildSteps actionTopicBuilder,
             TopicConfigBuilder.BuildSteps commandTopicBuilder) {
         return streamBuildContext -> {
-            ActionProcessorSpec<A> actionSpec = streamBuildContext.appInput;
+            ActionProcessorSpec<A> actionSpec = streamBuildContext.actionProcessorSpec;
 
             TopicConfig actionTopicConfig = TopicConfigBuilder.build(
                     TopicTypes.ActionTopic.all,
