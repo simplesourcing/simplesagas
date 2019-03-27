@@ -18,7 +18,7 @@ public class TopicConfigBuilder {
     private final Map<String, String> defaultConfigs;
     private final Map<String, Map<String, String>> defaultOverrides;
 
-    private Map<String, TopicSpec> configMap = new HashMap<String, TopicSpec>();
+    private Map<String, TopicSpec> configMap = new HashMap<>();
     private Function<String, TopicSpec> defaultSpec = topicType -> defaultMap(1, 1, 7, topicType);
     private ResourceNamingStrategy namingStrategy = null;
     private String topicBaseName = null;
@@ -111,9 +111,7 @@ public class TopicConfigBuilder {
 
     public static TopicConfig build(List<String> topicTypes,
                                     BuildSteps buildSteps) {
-        TopicConfigBuilder topicBuilder = new TopicConfigBuilder(topicTypes, Collections.emptyMap(), Collections.emptyMap());
-        buildSteps.applyStep(topicBuilder);
-        return topicBuilder.build();
+        return build(topicTypes, Collections.emptyMap(), Collections.emptyMap(), buildSteps);
     }
 
     public static TopicConfig build(List<String> topicTypes,

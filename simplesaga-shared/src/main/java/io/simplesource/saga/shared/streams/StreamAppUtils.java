@@ -22,6 +22,17 @@ public final class StreamAppUtils {
         void shutDown();
     }
 
+    public static void createMissingTopics(Properties config, List<TopicCreation> topics) {
+        try {
+            StreamAppUtils
+                    .createMissingTopics(AdminClient.create(config), topics)
+                    .all()
+                    .get(30L, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            throw new RuntimeException("Unable to add missing topics", e);
+        }
+    }
+
     public static CreateTopicsResult createMissingTopics(AdminClient adminClient, List<TopicCreation> topics){
         try {
             Set<String> existingTopics = adminClient.listTopics().names().get();

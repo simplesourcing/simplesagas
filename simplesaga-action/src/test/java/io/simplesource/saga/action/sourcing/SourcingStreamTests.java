@@ -86,32 +86,32 @@ class SourcingStreamTests {
             // get actionRequestPublisher
             actionRequestPublisher = testContext.publisher(
                     TopicNamer.forPrefix(Constants.ACTION_TOPIC_PREFIX, Constants.ACCOUNT_ACTION_TYPE)
-                            .apply(TopicTypes.ActionTopic.request),
+                            .apply(TopicTypes.ActionTopic.ACTION_REQUEST),
                     actionSerdes.sagaId(),
                     actionSerdes.request());
 
             commandResponsePublisher = testContext.publisher(
                     TopicNamer.forPrefix(Constants.COMMAND_TOPIC_PREFIX, Constants.ACCOUNT_AGGREGATE_NAME)
-                            .apply(TopicTypes.CommandTopic.response),
+                            .apply(TopicTypes.CommandTopic.COMMAND_RESPONSE),
                     commandSerdes.aggregateKey(),
                     commandSerdes.commandResponse());
 
             actionResponsePublisher = testContext.publisher(
                     TopicNamer.forPrefix(Constants.ACTION_TOPIC_PREFIX, Constants.ACCOUNT_ACTION_TYPE)
-                            .apply(TopicTypes.ActionTopic.response),
+                            .apply(TopicTypes.ActionTopic.ACTION_RESPONSE),
                     actionSerdes.sagaId(),
                     actionSerdes.response());
 
             // get commandRequestVerifier
             commandRequestVerifier = testContext.verifier(
                     TopicNamer.forPrefix(Constants.COMMAND_TOPIC_PREFIX, Constants.ACCOUNT_AGGREGATE_NAME)
-                            .apply(TopicTypes.CommandTopic.request),
+                            .apply(TopicTypes.CommandTopic.COMMAND_REQUEST),
                     commandSerdes.aggregateKey(),
                     commandSerdes.commandRequest());
 
             actionResponseVerifier = testContext.verifier(
                     TopicNamer.forPrefix(Constants.ACTION_TOPIC_PREFIX, Constants.ACCOUNT_ACTION_TYPE)
-                            .apply(TopicTypes.ActionTopic.response),
+                            .apply(TopicTypes.ActionTopic.ACTION_RESPONSE),
                     actionSerdes.sagaId(),
                     actionSerdes.response());
 

@@ -15,27 +15,27 @@ final class SagaProducer {
         actionRequests
                 .to((x, actionRequest, z) -> {
                             String actionType = actionRequest.actionType();
-                            String name = ctx.actionTopicNamer.apply(TopicTypes.ActionTopic.request + "-" + actionType.toLowerCase());
+                            String name = ctx.actionTopicNamer.apply(TopicTypes.ActionTopic.ACTION_REQUEST + "-" + actionType.toLowerCase());
                             return name;
                     },
                         Produced.with(ctx.sSerdes.sagaId(), ctx.aSerdes.request()));
         actionRequests
-                .to(ctx.actionTopicNamer.apply(TopicTypes.ActionTopic.request),
+                .to(ctx.actionTopicNamer.apply(TopicTypes.ActionTopic.ACTION_REQUEST),
                         Produced.with(ctx.sSerdes.sagaId(), ctx.aSerdes.request()));
     }
 
     static <A> void publishSagaState(SagaContext<A> ctx, KStream<SagaId, Saga<A>> sagaState) {
-        sagaState.to(ctx.sagaTopicNamer.apply(TopicTypes.SagaTopic.state),
+        sagaState.to(ctx.sagaTopicNamer.apply(TopicTypes.SagaTopic.SAGA_STATE),
                 Produced.with(ctx.sSerdes.sagaId(), ctx.sSerdes.state()));
     }
 
     static <A> void publishSagaStateTransitions(SagaContext<A> ctx, KStream<SagaId, SagaStateTransition> transitions) {
-        transitions.to(ctx.sagaTopicNamer.apply(TopicTypes.SagaTopic.stateTransition),
+        transitions.to(ctx.sagaTopicNamer.apply(TopicTypes.SagaTopic.SAGA_STATE_TRANSITION),
                 Produced.with(ctx.sSerdes.sagaId(), ctx.sSerdes.transition()));
     }
 
     static <A> void publishSagaResponses(SagaContext<A> ctx, KStream<SagaId, SagaResponse> sagaResponse) {
-        sagaResponse.to(ctx.sagaTopicNamer.apply(TopicTypes.SagaTopic.response),
+        sagaResponse.to(ctx.sagaTopicNamer.apply(TopicTypes.SagaTopic.SAGA_RESPONSE),
                 Produced.with(ctx.sSerdes.sagaId(), ctx.sSerdes.response()));
     }
 }

@@ -58,43 +58,44 @@ class SagaStreamTests {
         final RecordVerifier<SagaId, SagaResponse> sagaResponseVerifier;
 
         SagaCoordinatorContext() {
-            TopicNamer sagaTopicNamer = TopicNamer.forPrefix(Constants.SAGA_TOPIC_PREFIX, Constants.SAGA_BASE_NAME);
+            TopicNamer sagaTopicNamer = TopicNamer.forPrefix(Constants.SAGA_TOPIC_PREFIX, TopicTypes.SagaTopic.SAGA_BASE_NAME);
             TopicNamer actionTopicNamer = TopicNamer.forPrefix(Constants.ACTION_TOPIC_PREFIX, Constants.SAGA_ACTION_TYPE);
 
             SagaApp<SpecificRecord> sagaApp = new SagaApp<>(
                     new SagaSpec<>(sagaSerdes, new WindowSpec(60)),
-                    topicBuilder -> topicBuilder.withTopicPrefix(Constants.SAGA_TOPIC_PREFIX).withTopicBaseName(Constants.SAGA_BASE_NAME));
-            sagaApp.addActionProcessor(
                     ActionProcessorSpec.of(actionSerdes),
+                    topicBuilder -> topicBuilder.withTopicPrefix(Constants.SAGA_TOPIC_PREFIX));
+
+            sagaApp.addActionProcessor(
                     Constants.SAGA_ACTION_TYPE,
-                    topicBuilder -> topicBuilder.withTopicPrefix(Constants.ACTION_TOPIC_PREFIX).withTopicBaseName(Constants.SAGA_ACTION_TYPE));
+                    topicBuilder -> topicBuilder.withTopicPrefix(Constants.ACTION_TOPIC_PREFIX));
 
             Topology topology = sagaApp.buildTopology();
             testContext = TestContextBuilder.of(topology).build();
 
             sagaRequestPublisher = testContext.publisher(
-                    sagaTopicNamer.apply(TopicTypes.SagaTopic.request),
+                    sagaTopicNamer.apply(TopicTypes.SagaTopic.SAGA_REQUEST),
                     sagaSerdes.sagaId(),
                     sagaSerdes.request());
             actionResponsePublisher = testContext.publisher(
-                    actionTopicNamer.apply(TopicTypes.ActionTopic.response),
+                    actionTopicNamer.apply(TopicTypes.ActionTopic.ACTION_RESPONSE),
                     actionSerdes.sagaId(),
                     actionSerdes.response());
 
             actionRequestVerifier = testContext.verifier(
-                    actionTopicNamer.apply(TopicTypes.ActionTopic.request),
+                    actionTopicNamer.apply(TopicTypes.ActionTopic.ACTION_REQUEST),
                     actionSerdes.sagaId(),
                     actionSerdes.request());
             sagaStateTransitionVerifier = testContext.verifier(
-                    sagaTopicNamer.apply(TopicTypes.SagaTopic.stateTransition),
+                    sagaTopicNamer.apply(TopicTypes.SagaTopic.SAGA_STATE_TRANSITION),
                     sagaSerdes.sagaId(),
                     sagaSerdes.transition());
             sagaStateVerifier = testContext.verifier(
-                    sagaTopicNamer.apply(TopicTypes.SagaTopic.state),
+                    sagaTopicNamer.apply(TopicTypes.SagaTopic.SAGA_STATE),
                     sagaSerdes.sagaId(),
                     sagaSerdes.state());
             sagaResponseVerifier = testContext.verifier(
-                    sagaTopicNamer.apply(TopicTypes.SagaTopic.response),
+                    sagaTopicNamer.apply(TopicTypes.SagaTopic.SAGA_RESPONSE),
                     sagaSerdes.sagaId(),
                     sagaSerdes.response());
 

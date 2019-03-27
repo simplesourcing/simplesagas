@@ -73,15 +73,8 @@ public final class StreamApp<I> {
         // List topic names
         streamBuildResult.topicCreations.stream().map(x -> x.topicName).forEach(logger::info);
 
-        try {
-            StreamAppUtils
-                    .createMissingTopics(AdminClient.create(config), streamBuildResult.topicCreations)
-                    .all()
-                    .get(30L, TimeUnit.SECONDS);
-        } catch (Exception e) {
-            throw new RuntimeException("Unable to create all the topics");
-        }
-
+        // create missing topics
+        StreamAppUtils.createMissingTopics(config, streamBuildResult.topicCreations);
         StreamAppUtils.runStreamApp(config, streamBuildResult.topologySupplier.get());
 
         streamBuildResult.shutdownHandlers.forEach(StreamAppUtils.ShutdownHandler::shutDown);

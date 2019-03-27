@@ -123,7 +123,7 @@ final class AsyncActionProcessor {
                 request.actionCommand.commandId,
                 booleanResult);
 
-        responsePublisher.send(asyncContext.actionTopicNamer.apply(TopicTypes.ActionTopic.response),
+        responsePublisher.send(asyncContext.actionTopicNamer.apply(TopicTypes.ActionTopic.ACTION_RESPONSE),
                 sagaId,
                 actionResponse);
     }

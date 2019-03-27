@@ -26,7 +26,7 @@ public final class AsyncBuilder {
             ActionProcessorSpec<A> actionSpec = streamBuildContext.appInput;
 
             List<String> expectedTopicList = new ArrayList<>(TopicTypes.ActionTopic.all);
-            expectedTopicList.add(TopicTypes.ActionTopic.requestUnprocessed);
+            expectedTopicList.add(TopicTypes.ActionTopic.ACTION_REQUEST_UNPROCESSED);
 
             TopicConfigBuilder.BuildSteps initialBuildStep = builder -> builder.withTopicBaseName(spec.actionType.toLowerCase());
 

@@ -17,7 +17,7 @@ final class CommandConsumer {
     static <A, D, K, C> KStream<K, CommandResponse<K>> commandResponseStream(
             SourcingSpec<A, D, K, C> spec, TopicNamer commandTopicNamer, StreamsBuilder builder) {
         return builder
-                .stream(commandTopicNamer.apply(TopicTypes.CommandTopic.response),
+                .stream(commandTopicNamer.apply(TopicTypes.CommandTopic.COMMAND_RESPONSE),
                         Consumed.with(spec.commandSerdes.aggregateKey(), spec.commandSerdes.commandResponse()))
                 .peek(StreamUtils.logValues(logger, "commandResponseStream"));
     }

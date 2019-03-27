@@ -117,13 +117,13 @@ class AsyncStreamTests {
             // get actionRequestPublisher
             actionRequestPublisher = testContext.publisher(
                     TopicNamer.forPrefix(Constants.ACTION_TOPIC_PREFIX, Constants.ASYNC_TEST_ACTION_TYPE)
-                            .apply(TopicTypes.ActionTopic.request),
+                            .apply(TopicTypes.ActionTopic.ACTION_REQUEST),
                     actionSerdes.sagaId(),
                     actionSerdes.request());
 
             actionResponsePublisher = testContext.publisher(
                     TopicNamer.forPrefix(Constants.ACTION_TOPIC_PREFIX, Constants.ASYNC_TEST_ACTION_TYPE)
-                            .apply(TopicTypes.ActionTopic.response),
+                            .apply(TopicTypes.ActionTopic.ACTION_RESPONSE),
                     actionSerdes.sagaId(),
                     actionSerdes.response());
 
@@ -134,7 +134,7 @@ class AsyncStreamTests {
 
             actionUnprocessedRequestVerifier = testContext.verifier(
                     TopicNamer.forPrefix(Constants.ACTION_TOPIC_PREFIX, Constants.ASYNC_TEST_ACTION_TYPE)
-                            .apply(TopicTypes.ActionTopic.requestUnprocessed),
+                            .apply(TopicTypes.ActionTopic.ACTION_REQUEST_UNPROCESSED),
                     actionSerdes.sagaId(),
                     actionSerdes.request());
 
@@ -180,7 +180,7 @@ class AsyncStreamTests {
         final List<ValidationRecord<SagaId, ActionResponse>> responseRecords = new ArrayList<>();
         final List<ValidationRecord<AsyncTestId, AsyncTestOutput>> outputRecords = new ArrayList<>();
         final String responseTopic = TopicNamer.forPrefix(Constants.ACTION_TOPIC_PREFIX, Constants.ASYNC_TEST_ACTION_TYPE)
-                .apply(TopicTypes.ActionTopic.response);
+                .apply(TopicTypes.ActionTopic.ACTION_RESPONSE);
 
         private final RecordPublisher<SagaId, ActionResponse> actionResponsePublisher;
         final AsyncPublisher<SagaId, ActionResponse> responseProducer;

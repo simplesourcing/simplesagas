@@ -57,7 +57,7 @@ public class SagaTopologyBuilder<A> {
 
         DistributorContext<SagaId, SagaResponse> distCtx = new DistributorContext<>(
                 new DistributorSerdes<>(sagaSpec.serdes.sagaId(), sagaSpec.serdes.response()),
-                sagaTopicConfig.namer.apply(TopicTypes.SagaTopic.responseTopicMap),
+                sagaTopicConfig.namer.apply(TopicTypes.SagaTopic.SAGA_RESPONSE_TOPIC_MAP),
                 sagaSpec.responseWindow,
                 response -> response.sagaId,
                 key -> key.id);

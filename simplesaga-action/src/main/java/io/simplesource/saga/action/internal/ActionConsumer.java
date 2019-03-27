@@ -20,7 +20,7 @@ final class ActionConsumer {
                                                                      TopicNamer actionTopicNamer,
                                                                      StreamsBuilder builder) {
         return builder.stream(
-                actionTopicNamer.apply(TopicTypes.ActionTopic.request),
+                actionTopicNamer.apply(TopicTypes.ActionTopic.ACTION_REQUEST),
                 Consumed.with(spec.serdes.sagaId(), spec.serdes.request())
         ).peek(StreamUtils.logValues(logger, "actionRequestStream"));
     }
@@ -29,7 +29,7 @@ final class ActionConsumer {
                                                                     TopicNamer actionTopicNamer,
                                                                     StreamsBuilder builder) {
         return builder.stream(
-                actionTopicNamer.apply(TopicTypes.ActionTopic.response),
+                actionTopicNamer.apply(TopicTypes.ActionTopic.ACTION_RESPONSE),
                 Consumed.with(spec.serdes.sagaId(), spec.serdes.response())
         ).peek(StreamUtils.logValues(logger, "actionResponseStream"));
     }

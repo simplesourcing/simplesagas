@@ -3,7 +3,6 @@ package io.simplesource.saga.testutils;
 public class Constants {
     // sagas
     public static final String SAGA_TOPIC_PREFIX = "saga_coordinator-";
-    public static final String SAGA_BASE_NAME = "saga";
 
     // action processors
     public static final String ACTION_TOPIC_PREFIX = "saga_action_processor-";
