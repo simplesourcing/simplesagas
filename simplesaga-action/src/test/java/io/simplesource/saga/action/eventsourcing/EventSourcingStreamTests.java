@@ -1,4 +1,4 @@
-package io.simplesource.saga.action.sourcing;
+package io.simplesource.saga.action.eventsourcing;
 
 import io.simplesource.api.CommandId;
 import io.simplesource.data.Result;
@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class SourcingStreamTests {
+class EventSourcingStreamTests {
 
     private static String SCHEMA_URL = "http://localhost:8081/";
     private static String ACCOUNT_ID = "account id";
@@ -58,7 +58,7 @@ class SourcingStreamTests {
         final Set<String> expectedTopics;
 
         AccountContext() {
-            SourcingSpec<SpecificRecord, AccountCommand, AccountId, AccountCommand> commandSpec = new SourcingSpec<>(
+            EventSourcingSpec<SpecificRecord, AccountCommand, AccountId, AccountCommand> commandSpec = new EventSourcingSpec<>(
                     Constants.ACCOUNT_ACTION_TYPE,
                     a -> Result.success((AccountCommand) a),
                     c -> c,
@@ -70,7 +70,7 @@ class SourcingStreamTests {
 
             ActionApp<SpecificRecord> streamApp = ActionApp.of(actionSerdes);
 
-            streamApp.withActionProcessor(SourcingBuilder.apply(
+            streamApp.withActionProcessor(EventSourcingBuilder.apply(
                     commandSpec,
                     topicBuilder -> topicBuilder.withTopicPrefix(Constants.ACTION_TOPIC_PREFIX),
                     topicBuilder -> topicBuilder.withTopicPrefix((Constants.COMMAND_TOPIC_PREFIX))));

@@ -59,8 +59,8 @@ final class AsyncTransform {
         if (useTransactions)
             producer.initTransactions();
 
-        AsyncPublisher<SagaId, ActionResponse> responsePublisher = new KafkaAsyncPublisher<>(producer, asyncContext.actionSpec.serdes.sagaId(), asyncContext.actionSpec.serdes.response());
-        Function<TopicSerdes<K, R>, AsyncPublisher<K, R>> outputPublisher = serdes -> new KafkaAsyncPublisher<>(producer, serdes.key, serdes.value);
+        AsyncPublisher<SagaId, ActionResponse> responsePublisher = new AsyncKafkaPublisher<>(producer, asyncContext.actionSpec.serdes.sagaId(), asyncContext.actionSpec.serdes.response());
+        Function<TopicSerdes<K, R>, AsyncPublisher<K, R>> outputPublisher = serdes -> new AsyncKafkaPublisher<>(producer, serdes.key, serdes.value);
 
         final AsyncConsumerRunner<A, D, K, O, R> runner = new AsyncConsumerRunner<A, D, K, O, R>(asyncContext, consumerConfig, responsePublisher, outputPublisher, closed -> {
             producer.flush();

@@ -1,4 +1,4 @@
-package io.simplesource.saga.action.sourcing;
+package io.simplesource.saga.action.eventsourcing;
 
 import io.simplesource.data.Result;
 import io.simplesource.data.Sequence;
@@ -19,7 +19,7 @@ import java.util.function.Function;
 @Value
 @Builder
 @AllArgsConstructor
-public final class SourcingSpec<A, D, K, C> {
+public final class EventSourcingSpec<A, D, K, C> {
     public final String actionType;
     public final Function<A, Result<Throwable, D>> decode;
     public final Function<D, C> commandMapper;

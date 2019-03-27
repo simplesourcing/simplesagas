@@ -1,4 +1,4 @@
-package io.simplesource.saga.action.sourcing;
+package io.simplesource.saga.action.eventsourcing;
 
 import io.simplesource.kafka.api.CommandSerdes;
 import io.simplesource.saga.action.internal.ActionContext;
@@ -15,9 +15,9 @@ import lombok.Value;
   */
 
 @Value(staticConstructor = "of")
-public final class SourcingContext<A, D, K, C> {
+public final class EventSourcingContext<A, D, K, C> {
     public final ActionSpec<A> actionSpec;
-    public final SourcingSpec<A, D, K, C> commandSpec;
+    public final EventSourcingSpec<A, D, K, C> commandSpec;
     public final TopicNamer actionTopicNamer;
     public final TopicNamer commandTopicNamer;
 

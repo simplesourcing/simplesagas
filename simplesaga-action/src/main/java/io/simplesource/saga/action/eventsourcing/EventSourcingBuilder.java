@@ -1,4 +1,4 @@
-package io.simplesource.saga.action.sourcing;
+package io.simplesource.saga.action.eventsourcing;
 
 import io.simplesource.saga.action.app.ActionProcessor;
 import io.simplesource.saga.shared.streams.StreamBuildSpec;
@@ -12,10 +12,10 @@ import io.simplesource.saga.shared.topics.TopicTypes;
 import java.util.List;
 import java.util.Optional;
 
-public final class SourcingBuilder {
+public final class EventSourcingBuilder {
 
     public static <A, D, K, C> ActionProcessor<A> apply(
-            SourcingSpec<A, D, K, C> cSpec,
+            EventSourcingSpec<A, D, K, C> cSpec,
             TopicConfigBuilder.BuildSteps actionTopicBuilder,
             TopicConfigBuilder.BuildSteps commandTopicBuilder) {
         return streamBuildContext -> {
@@ -33,9 +33,9 @@ public final class SourcingBuilder {
             topics.addAll(commandTopicConfig.allTopics());
 
             return new StreamBuildSpec(topics, builder -> {
-                SourcingContext<A, D, K, C> sourcingContext = SourcingContext.of(actionSpec, cSpec, actionTopicConfig.namer, commandTopicConfig.namer);
+                EventSourcingContext<A, D, K, C> eventSourcingContext = EventSourcingContext.of(actionSpec, cSpec, actionTopicConfig.namer, commandTopicConfig.namer);
                 ActionTopologyContext<A> topologyContext = ActionTopologyContext.of(actionSpec, actionTopicConfig.namer, streamBuildContext.properties, builder);
-                SourcingStream.addSubTopology(topologyContext, sourcingContext);
+                EventSourcingStream.addSubTopology(topologyContext, eventSourcingContext);
 
                 return Optional.empty();
             });
