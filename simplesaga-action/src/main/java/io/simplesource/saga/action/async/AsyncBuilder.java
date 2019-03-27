@@ -19,6 +19,17 @@ public final class AsyncBuilder {
     }
 
     public static <A, D, K, O, R> ActionProcessor<A> apply(
+            AsyncSpec<A, D, K, O, R> spec) {
+        return apply(spec, a -> a, null);
+    }
+
+    public static <A, D, K, O, R> ActionProcessor<A> apply(
+            AsyncSpec<A, D, K, O, R> spec,
+            ScheduledExecutorService executor) {
+        return apply(spec, a -> a, executor);
+    }
+
+    public static <A, D, K, O, R> ActionProcessor<A> apply(
             AsyncSpec<A, D, K, O, R> spec,
             TopicConfigBuilder.BuildSteps topicBuildFn,
             ScheduledExecutorService executor) {

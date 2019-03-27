@@ -15,6 +15,11 @@ import java.util.Optional;
 public final class EventSourcingBuilder {
 
     public static <A, D, K, C> ActionProcessor<A> apply(
+            EventSourcingSpec<A, D, K, C> cSpec) {
+        return apply(cSpec, a -> a, c -> c);
+    }
+
+    public static <A, D, K, C> ActionProcessor<A> apply(
             EventSourcingSpec<A, D, K, C> cSpec,
             TopicConfigBuilder.BuildSteps actionTopicBuilder,
             TopicConfigBuilder.BuildSteps commandTopicBuilder) {
