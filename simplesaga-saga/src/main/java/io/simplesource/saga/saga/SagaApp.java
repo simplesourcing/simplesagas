@@ -1,6 +1,6 @@
 package io.simplesource.saga.saga;
 
-import io.simplesource.saga.model.specs.ActionProcessorSpec;
+import io.simplesource.saga.model.specs.ActionSpec;
 import io.simplesource.saga.model.specs.SagaSpec;
 import io.simplesource.saga.saga.app.SagaContext;
 import io.simplesource.saga.saga.app.SagaTopologyBuilder;
@@ -35,12 +35,12 @@ final public class SagaApp<A> {
 
     private static Logger logger = LoggerFactory.getLogger(SagaApp.class);
     private final SagaSpec<A> sagaSpec;
-    private final ActionProcessorSpec<A> actionSpec;
+    private final ActionSpec<A> actionSpec;
     private final TopicConfig sagaTopicConfig;
     private final List<TopicCreation> topics = new ArrayList<>();
     private final Map<String, TopicNamer> topicNamers = new HashMap<>();
 
-    public SagaApp(SagaSpec<A> sagaSpec, ActionProcessorSpec<A> actionSpec, TopicConfigBuilder.BuildSteps topicBuildFn) {
+    public SagaApp(SagaSpec<A> sagaSpec, ActionSpec<A> actionSpec, TopicConfigBuilder.BuildSteps topicBuildFn) {
         this.sagaSpec = sagaSpec;
         this.actionSpec = actionSpec;
         sagaTopicConfig = TopicConfigBuilder.build(

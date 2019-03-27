@@ -3,7 +3,7 @@ package io.simplesource.saga.action.internal;
 import io.simplesource.saga.model.messages.ActionRequest;
 import io.simplesource.saga.model.messages.ActionResponse;
 import io.simplesource.saga.model.saga.SagaId;
-import io.simplesource.saga.model.specs.ActionProcessorSpec;
+import io.simplesource.saga.model.specs.ActionSpec;
 import io.simplesource.saga.shared.streams.StreamUtils;
 import io.simplesource.saga.shared.topics.TopicNamer;
 import io.simplesource.saga.shared.topics.TopicTypes;
@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
 final class ActionConsumer {
     private static Logger logger = LoggerFactory.getLogger(ActionConsumer.class);
 
-    static <A> KStream<SagaId, ActionRequest<A>> actionRequestStream(ActionProcessorSpec<A> spec,
+    static <A> KStream<SagaId, ActionRequest<A>> actionRequestStream(ActionSpec<A> spec,
                                                                      TopicNamer actionTopicNamer,
                                                                      StreamsBuilder builder) {
         return builder.stream(
@@ -25,7 +25,7 @@ final class ActionConsumer {
         ).peek(StreamUtils.logValues(logger, "actionRequestStream"));
     }
 
-    static <A> KStream<SagaId, ActionResponse> actionResponseStream(ActionProcessorSpec<A> spec,
+    static <A> KStream<SagaId, ActionResponse> actionResponseStream(ActionSpec<A> spec,
                                                                     TopicNamer actionTopicNamer,
                                                                     StreamsBuilder builder) {
         return builder.stream(

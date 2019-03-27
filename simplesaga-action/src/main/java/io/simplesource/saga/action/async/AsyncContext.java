@@ -1,7 +1,7 @@
 package io.simplesource.saga.action.async;
 
 import io.simplesource.saga.action.internal.ActionContext;
-import io.simplesource.saga.model.specs.ActionProcessorSpec;
+import io.simplesource.saga.model.specs.ActionSpec;
 import io.simplesource.saga.shared.topics.TopicNamer;
 import lombok.Value;
 
@@ -16,7 +16,7 @@ import java.util.concurrent.ScheduledExecutorService;
   */
 @Value
 public final class AsyncContext<A, D, K, O, R> {
-    public final ActionProcessorSpec<A> actionSpec;
+    public final ActionSpec<A> actionSpec;
     public final TopicNamer actionTopicNamer;
     public final AsyncSpec<A, D, K, O, R> asyncSpec;
     public final ScheduledExecutorService executor;

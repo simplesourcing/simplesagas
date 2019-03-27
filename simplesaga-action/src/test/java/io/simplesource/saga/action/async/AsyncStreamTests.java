@@ -4,7 +4,7 @@ import io.confluent.kafka.schemaregistry.client.MockSchemaRegistryClient;
 import io.simplesource.api.CommandId;
 import io.simplesource.data.Result;
 import io.simplesource.kafka.spec.TopicSpec;
-import io.simplesource.saga.action.ActionProcessorApp;
+import io.simplesource.saga.action.ActionApp;
 import io.simplesource.saga.model.serdes.TopicSerdes;
 import io.simplesource.saga.action.internal.AsyncActionProcessorProxy;
 import io.simplesource.saga.action.internal.AsyncPublisher;
@@ -17,7 +17,7 @@ import io.simplesource.saga.model.messages.ActionRequest;
 import io.simplesource.saga.model.messages.ActionResponse;
 import io.simplesource.saga.model.saga.SagaId;
 import io.simplesource.saga.model.serdes.ActionSerdes;
-import io.simplesource.saga.model.specs.ActionProcessorSpec;
+import io.simplesource.saga.model.specs.ActionSpec;
 import io.simplesource.saga.serialization.avro.AvroSerdes;
 import io.simplesource.saga.serialization.avro.SpecificSerdeUtils;
 import io.simplesource.saga.shared.streams.StreamBuildResult;
@@ -100,15 +100,15 @@ class AsyncStreamTests {
                             ))),
                     timeout);
 
-            ActionProcessorApp<SpecificRecord> streamApp = ActionProcessorApp.of(actionSerdes);
+            ActionApp<SpecificRecord> actionApp = ActionApp.of(actionSerdes);
 
-            streamApp.withActionProcessor(AsyncBuilder.apply(
+            actionApp.withActionProcessor(AsyncBuilder.apply(
                     asyncSpec,
                     topicBuilder -> topicBuilder.withTopicPrefix(Constants.ACTION_TOPIC_PREFIX)));
 
             Properties config = StreamAppConfig.getConfig(new StreamAppConfig("app-id", "http://localhost:9092"));
 
-            StreamBuildResult sb = streamApp.build(config);
+            StreamBuildResult sb = actionApp.build(config);
             Topology topology = sb.topologySupplier.get();
             expectedTopics = sb.topicCreations.stream().map(x -> x.topicName).collect(Collectors.toSet());
 
@@ -139,7 +139,7 @@ class AsyncStreamTests {
                     actionSerdes.request());
 
             asyncContext = new AsyncContext<>(
-                    ActionProcessorSpec.of(actionSerdes),
+                    ActionSpec.of(actionSerdes, Duration.ofSeconds(60)),
                     TopicNamer.forPrefix(Constants.ACTION_TOPIC_PREFIX, Constants.ASYNC_TEST_ACTION_TYPE),
                     asyncSpec,
                     executor);

@@ -15,7 +15,7 @@ import io.simplesource.saga.model.saga.SagaId;
 import io.simplesource.saga.model.saga.SagaStatus;
 import io.simplesource.saga.model.serdes.ActionSerdes;
 import io.simplesource.saga.model.serdes.SagaSerdes;
-import io.simplesource.saga.model.specs.ActionProcessorSpec;
+import io.simplesource.saga.model.specs.ActionSpec;
 import io.simplesource.saga.model.specs.SagaSpec;
 import io.simplesource.saga.saga.avro.generated.test.AddFunds;
 import io.simplesource.saga.saga.avro.generated.test.CreateAccount;
@@ -30,6 +30,7 @@ import org.apache.avro.specific.SpecificRecord;
 import org.apache.kafka.streams.Topology;
 import org.junit.jupiter.api.Test;
 
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -67,7 +68,7 @@ class SagaStreamTests {
 
             SagaApp<SpecificRecord> sagaApp = new SagaApp<>(
                     new SagaSpec<>(sagaSerdes, new WindowSpec(60)),
-                    ActionProcessorSpec.of(actionSerdes),
+                    ActionSpec.of(actionSerdes, Duration.ofSeconds(60)),
                     topicBuilder -> topicBuilder.withTopicPrefix(Constants.SAGA_TOPIC_PREFIX));
 
             sagaApp.addActionProcessor(

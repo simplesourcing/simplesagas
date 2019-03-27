@@ -24,6 +24,8 @@ import org.apache.kafka.streams.kstream.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
+
 public final class SourcingStream {
 
     private static Logger logger = LoggerFactory.getLogger(SourcingStream.class);
@@ -150,7 +152,7 @@ public final class SourcingStream {
         // Join the action request and command response by commandID
         KStream<CommandId, Tuple2<CommandResponse<K>, ActionRequest<A>>> crArByCi = commandResponseByAggregate
                 .selectKey((k, v) -> v.commandId())
-                .join(actionRequests.selectKey((k, v) -> v.actionCommand.commandId), Tuple2::of, JoinWindows.of(0L),
+                .join(actionRequests.selectKey((k, v) -> v.actionCommand.commandId), Tuple2::of, JoinWindows.of(ctx.actionSpec().sagaDuration),
                         Joined.with(cSerdes.commandId(), cSerdes.commandResponse(), aSerdes.request()));
 
 
@@ -172,7 +174,7 @@ public final class SourcingStream {
             SourcingContext<A, D, K, C> ctx,
             KStream<SagaId, ActionRequest<A>> actionRequests,
             KStream<CommandId, CommandResponse<K>> responseByCommandId) {
-        long timeOutMillis = ctx.commandSpec.timeOutMillis;
+        Duration timeout = ctx.commandSpec.timeout;
         // find the response for the request
         KStream<CommandId, Tuple2<ActionRequest<A>, CommandResponse<K>>> actionRequestWithResponse =
                 // join command response to action request by the command / action ID
@@ -182,7 +184,7 @@ public final class SourcingStream {
                         .join(
                                 responseByCommandId,
                                 Tuple2::of,
-                                JoinWindows.of(timeOutMillis).until(timeOutMillis * 2 + 1),
+                                JoinWindows.of(timeout),
                                 Joined.with(ctx.cSerdes().commandId(), ctx.aSerdes().request(), ctx.cSerdes().commandResponse())
                         )
                         .peek(StreamUtils.logValues(logger, "joinActionRequestAndCommandResponse"));

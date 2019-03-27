@@ -3,8 +3,7 @@ package io.simplesource.saga.action.internal;
 import io.simplesource.saga.model.messages.ActionRequest;
 import io.simplesource.saga.model.messages.ActionResponse;
 import io.simplesource.saga.model.saga.SagaId;
-import io.simplesource.saga.model.specs.ActionProcessorSpec;
-import io.simplesource.saga.shared.topics.TopicConfig;
+import io.simplesource.saga.model.specs.ActionSpec;
 import io.simplesource.saga.shared.topics.TopicNamer;
 import lombok.Value;
 import org.apache.kafka.streams.StreamsBuilder;
@@ -23,7 +22,7 @@ public final class ActionTopologyContext<A> {
     public final Properties properties;
 
     public static <A> ActionTopologyContext<A> of(
-            ActionProcessorSpec<A> actionSpec, TopicNamer actionTopicNamer, Properties config, StreamsBuilder builder) {
+            ActionSpec<A> actionSpec, TopicNamer actionTopicNamer, Properties config, StreamsBuilder builder) {
         KStream<SagaId, ActionRequest<A>> actionRequests =
                 ActionConsumer.actionRequestStream(actionSpec, actionTopicNamer, builder);
         KStream<SagaId, ActionResponse> actionResponses =

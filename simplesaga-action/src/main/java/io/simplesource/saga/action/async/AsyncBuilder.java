@@ -1,9 +1,9 @@
 package io.simplesource.saga.action.async;
 
-import io.simplesource.saga.action.app.ActionProcessorBuildStep;
+import io.simplesource.saga.action.app.ActionProcessor;
 import io.simplesource.saga.shared.streams.StreamBuildSpec;
 import io.simplesource.saga.action.internal.*;
-import io.simplesource.saga.model.specs.ActionProcessorSpec;
+import io.simplesource.saga.model.specs.ActionSpec;
 import io.simplesource.saga.shared.topics.*;
 
 import java.util.*;
@@ -12,18 +12,18 @@ import java.util.concurrent.ScheduledExecutorService;
 
 public final class AsyncBuilder {
 
-    public static <A, D, K, O, R> ActionProcessorBuildStep<A> apply(
+    public static <A, D, K, O, R> ActionProcessor<A> apply(
             AsyncSpec<A, D, K, O, R> spec,
             TopicConfigBuilder.BuildSteps topicBuildFn) {
         return apply(spec, topicBuildFn, null);
     }
 
-    public static <A, D, K, O, R> ActionProcessorBuildStep<A> apply(
+    public static <A, D, K, O, R> ActionProcessor<A> apply(
             AsyncSpec<A, D, K, O, R> spec,
             TopicConfigBuilder.BuildSteps topicBuildFn,
             ScheduledExecutorService executor) {
         return streamBuildContext -> {
-            ActionProcessorSpec<A> actionSpec = streamBuildContext.actionProcessorSpec;
+            ActionSpec<A> actionSpec = streamBuildContext.actionSpec;
 
             List<String> expectedTopicList = new ArrayList<>(TopicTypes.ActionTopic.all);
             expectedTopicList.add(TopicTypes.ActionTopic.ACTION_REQUEST_UNPROCESSED);

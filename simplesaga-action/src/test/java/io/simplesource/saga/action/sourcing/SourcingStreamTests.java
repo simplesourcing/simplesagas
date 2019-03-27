@@ -7,7 +7,7 @@ import io.simplesource.kafka.api.CommandSerdes;
 import io.simplesource.kafka.model.CommandRequest;
 import io.simplesource.kafka.model.CommandResponse;
 import io.simplesource.kafka.serialization.avro.AvroCommandSerdes;
-import io.simplesource.saga.action.ActionProcessorApp;
+import io.simplesource.saga.action.ActionApp;
 import io.simplesource.saga.avro.avro.generated.test.*;
 import io.simplesource.saga.model.action.ActionCommand;
 import io.simplesource.saga.model.action.ActionId;
@@ -26,6 +26,7 @@ import org.apache.avro.specific.SpecificRecord;
 import org.apache.kafka.streams.Topology;
 import org.junit.jupiter.api.Test;
 
+import java.time.Duration;
 import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -64,10 +65,10 @@ class SourcingStreamTests {
                     AccountCommand::getId,
                     c -> Sequence.position(c.getSequence()),
                     commandSerdes,
-                    2000,
+                    Duration.ofSeconds(20),
                     Constants.ACCOUNT_AGGREGATE_NAME);
 
-            ActionProcessorApp<SpecificRecord> streamApp = ActionProcessorApp.of(actionSerdes);
+            ActionApp<SpecificRecord> streamApp = ActionApp.of(actionSerdes);
 
             streamApp.withActionProcessor(SourcingBuilder.apply(
                     commandSpec,

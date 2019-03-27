@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Value;
 
+import java.time.Duration;
 import java.util.function.Function;
 
 /**
@@ -25,6 +26,6 @@ public final class SourcingSpec<A, D, K, C> {
     public final Function<D, K> keyMapper;
     public final Function<D, Sequence> sequenceMapper;
     public final CommandSerdes<K, C> commandSerdes;
-    public final long timeOutMillis;
+    public final Duration timeout;
     public final String aggregateName;
 }

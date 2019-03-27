@@ -5,7 +5,7 @@ import io.simplesource.kafka.internal.util.Tuple2;
 import io.simplesource.saga.model.messages.ActionRequest;
 import io.simplesource.saga.model.messages.ActionResponse;
 import io.simplesource.saga.model.saga.SagaId;
-import io.simplesource.saga.model.specs.ActionProcessorSpec;
+import io.simplesource.saga.model.specs.ActionSpec;
 import lombok.Value;
 import org.apache.kafka.streams.kstream.*;
 
@@ -18,7 +18,7 @@ final class IdempotentStream {
     }
 
     static <A> IdempotentAction<A> getActionRequestsWithResponse
-            (ActionProcessorSpec<A> aSpec,
+            (ActionSpec<A> aSpec,
              KStream<SagaId, ActionRequest<A>> actionRequests,
              KStream<SagaId, ActionResponse> actionResponse) {
 

@@ -6,7 +6,7 @@ import io.simplesource.saga.model.messages.SagaResponse;
 import io.simplesource.saga.model.messages.SagaStateTransition;
 import io.simplesource.saga.model.saga.Saga;
 import io.simplesource.saga.model.saga.SagaId;
-import io.simplesource.saga.model.specs.ActionProcessorSpec;
+import io.simplesource.saga.model.specs.ActionSpec;
 import io.simplesource.saga.model.specs.SagaSpec;
 import io.simplesource.saga.shared.topics.TopicNamer;
 import io.simplesource.saga.shared.topics.TopicTypes;
@@ -48,9 +48,9 @@ final class SagaConsumer {
                 Consumed.with(spec.serdes.sagaId(), spec.serdes.state()));
     }
 
-    static <A> KStream<SagaId, ActionResponse> actionResponse(ActionProcessorSpec<A> actionSpec,
-                                                            Map<String, TopicNamer> topicNamers,
-                                                            StreamsBuilder builder) {
+    static <A> KStream<SagaId, ActionResponse> actionResponse(ActionSpec<A> actionSpec,
+                                                              Map<String, TopicNamer> topicNamers,
+                                                              StreamsBuilder builder) {
         List<String> actionResponseNames = topicNamers.values()
                 .stream()
                 .map(tn -> tn.apply(TopicTypes.ActionTopic.ACTION_RESPONSE))
