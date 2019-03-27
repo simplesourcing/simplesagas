@@ -31,9 +31,9 @@ public class TopicConfigBuilder {
         public default BuildSteps withInitialStep(BuildSteps initial) {
             return builder -> this.applyStep(initial.applyStep(builder));
         }
-
-        public BuildSteps indentity = builder -> builder;
     }
+
+    public BuildSteps indentity = builder -> builder;
 
     public TopicConfigBuilder(
             List<String> topicTypes,

@@ -66,16 +66,16 @@ class SagaStreamTests {
             TopicNamer accountActionTopicNamer = TopicNamer.forPrefix(Constants.ACTION_TOPIC_PREFIX, Constants.ACCOUNT_ACTION_TYPE);
             TopicNamer userActionTopicNamer = TopicNamer.forPrefix(Constants.ACTION_TOPIC_PREFIX, Constants.USER_ACTION_TYPE);
 
-            SagaApp<SpecificRecord> sagaApp = new SagaApp<>(
+            SagaApp<SpecificRecord> sagaApp = SagaApp.of(
                     new SagaSpec<>(sagaSerdes, new WindowSpec(60)),
                     ActionSpec.of(actionSerdes, Duration.ofSeconds(60)),
                     topicBuilder -> topicBuilder.withTopicPrefix(Constants.SAGA_TOPIC_PREFIX));
 
-            sagaApp.addActionProcessor(
+            sagaApp.withAction(
                     Constants.ACCOUNT_ACTION_TYPE,
                     topicBuilder -> topicBuilder.withTopicPrefix(Constants.ACTION_TOPIC_PREFIX));
 
-            sagaApp.addActionProcessor(
+            sagaApp.withAction(
                     Constants.USER_ACTION_TYPE,
                     topicBuilder -> topicBuilder.withTopicPrefix(Constants.ACTION_TOPIC_PREFIX));
 
