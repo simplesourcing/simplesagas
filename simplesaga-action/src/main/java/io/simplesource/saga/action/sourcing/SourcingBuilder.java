@@ -24,11 +24,12 @@ public final class SourcingBuilder {
             TopicConfig actionTopicConfig = TopicConfigBuilder.build(
                     TopicTypes.ActionTopic.all,
                     actionTopicBuilder.withInitialStep(builder -> builder.withTopicBaseName(cSpec.actionType.toLowerCase())));
-            List<TopicCreation> topics = actionTopicConfig.allTopics();
 
             TopicConfig commandTopicConfig = TopicConfigBuilder.build(
                     TopicTypes.CommandTopic.all,
                     commandTopicBuilder.withInitialStep(builder -> builder.withTopicBaseName(cSpec.aggregateName.toLowerCase())));
+
+            List<TopicCreation> topics = actionTopicConfig.allTopics();
             topics.addAll(commandTopicConfig.allTopics());
 
             return new StreamBuildSpec(topics, builder -> {

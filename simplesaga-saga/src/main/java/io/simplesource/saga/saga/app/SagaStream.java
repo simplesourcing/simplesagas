@@ -17,25 +17,13 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 final public class SagaStream {
     private static Logger logger = LoggerFactory.getLogger(SagaStream.class);
 
     static <K, V> ForeachAction<K, V> logValues(String prefix) {
         return (k, v) -> logger.info("{}: {}={}", prefix, k.toString().substring(0, 6), v.toString());
-    }
-
-    public static <A> void addSubTopology(SagaTopologyBuilder.SagaTopologyContext<A> topologyContext,
-                                          SagaContext<A> sagaContext) {
-        KStream<SagaId, ActionResponse> actionResponse = SagaConsumer.actionResponse(
-                sagaContext.aSpec,
-                sagaContext.actionTopicNamer,
-                topologyContext.builder);
-        SagaStream.addSubTopology(sagaContext,
-                topologyContext.sagaRequest,
-                topologyContext.sagaStateTransition,
-                topologyContext.sagaState,
-                actionResponse);
     }
 
     static <A> void addSubTopology(SagaContext<A> ctx,
@@ -47,21 +35,26 @@ final public class SagaStream {
         // create the state table from the state stream
         KTable<SagaId, Saga<A>> stateTable = createStateTable(ctx, stateStream);
 
+        // validate saga requests
+        Tuple2<KStream<SagaId, SagaRequest<A>>, KStream<SagaId, SagaResponse>> vrIr =
+                validateSagaRequests(ctx, sagaRequestStream);
+
         // add stream transformations
-        KStream<SagaId, SagaStateTransition> inputStateTransitions = addInitialState(ctx, sagaRequestStream, stateTable);
-        Tuple2<KStream<SagaId, SagaStateTransition>, KStream<SagaId, ActionRequest<A>>> rtar = addNextActions(stateStream);
+        KStream<SagaId, SagaStateTransition> inputStateTransitions = addInitialState(ctx, vrIr.v1(), stateTable);
+        Tuple2<KStream<SagaId, SagaStateTransition>, KStream<SagaId, ActionRequest<A>>> rtAr = addNextActions(stateStream);
         KStream<SagaId, SagaStateTransition> responseTransitions = addActionResponses(actionResponseStream);
-        Tuple2<KStream<SagaId, SagaStateTransition>, KStream<SagaId, SagaResponse>> stsr = addSagaResponse(stateStream);
+        Tuple2<KStream<SagaId, SagaStateTransition>, KStream<SagaId, SagaResponse>> stSr = addSagaResponse(stateStream);
         KStream<SagaId, Saga<A>> sagaState = applyStateTransitions(ctx, stateTransitionStream);
 
         // publish to all the value topics
-        SagaProducer.publishActionRequests(ctx, rtar.v2());
+        SagaProducer.publishActionRequests(ctx, rtAr.v2());
         SagaProducer.publishSagaStateTransitions(ctx, inputStateTransitions);
-        SagaProducer.publishSagaStateTransitions(ctx, rtar.v1());
+        SagaProducer.publishSagaStateTransitions(ctx, rtAr.v1());
         SagaProducer.publishSagaStateTransitions(ctx, responseTransitions);
-        SagaProducer.publishSagaStateTransitions(ctx, stsr.v1());
+        SagaProducer.publishSagaStateTransitions(ctx, stSr.v1());
         SagaProducer.publishSagaState(ctx, sagaState);
-        SagaProducer.publishSagaResponses(ctx, stsr.v2());
+        SagaProducer.publishSagaResponses(ctx, vrIr.v2());
+        SagaProducer.publishSagaResponses(ctx, stSr.v2());
     }
 
     static <A> KTable<SagaId, Saga<A>> createStateTable(SagaContext<A> ctx, KStream<SagaId, Saga<A>> stateStream) {
@@ -71,7 +64,7 @@ final public class SagaStream {
     }
 
     static <A> KStream<SagaId, Saga<A>> applyStateTransitions(SagaContext<A> ctx,
-                                                            KStream<SagaId, SagaStateTransition> stateTransitionStream) {
+                                                              KStream<SagaId, SagaStateTransition> stateTransitionStream) {
         SagaSerdes<A> sSerdes = ctx.sSerdes;
 
         Materialized<SagaId, Saga<A>, KeyValueStore<Bytes, byte[]>> materialized = Materialized
@@ -88,9 +81,32 @@ final public class SagaStream {
                 .toStream();
     }
 
-    static <A> KStream<SagaId, SagaStateTransition> addInitialState(SagaContext<A> ctx,
-                                                                  KStream<SagaId, SagaRequest<A>> sagaRequestStream,
-                                                                  KTable<SagaId, Saga<A>> stateTable) {
+    private static <A> Tuple2<KStream<SagaId, SagaRequest<A>>, KStream<SagaId, SagaResponse>> validateSagaRequests(
+            SagaContext<A> ctx,
+            KStream<SagaId, SagaRequest<A>> sagaRequestStream) {
+
+        Set<String> actionTypes = ctx.actionTopicNamers.keySet();
+
+        // check that all action types are valid (may add other validations at some point)
+        KStream<SagaId, Tuple2<SagaRequest<A>, List<SagaError>>> y = sagaRequestStream.mapValues((id, request) -> {
+            List<SagaError> errors = request.initialState.actions.values().stream().map(action -> {
+                String at = action.actionType.toLowerCase();
+                SagaError error = !actionTypes.contains(at) ? SagaError.of(SagaError.Reason.InvalidSaga, String.format("Unknown action type '%s'", at)) : null;
+                return error;
+            }).filter(Objects::nonNull).collect(Collectors.toList());
+            return Tuple2.of(request, errors);
+        });
+
+        KStream<SagaId, Tuple2<SagaRequest<A>, List<SagaError>>>[] z = y.branch((k, reqWithErrors) -> reqWithErrors.v2().isEmpty(), (k, reqWithErrors) -> !reqWithErrors.v2().isEmpty());
+        KStream<SagaId, SagaRequest<A>> validRequests = z[0].mapValues(Tuple2::v1);
+        KStream<SagaId, SagaResponse> inValidResponses = z[1].mapValues(Tuple2::v2).mapValues((k, v) -> new SagaResponse(k, Result.failure(NonEmptyList.fromList(v).get())));
+
+        return Tuple2.of(validRequests, inValidResponses);
+    }
+
+    private static <A> KStream<SagaId, SagaStateTransition> addInitialState(SagaContext<A> ctx,
+                                                                            KStream<SagaId, SagaRequest<A>> sagaRequestStream,
+                                                                            KTable<SagaId, Saga<A>> stateTable) {
         SagaSerdes<A> sSerdes = ctx.sSerdes;
         KStream<SagaId, Tuple2<SagaRequest<A>, Boolean>> newRequestStream = sagaRequestStream.leftJoin(
                 stateTable,
@@ -100,7 +116,6 @@ final public class SagaStream {
 
         return newRequestStream.mapValues((k, v) -> new SagaStateTransition.SetInitialState<>(v.v1().initialState));
     }
-
 
     @Value
     private static final class StatusWithError {

@@ -20,7 +20,7 @@ public final class AsyncStream {
                                                        KStream<SagaId, ActionResponse> actionResponse) {
         // join the action request with corresponding prior command responses
         IdempotentStream.IdempotentAction<A> idempotentAction = IdempotentStream.getActionRequestsWithResponse(
-                ctx.actionSpec, actionRequest, actionResponse, ctx.asyncSpec.actionType);
+                ctx.actionSpec, actionRequest, actionResponse);
 
         // publish to value topics
         ActionPublisher.publishActionResponse(ctx.getActionContext(), idempotentAction.priorResponses);

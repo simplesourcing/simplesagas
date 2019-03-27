@@ -8,6 +8,8 @@ import io.simplesource.saga.model.specs.SagaSpec;
 import io.simplesource.saga.shared.topics.TopicNamer;
 import lombok.Value;
 
+import java.util.Map;
+
 @Value
 public final class SagaContext<A> {
     public final SagaSerdes<A> sSerdes;
@@ -15,17 +17,17 @@ public final class SagaContext<A> {
     public final SagaSpec<A> sSpec;
     public final ActionProcessorSpec<A> aSpec;
     public final TopicNamer sagaTopicNamer;
-    public final TopicNamer actionTopicNamer;
+    public final Map<String, TopicNamer> actionTopicNamers;
 
     public SagaContext(SagaSpec<A> sSpec,
             ActionProcessorSpec<A> aSpec,
             TopicNamer sagaTopicNamer,
-            TopicNamer actionTopicNamer) {
+            Map<String, TopicNamer> actionTopicNamers) {
 
         this.sSpec = sSpec;
         this.aSpec = aSpec;
         this.sagaTopicNamer = sagaTopicNamer;
-        this.actionTopicNamer = actionTopicNamer;
+        this.actionTopicNamers = actionTopicNamers;
         sSerdes = sSpec.serdes;
         aSerdes = aSpec.serdes;
     }

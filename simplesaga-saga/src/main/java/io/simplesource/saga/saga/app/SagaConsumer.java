@@ -14,6 +14,10 @@ import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.KStream;
 
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 final class SagaConsumer {
 
     static <A> KStream<SagaId, SagaRequest<A>> sagaRequest(SagaSpec<A> spec,
@@ -45,9 +49,14 @@ final class SagaConsumer {
     }
 
     static <A> KStream<SagaId, ActionResponse> actionResponse(ActionProcessorSpec<A> actionSpec,
-                                                            TopicNamer topicNamer,
+                                                            Map<String, TopicNamer> topicNamers,
                                                             StreamsBuilder builder) {
-        return builder.stream(topicNamer.apply(TopicTypes.ActionTopic.ACTION_RESPONSE),
+        List<String> actionResponseNames = topicNamers.values()
+                .stream()
+                .map(tn -> tn.apply(TopicTypes.ActionTopic.ACTION_RESPONSE))
+                .collect(Collectors.toList());
+
+        return builder.stream(actionResponseNames,
                 Consumed.with(actionSpec.serdes.sagaId(), actionSpec.serdes.response()));
     }
 }

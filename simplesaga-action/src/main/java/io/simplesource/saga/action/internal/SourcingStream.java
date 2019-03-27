@@ -49,10 +49,12 @@ public final class SourcingStream {
 
         IdempotentStream.IdempotentAction<A> idempotentAction = IdempotentStream.getActionRequestsWithResponse(ctx.actionSpec,
                 actionRequest,
-                actionResponse,
-                ctx.commandSpec.actionType);
+                actionResponse);
+
         // get new command requests
-        Tuple2<KStream<SagaId, ActionResponse>, KStream<K, CommandRequest<K, C>>> requestResp = handleActionRequest(ctx, idempotentAction.unprocessedRequests, commandResponseByAggregate);
+        Tuple2<KStream<SagaId, ActionResponse>, KStream<K, CommandRequest<K, C>>> requestResp =
+                handleActionRequest(ctx, idempotentAction.unprocessedRequests, commandResponseByAggregate);
+
         KStream<SagaId, ActionResponse> requestErrorResponses = requestResp.v1();
         KStream<K, CommandRequest<K, C>> commandRequests = requestResp.v2();
 
@@ -66,7 +68,6 @@ public final class SourcingStream {
         ActionPublisher.publishActionResponse(actionCtx, newActionResponses);
         ActionPublisher.publishActionResponse(actionCtx, requestErrorResponses);
     }
-
 
     /**
      * Unfortunately we have to keep invoking this decoder step

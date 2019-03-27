@@ -15,13 +15,9 @@ final class SagaProducer {
         actionRequests
                 .to((x, actionRequest, z) -> {
                             String actionType = actionRequest.actionType();
-                            String name = ctx.actionTopicNamer.apply(TopicTypes.ActionTopic.ACTION_REQUEST + "-" + actionType.toLowerCase());
-                            return name;
+                            return ctx.actionTopicNamers.get(actionType.toLowerCase()).apply(TopicTypes.ActionTopic.ACTION_REQUEST);
                     },
-                        Produced.with(ctx.sSerdes.sagaId(), ctx.aSerdes.request()));
-        actionRequests
-                .to(ctx.actionTopicNamer.apply(TopicTypes.ActionTopic.ACTION_REQUEST),
-                        Produced.with(ctx.sSerdes.sagaId(), ctx.aSerdes.request()));
+                    Produced.with(ctx.sSerdes.sagaId(), ctx.aSerdes.request()));
     }
 
     static <A> void publishSagaState(SagaContext<A> ctx, KStream<SagaId, Saga<A>> sagaState) {

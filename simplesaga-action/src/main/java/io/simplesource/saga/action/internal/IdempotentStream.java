@@ -20,8 +20,7 @@ final class IdempotentStream {
     static <A> IdempotentAction<A> getActionRequestsWithResponse
             (ActionProcessorSpec<A> aSpec,
              KStream<SagaId, ActionRequest<A>> actionRequests,
-             KStream<SagaId, ActionResponse> actionResponse,
-             String actionType) {
+             KStream<SagaId, ActionResponse> actionResponse) {
 
         KTable<CommandId, ActionResponse> actionByCommandId =
                 actionResponse
@@ -30,10 +29,9 @@ final class IdempotentStream {
                         .reduce((cr1, cr2) -> cr2, Materialized.with(aSpec.serdes.commandId(), aSpec.serdes.response()));
 
         KStream<SagaId, Tuple2<ActionRequest<A>, ActionResponse>> actionRequestWithResponse = actionRequests
-                .filter((k, aReq) -> aReq.actionType.equals(actionType))
                 .selectKey((k, v) -> v.actionCommand.commandId)
                 .leftJoin(actionByCommandId,
-                        (k, v) -> Tuple2.of(k, v),
+                        Tuple2::of,
                         Joined.with(aSpec.serdes.commandId(), aSpec.serdes.request(), aSpec.serdes.response()))
                 .selectKey(((k, v) -> v.v1().sagaId));
 
