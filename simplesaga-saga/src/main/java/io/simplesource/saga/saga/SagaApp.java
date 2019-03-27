@@ -57,11 +57,13 @@ final public class SagaApp<A> {
                 )),
                 topicBuildFn);
         topologyBuilder = new SagaTopologyBuilder<>(sagaSpec, sagaTopicConfig);
-        topics = TopicCreation.allTopics(sagaTopicConfig);
+        topics = sagaTopicConfig.allTopics();
     }
 
-    public SagaApp<A> addActionProcessor(ActionProcessorSpec<A> actionSpec, TopicConfigBuilder.BuildSteps buildFn) {
-        TopicConfig topicConfig = TopicConfigBuilder.build(TopicTypes.ActionTopic.all, buildFn);
+    public SagaApp<A> addActionProcessor(ActionProcessorSpec<A> actionSpec, String actionType, TopicConfigBuilder.BuildSteps buildFn) {
+        TopicConfigBuilder.BuildSteps initialBuildStep = builder -> builder.withTopicBaseName(actionType.toLowerCase());
+
+        TopicConfig topicConfig = TopicConfigBuilder.build(TopicTypes.ActionTopic.all, buildFn.withInitialStep(initialBuildStep));
         topics.addAll(TopicCreation.allTopics(topicConfig));
 
         topologyBuilder.onBuildTopology((topologyContext) -> {

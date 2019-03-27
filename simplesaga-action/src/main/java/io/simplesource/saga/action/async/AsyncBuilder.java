@@ -4,10 +4,7 @@ import io.simplesource.saga.shared.streams.StreamBuildSpec;
 import io.simplesource.saga.action.internal.*;
 import io.simplesource.saga.model.specs.ActionProcessorSpec;
 import io.simplesource.saga.shared.streams.StreamBuildStep;
-import io.simplesource.saga.shared.topics.TopicConfig;
-import io.simplesource.saga.shared.topics.TopicConfigBuilder;
-import io.simplesource.saga.shared.topics.TopicCreation;
-import io.simplesource.saga.shared.topics.TopicTypes;
+import io.simplesource.saga.shared.topics.*;
 
 import java.util.*;
 import java.util.concurrent.Executors;
@@ -31,8 +28,10 @@ public final class AsyncBuilder {
             List<String> expectedTopicList = new ArrayList<>(TopicTypes.ActionTopic.all);
             expectedTopicList.add(TopicTypes.ActionTopic.requestUnprocessed);
 
-            TopicConfig actionTopicConfig = TopicConfigBuilder.build(expectedTopicList, topicBuildFn);
-            List<TopicCreation> topics = TopicCreation.allTopics(actionTopicConfig);
+            TopicConfigBuilder.BuildSteps initialBuildStep = builder -> builder.withTopicBaseName(spec.actionType.toLowerCase());
+
+            TopicConfig actionTopicConfig = TopicConfigBuilder.build(expectedTopicList, topicBuildFn.withInitialStep(initialBuildStep));
+            List<TopicCreation> topics = actionTopicConfig.allTopics();
 
             return new StreamBuildSpec(topics, builder -> {
 

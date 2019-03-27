@@ -2,15 +2,15 @@ package io.simplesource.saga.testutils;
 
 public class Constants {
     // sagas
-    public static final String SAGA_TOPIC_PREFIX = "saga_coordinator_";
+    public static final String SAGA_TOPIC_PREFIX = "saga_coordinator-";
     public static final String SAGA_BASE_NAME = "saga";
 
     // action processors
-    public static final String ACTION_TOPIC_PREFIX = "saga_action_processor_";
-    public static final String SAGA_ACTION_BASE_NAME = "saga_action";
+    public static final String ACTION_TOPIC_PREFIX = "saga_action_processor-";
+    public static final String SAGA_ACTION_TYPE = "saga_action_type";
 
     // commands (simple sourcing)
-    public static final String COMMAND_TOPIC_PREFIX = "saga_command_";
+    public static final String COMMAND_TOPIC_PREFIX = "saga_command-";
 
     // account aggregate
     public static final String ACCOUNT_AGGREGATE_NAME = "account";

@@ -1,6 +1,8 @@
 package io.simplesource.saga.shared.topics;
 
+import io.simplesource.kafka.api.ResourceNamingStrategy;
 import io.simplesource.kafka.spec.TopicSpec;
+import io.simplesource.kafka.util.PrefixResourceNamingStrategy;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -18,11 +20,19 @@ public class TopicConfigBuilder {
 
     private Map<String, TopicSpec> configMap = new HashMap<String, TopicSpec>();
     private Function<String, TopicSpec> defaultSpec = topicType -> defaultMap(1, 1, 7, topicType);
-    private TopicNamer topicNamer = name -> name;
+    private ResourceNamingStrategy namingStrategy = null;
+    private String topicBaseName = null;
+    private TopicNamer topicNamer = null;
 
     @FunctionalInterface
     public interface BuildSteps {
         TopicConfigBuilder applyStep(TopicConfigBuilder builder);
+
+        public default BuildSteps withInitialStep(BuildSteps initial) {
+            return builder -> this.applyStep(initial.applyStep(builder));
+        }
+
+        public BuildSteps indentity = builder -> builder;
     }
 
     public TopicConfigBuilder(
@@ -34,7 +44,22 @@ public class TopicConfigBuilder {
         this.defaultOverrides = defaultOverrides;
     }
 
-    public TopicConfigBuilder  withTopicNamer(TopicNamer topicNamer) {
+    public TopicConfigBuilder withNamingStrategy(ResourceNamingStrategy namingStrategy) {
+        this.namingStrategy = namingStrategy;
+        return this;
+    }
+
+    public TopicConfigBuilder withTopicPrefix(String prefix) {
+        this.namingStrategy = new PrefixResourceNamingStrategy(prefix);
+        return this;
+    }
+
+    public TopicConfigBuilder withTopicBaseName(String topicBaseName) {
+        this.topicBaseName = topicBaseName;
+        return this;
+    }
+
+    public TopicConfigBuilder withTopicNamer(TopicNamer topicNamer) {
         this.topicNamer = topicNamer;
         return this;
     }
@@ -49,11 +74,20 @@ public class TopicConfigBuilder {
         return this;
     }
 
+    private TopicNamer getTopicNamer() {
+        if (topicNamer != null) return topicNamer;
+        if (topicBaseName != null) return TopicNamer.forStrategy(
+                namingStrategy != null ? namingStrategy : new PrefixResourceNamingStrategy(""),
+                topicBaseName);
+        return name -> name;
+    }
+
     public TopicConfig build() {
+        TopicNamer namer = getTopicNamer();
         Map<String, TopicSpec> topicSpecs = new HashMap<>();
         topicTypes.forEach(tt ->
                 topicSpecs.put(tt, configMap.getOrDefault(tt, defaultSpec.apply(tt))));
-        return new TopicConfig(topicNamer, topicTypes, topicSpecs);
+        return new TopicConfig(namer, topicTypes, topicSpecs);
     }
 
     public TopicSpec defaultMap(int partitions, int replication, long retentionInDays, String topicType) {

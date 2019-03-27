@@ -48,7 +48,6 @@ class AsyncStreamTests {
     private static String SCHEMA_URL = "http://localhost:8081/";
 
     private static String ASYNC_TEST_OUTPUT_TOPIC = "async_test_topic";
-    private static String ASYNC_ACTION_BASE_NAME = "async-" + Constants.ASYNC_TEST_ACTION_TYPE;
 
     private static ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
 
@@ -87,7 +86,8 @@ class AsyncStreamTests {
                     (i, callBack) -> executor.schedule(() ->
                             callBack.complete(Result.success(i.getValue() * i.getValue())), executionDelayMillis, TimeUnit.MILLISECONDS);
 
-            AsyncSpec<SpecificRecord, AsyncTestCommand, AsyncTestId, Integer, AsyncTestOutput> asyncSpec = new AsyncSpec<>(Constants.ASYNC_TEST_ACTION_TYPE,
+            AsyncSpec<SpecificRecord, AsyncTestCommand, AsyncTestId, Integer, AsyncTestOutput> asyncSpec = new AsyncSpec<>(
+                    Constants.ASYNC_TEST_ACTION_TYPE,
                     a -> Result.success((AsyncTestCommand) a),
                     asyncFunction,
                     "group_id",
@@ -104,7 +104,7 @@ class AsyncStreamTests {
 
             streamApp.withBuildStep(AsyncBuilder.apply(
                     asyncSpec,
-                    TopicUtils.buildSteps(Constants.ACTION_TOPIC_PREFIX, ASYNC_ACTION_BASE_NAME)));
+                    topicBuilder -> topicBuilder.withTopicPrefix(Constants.ACTION_TOPIC_PREFIX)));
 
             Properties config = StreamAppConfig.getConfig(new StreamAppConfig("app-id", "http://localhost:9092"));
 
@@ -116,13 +116,13 @@ class AsyncStreamTests {
 
             // get actionRequestPublisher
             actionRequestPublisher = testContext.publisher(
-                    TopicNamer.forPrefix(Constants.ACTION_TOPIC_PREFIX, ASYNC_ACTION_BASE_NAME)
+                    TopicNamer.forPrefix(Constants.ACTION_TOPIC_PREFIX, Constants.ASYNC_TEST_ACTION_TYPE)
                             .apply(TopicTypes.ActionTopic.request),
                     actionSerdes.sagaId(),
                     actionSerdes.request());
 
             actionResponsePublisher = testContext.publisher(
-                    TopicNamer.forPrefix(Constants.ACTION_TOPIC_PREFIX, ASYNC_ACTION_BASE_NAME)
+                    TopicNamer.forPrefix(Constants.ACTION_TOPIC_PREFIX, Constants.ASYNC_TEST_ACTION_TYPE)
                             .apply(TopicTypes.ActionTopic.response),
                     actionSerdes.sagaId(),
                     actionSerdes.response());
@@ -133,14 +133,14 @@ class AsyncStreamTests {
                     asyncSerdes.value);
 
             actionUnprocessedRequestVerifier = testContext.verifier(
-                    TopicNamer.forPrefix(Constants.ACTION_TOPIC_PREFIX, ASYNC_ACTION_BASE_NAME)
+                    TopicNamer.forPrefix(Constants.ACTION_TOPIC_PREFIX, Constants.ASYNC_TEST_ACTION_TYPE)
                             .apply(TopicTypes.ActionTopic.requestUnprocessed),
                     actionSerdes.sagaId(),
                     actionSerdes.request());
 
             asyncContext = new AsyncContext<>(
                     ActionProcessorSpec.of(actionSerdes),
-                    TopicNamer.forPrefix(Constants.ACTION_TOPIC_PREFIX, ASYNC_ACTION_BASE_NAME),
+                    TopicNamer.forPrefix(Constants.ACTION_TOPIC_PREFIX, Constants.ASYNC_TEST_ACTION_TYPE),
                     asyncSpec,
                     executor);
         }
@@ -179,7 +179,7 @@ class AsyncStreamTests {
     private static class AsyncValidation {
         final List<ValidationRecord<SagaId, ActionResponse>> responseRecords = new ArrayList<>();
         final List<ValidationRecord<AsyncTestId, AsyncTestOutput>> outputRecords = new ArrayList<>();
-        final String responseTopic = TopicNamer.forPrefix(Constants.ACTION_TOPIC_PREFIX, ASYNC_ACTION_BASE_NAME)
+        final String responseTopic = TopicNamer.forPrefix(Constants.ACTION_TOPIC_PREFIX, Constants.ASYNC_TEST_ACTION_TYPE)
                 .apply(TopicTypes.ActionTopic.response);
 
         private final RecordPublisher<SagaId, ActionResponse> actionResponsePublisher;
@@ -234,9 +234,9 @@ class AsyncStreamTests {
         AsyncTestContext acc = AsyncTestContext.of(100);
 
         assertThat(acc.expectedTopics).containsExactlyInAnyOrder(
-                "saga_action_processor_async-async_action_test-action_response",
-                "saga_action_processor_async-async_action_test-action_request",
-                "saga_action_processor_async-async_action_test-action_request_unprocessed");
+                "saga_action_processor-async_action_test-action_response",
+                "saga_action_processor-async_action_test-action_request",
+                "saga_action_processor-async_action_test-action_request_unprocessed");
 
         AsyncValidation validation = AsyncValidation.create();
 

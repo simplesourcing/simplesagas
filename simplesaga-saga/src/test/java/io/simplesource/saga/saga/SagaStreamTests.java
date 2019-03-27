@@ -59,14 +59,15 @@ class SagaStreamTests {
 
         SagaCoordinatorContext() {
             TopicNamer sagaTopicNamer = TopicNamer.forPrefix(Constants.SAGA_TOPIC_PREFIX, Constants.SAGA_BASE_NAME);
-            TopicNamer actionTopicNamer = TopicNamer.forPrefix(Constants.ACTION_TOPIC_PREFIX, Constants.SAGA_ACTION_BASE_NAME);
+            TopicNamer actionTopicNamer = TopicNamer.forPrefix(Constants.ACTION_TOPIC_PREFIX, Constants.SAGA_ACTION_TYPE);
 
             SagaApp<SpecificRecord> sagaApp = new SagaApp<>(
                     new SagaSpec<>(sagaSerdes, new WindowSpec(60)),
-                    TopicUtils.buildSteps(Constants.SAGA_TOPIC_PREFIX, Constants.SAGA_BASE_NAME));
+                    topicBuilder -> topicBuilder.withTopicPrefix(Constants.SAGA_TOPIC_PREFIX).withTopicBaseName(Constants.SAGA_BASE_NAME));
             sagaApp.addActionProcessor(
                     ActionProcessorSpec.of(actionSerdes),
-                    TopicUtils.buildSteps(Constants.ACTION_TOPIC_PREFIX, Constants.SAGA_ACTION_BASE_NAME));
+                    Constants.SAGA_ACTION_TYPE,
+                    topicBuilder -> topicBuilder.withTopicPrefix(Constants.ACTION_TOPIC_PREFIX).withTopicBaseName(Constants.SAGA_ACTION_TYPE));
 
             Topology topology = sagaApp.buildTopology();
             testContext = TestContextBuilder.of(topology).build();

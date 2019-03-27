@@ -21,11 +21,15 @@ public final class SourcingBuilder {
         return streamBuildContext -> {
             ActionProcessorSpec<A> actionSpec = streamBuildContext.appInput;
 
-            TopicConfig actionTopicConfig = TopicConfigBuilder.build(TopicTypes.ActionTopic.all, actionTopicBuilder);
-            List<TopicCreation> topics = TopicCreation.allTopics(actionTopicConfig);
+            TopicConfig actionTopicConfig = TopicConfigBuilder.build(
+                    TopicTypes.ActionTopic.all,
+                    actionTopicBuilder.withInitialStep(builder -> builder.withTopicBaseName(cSpec.actionType.toLowerCase())));
+            List<TopicCreation> topics = actionTopicConfig.allTopics();
 
-            TopicConfig commandTopicConfig = TopicConfigBuilder.build(TopicTypes.CommandTopic.all, commandTopicBuilder);
-            topics.addAll(TopicCreation.allTopics(commandTopicConfig));
+            TopicConfig commandTopicConfig = TopicConfigBuilder.build(
+                    TopicTypes.CommandTopic.all,
+                    commandTopicBuilder.withInitialStep(builder -> builder.withTopicBaseName(cSpec.aggregateName.toLowerCase())));
+            topics.addAll(commandTopicConfig.allTopics());
 
             return new StreamBuildSpec(topics, builder -> {
                 SourcingContext<A, D, K, C> sourcingContext = SourcingContext.of(actionSpec, cSpec, actionTopicConfig.namer, commandTopicConfig.namer);

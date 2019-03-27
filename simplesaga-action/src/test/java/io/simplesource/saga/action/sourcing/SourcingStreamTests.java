@@ -65,16 +65,17 @@ class SourcingStreamTests {
                     AccountCommand::getId,
                     c -> Sequence.position(c.getSequence()),
                     commandSerdes,
-                    2000);
+                    2000,
+                    Constants.ACCOUNT_AGGREGATE_NAME);
 
             StreamApp<ActionProcessorSpec<SpecificRecord>> streamApp = new StreamApp<>(ActionProcessorSpec.of(actionSerdes));
 
-            String accountActionBaseName = "sourcing-" + Constants.ACCOUNT_AGGREGATE_NAME;
+            String accountActionBaseName = Constants.ACCOUNT_ACTION_TYPE;
 
             streamApp.withBuildStep(SourcingBuilder.apply(
                     commandSpec,
-                    TopicUtils.buildSteps(Constants.ACTION_TOPIC_PREFIX, accountActionBaseName),
-                    TopicUtils.buildSteps(Constants.COMMAND_TOPIC_PREFIX, Constants.ACCOUNT_AGGREGATE_NAME)));
+                    topicBuilder -> topicBuilder.withTopicPrefix(Constants.ACTION_TOPIC_PREFIX),
+                    topicBuilder -> topicBuilder.withTopicPrefix((Constants.COMMAND_TOPIC_PREFIX))));
 
             Properties config = StreamAppConfig.getConfig(new StreamAppConfig("app-id", "http://localhost:9092"));
 
@@ -135,10 +136,10 @@ class SourcingStreamTests {
         AccountContext acc = new AccountContext();
 
         assertThat(acc.expectedTopics).containsExactlyInAnyOrder(
-                "saga_action_processor_sourcing-account-action_response",
-                "saga_action_processor_sourcing-account-action_request",
-                "saga_command_account-command_response",
-                "saga_command_account-command_request");
+                "saga_action_processor-sourcing_action_account-action_response",
+                "saga_action_processor-sourcing_action_account-action_request",
+                "saga_command-account-command_response",
+                "saga_command-account-command_request");
 
         CreateAccount createAccount = new CreateAccount(ACCOUNT_ID, "user name");
         AccountCommand accountCommand = new AccountCommand(new AccountId(createAccount.getId()), 200L, createAccount);

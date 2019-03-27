@@ -26,4 +26,5 @@ public final class SourcingSpec<A, D, K, C> {
     public final Function<D, Sequence> sequenceMapper;
     public final CommandSerdes<K, C> commandSerdes;
     public final long timeOutMillis;
+    public final String aggregateName;
 }
