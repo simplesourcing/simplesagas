@@ -23,7 +23,7 @@ public final class SagaClientBuilder<A> {
     private final KafkaConfig kafkaConfig;
     private ScheduledExecutorService scheduler = null;
     private SagaSerdes<A> serdes = null;
-    private TopicConfig topicConfig = null;
+    private TopicConfigBuilder.BuildSteps topicConfigBuildSteps = builder -> builder;
     private String clientId = null;
     private WindowSpec windowSpec = new WindowSpec(3600L);
 
@@ -48,9 +48,7 @@ public final class SagaClientBuilder<A> {
     }
 
     public SagaClientBuilder<A> withTopicConfig(TopicConfigBuilder.BuildSteps topicBuildFn) {
-        TopicConfigBuilder tcb = new TopicConfigBuilder(TopicTypes.SagaTopic.client, Collections.emptyMap(), Collections.emptyMap());
-        topicBuildFn.applyStep(tcb);
-        this.topicConfig = tcb.build();
+
         return this;
     }
 
@@ -61,10 +59,18 @@ public final class SagaClientBuilder<A> {
 
     public SagaAPI<A> build() {
         requireNonNull(serdes, "Serdes have not been defined");
-        requireNonNull(topicConfig, "TopicConfig has not been defined");
         requireNonNull(clientId, "ClientId has not been defined");
+
         if (scheduler == null)
             scheduler = Executors.newSingleThreadScheduledExecutor(new NamedThreadFactory("SagaApp-scheduler"));
+
+        // build topic config
+        TopicConfigBuilder tcb = new TopicConfigBuilder(TopicTypes.SagaTopic.client, Collections.emptyMap(), Collections.emptyMap());
+        topicConfigBuildSteps
+                .withInitialStep(tcBuilder -> tcBuilder.withTopicBaseName(TopicTypes.SagaTopic.SAGA_BASE_NAME))
+                .applyStep(tcb);
+
+        TopicConfig topicConfig = tcb.build();
 
         SagaSpec<A> sagaSpec =new SagaSpec<>(serdes, windowSpec);
         return new KafkaSagaAPI<>(sagaSpec, kafkaConfig, topicConfig, clientId, scheduler);

@@ -4,10 +4,7 @@ import io.simplesource.saga.action.app.ActionProcessor;
 import io.simplesource.saga.shared.streams.StreamBuildSpec;
 import io.simplesource.saga.action.internal.*;
 import io.simplesource.saga.model.specs.ActionSpec;
-import io.simplesource.saga.shared.topics.TopicConfig;
-import io.simplesource.saga.shared.topics.TopicConfigBuilder;
-import io.simplesource.saga.shared.topics.TopicCreation;
-import io.simplesource.saga.shared.topics.TopicTypes;
+import io.simplesource.saga.shared.topics.*;
 
 import java.util.List;
 import java.util.Optional;
@@ -23,11 +20,13 @@ public final class EventSourcingBuilder {
 
             TopicConfig actionTopicConfig = TopicConfigBuilder.build(
                     TopicTypes.ActionTopic.all,
-                    actionTopicBuilder.withInitialStep(builder -> builder.withTopicBaseName(esSpec.actionType.toLowerCase())));
+                    actionTopicBuilder.withInitialStep(builder ->
+                            builder.withTopicBaseName(TopicUtils.actionTopicBaseName(esSpec.actionType))));
 
             TopicConfig commandTopicConfig = TopicConfigBuilder.build(
                     TopicTypes.CommandTopic.all,
-                    commandTopicBuilder.withInitialStep(builder -> builder.withTopicBaseName(esSpec.aggregateName.toLowerCase())));
+                    commandTopicBuilder.withInitialStep(builder ->
+                            builder.withTopicBaseName(esSpec.aggregateName.toLowerCase())));
 
             List<TopicCreation> topics = actionTopicConfig.allTopics();
             topics.addAll(commandTopicConfig.allTopics());

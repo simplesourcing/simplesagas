@@ -50,7 +50,8 @@ final public class SagaApp<A> {
                         org.apache.kafka.common.config.TopicConfig.CLEANUP_POLICY_CONFIG,
                         org.apache.kafka.common.config.TopicConfig.CLEANUP_POLICY_COMPACT
                 )),
-                topicBuildFn.withInitialStep(b -> b.withTopicBaseName(TopicTypes.SagaTopic.SAGA_BASE_NAME)));
+                topicBuildFn.withInitialStep(tcBuilder ->
+                        tcBuilder.withTopicBaseName(TopicTypes.SagaTopic.SAGA_BASE_NAME)));
 
         topics.addAll(sagaTopicConfig.allTopics());
     }
@@ -60,7 +61,7 @@ final public class SagaApp<A> {
     }
 
     public static <A> SagaApp<A> of(SagaSpec<A> sagaSpec, ActionSpec<A> actionSpec) {
-        return of(sagaSpec, actionSpec, topicBuilder -> topicBuilder);
+        return of(sagaSpec, actionSpec, b -> b);
     }
 
     public SagaApp<A> withAction(String actionType, TopicConfigBuilder.BuildSteps buildFn) {
@@ -69,7 +70,7 @@ final public class SagaApp<A> {
 
         TopicConfig actionTopicConfig = TopicConfigBuilder.build(
                 TopicTypes.ActionTopic.all,
-                buildFn.withInitialStep(builder -> builder.withTopicBaseName(atlc)));
+                buildFn.withInitialStep(builder -> builder.withTopicBaseName(TopicUtils.actionTopicBaseName(atlc))));
 
         topics.addAll(TopicCreation.allTopics(actionTopicConfig));
         topicNamers.put(atlc, actionTopicConfig.namer);

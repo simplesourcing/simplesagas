@@ -66,18 +66,11 @@ final public class SagaStream {
     static <A> KStream<SagaId, Saga<A>> applyStateTransitions(SagaContext<A> ctx,
                                                               KStream<SagaId, SagaStateTransition> stateTransitionStream) {
         SagaSerdes<A> sSerdes = ctx.sSerdes;
-
-        Materialized<SagaId, Saga<A>, KeyValueStore<Bytes, byte[]>> materialized = Materialized
-                .<SagaId, Saga<A>, KeyValueStore<Bytes, byte[]>>as("saga_state_aggregation")
-                .withKeySerde(sSerdes.sagaId())
-                .withValueSerde(sSerdes.state());
-
-        // TODO: remove the random UUIDs
         return stateTransitionStream
                 .groupByKey(Grouped.with(sSerdes.sagaId(), sSerdes.transition()))
                 .aggregate(() -> Saga.of(SagaId.random(), new HashMap<>(), SagaStatus.NotStarted, Sequence.first()),
                         (k, t, s) -> SagaUtils.applyTransition(t, s),
-                        materialized)
+                        Materialized.with(sSerdes.sagaId(), sSerdes.state()))
                 .toStream();
     }
 

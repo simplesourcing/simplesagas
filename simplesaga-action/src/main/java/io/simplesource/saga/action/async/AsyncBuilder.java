@@ -24,9 +24,10 @@ public final class AsyncBuilder {
 
             TopicConfig actionTopicConfig = TopicConfigBuilder.build(
                     expectedTopicList,
-                    topicBuildFn.withInitialStep(builder -> builder.withTopicBaseName(spec.actionType.toLowerCase())));
+                    topicBuildFn.withInitialStep(builder -> builder.withTopicBaseName(TopicUtils.actionTopicBaseName(spec.actionType))));
 
             List<TopicCreation> topics = actionTopicConfig.allTopics();
+            spec.outputSpec.ifPresent(oSpec -> topics.addAll(oSpec.topicCreations));
 
             return new StreamBuildSpec(topics, builder -> {
 

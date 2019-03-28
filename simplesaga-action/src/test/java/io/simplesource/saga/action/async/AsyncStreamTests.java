@@ -25,6 +25,7 @@ import io.simplesource.saga.shared.topics.TopicCreation;
 import io.simplesource.saga.shared.topics.TopicNamer;
 import io.simplesource.saga.shared.topics.TopicTypes;
 import io.simplesource.saga.shared.streams.StreamAppConfig;
+import io.simplesource.saga.shared.topics.TopicUtils;
 import io.simplesource.saga.testutils.*;
 import lombok.Value;
 import org.apache.avro.specific.SpecificRecord;
@@ -116,13 +117,13 @@ class AsyncStreamTests {
 
             // get actionRequestPublisher
             actionRequestPublisher = testContext.publisher(
-                    TopicNamer.forPrefix(Constants.ACTION_TOPIC_PREFIX, Constants.ASYNC_TEST_ACTION_TYPE)
+                    TopicNamer.forPrefix(Constants.ACTION_TOPIC_PREFIX, TopicUtils.actionTopicBaseName(Constants.ASYNC_TEST_ACTION_TYPE))
                             .apply(TopicTypes.ActionTopic.ACTION_REQUEST),
                     actionSerdes.sagaId(),
                     actionSerdes.request());
 
             actionResponsePublisher = testContext.publisher(
-                    TopicNamer.forPrefix(Constants.ACTION_TOPIC_PREFIX, Constants.ASYNC_TEST_ACTION_TYPE)
+                    TopicNamer.forPrefix(Constants.ACTION_TOPIC_PREFIX, TopicUtils.actionTopicBaseName(Constants.ASYNC_TEST_ACTION_TYPE))
                             .apply(TopicTypes.ActionTopic.ACTION_RESPONSE),
                     actionSerdes.sagaId(),
                     actionSerdes.response());
@@ -133,14 +134,14 @@ class AsyncStreamTests {
                     asyncSerdes.value);
 
             actionUnprocessedRequestVerifier = testContext.verifier(
-                    TopicNamer.forPrefix(Constants.ACTION_TOPIC_PREFIX, Constants.ASYNC_TEST_ACTION_TYPE)
+                    TopicNamer.forPrefix(Constants.ACTION_TOPIC_PREFIX, TopicUtils.actionTopicBaseName(Constants.ASYNC_TEST_ACTION_TYPE))
                             .apply(TopicTypes.ActionTopic.ACTION_REQUEST_UNPROCESSED),
                     actionSerdes.sagaId(),
                     actionSerdes.request());
 
             asyncContext = new AsyncContext<>(
                     ActionSpec.of(actionSerdes, Duration.ofSeconds(60)),
-                    TopicNamer.forPrefix(Constants.ACTION_TOPIC_PREFIX, Constants.ASYNC_TEST_ACTION_TYPE),
+                    TopicNamer.forPrefix(Constants.ACTION_TOPIC_PREFIX, TopicUtils.actionTopicBaseName(Constants.ASYNC_TEST_ACTION_TYPE)),
                     asyncSpec,
                     executor);
         }
@@ -179,7 +180,7 @@ class AsyncStreamTests {
     private static class AsyncValidation {
         final List<ValidationRecord<SagaId, ActionResponse>> responseRecords = new ArrayList<>();
         final List<ValidationRecord<AsyncTestId, AsyncTestOutput>> outputRecords = new ArrayList<>();
-        final String responseTopic = TopicNamer.forPrefix(Constants.ACTION_TOPIC_PREFIX, Constants.ASYNC_TEST_ACTION_TYPE)
+        final String responseTopic = TopicNamer.forPrefix(Constants.ACTION_TOPIC_PREFIX, TopicUtils.actionTopicBaseName(Constants.ASYNC_TEST_ACTION_TYPE))
                 .apply(TopicTypes.ActionTopic.ACTION_RESPONSE);
 
         private final RecordPublisher<SagaId, ActionResponse> actionResponsePublisher;
@@ -234,9 +235,9 @@ class AsyncStreamTests {
         AsyncTestContext acc = AsyncTestContext.of(100);
 
         assertThat(acc.expectedTopics).containsExactlyInAnyOrder(
-                "saga_action_processor-async_action_test-action_response",
-                "saga_action_processor-async_action_test-action_request",
-                "saga_action_processor-async_action_test-action_request_unprocessed");
+                "saga_action_processor-saga_action-async_action_test-action_response",
+                "saga_action_processor-saga_action-async_action_test-action_request",
+                "saga_action_processor-saga_action-async_action_test-action_request_unprocessed");
 
         AsyncValidation validation = AsyncValidation.create();
 

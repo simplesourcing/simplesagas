@@ -33,8 +33,6 @@ public class TopicConfigBuilder {
         }
     }
 
-    public BuildSteps indentity = builder -> builder;
-
     public TopicConfigBuilder(
             List<String> topicTypes,
             Map<String, String> defaultConfigs,

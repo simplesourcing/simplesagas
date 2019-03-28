@@ -152,7 +152,7 @@ public final class EventSourcingStream {
         // Join the action request and command response by commandID
         KStream<CommandId, Tuple2<CommandResponse<K>, ActionRequest<A>>> crArByCi = commandResponseByAggregate
                 .selectKey((k, v) -> v.commandId())
-                .join(actionRequests.selectKey((k, v) -> v.actionCommand.commandId), Tuple2::of, JoinWindows.of(ctx.actionSpec().sagaDuration),
+                .join(actionRequests.selectKey((k, v) -> v.actionCommand.commandId), Tuple2::of, JoinWindows.of(ctx.actionSpec().sagaDuration).until(ctx.actionSpec().sagaDuration.toMillis() * 2 + 1),
                         Joined.with(cSerdes.commandId(), cSerdes.commandResponse(), aSerdes.request()));
 
 
@@ -184,7 +184,7 @@ public final class EventSourcingStream {
                         .join(
                                 responseByCommandId,
                                 Tuple2::of,
-                                JoinWindows.of(timeout),
+                                JoinWindows.of(timeout).until(timeout.toMillis() * 2 + 1),
                                 Joined.with(ctx.cSerdes().commandId(), ctx.aSerdes().request(), ctx.cSerdes().commandResponse())
                         )
                         .peek(StreamUtils.logValues(logger, "joinActionRequestAndCommandResponse"));

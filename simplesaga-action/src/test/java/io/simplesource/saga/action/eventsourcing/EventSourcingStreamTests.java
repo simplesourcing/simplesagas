@@ -20,6 +20,7 @@ import io.simplesource.saga.shared.streams.StreamBuildResult;
 import io.simplesource.saga.shared.topics.TopicNamer;
 import io.simplesource.saga.shared.topics.TopicTypes;
 import io.simplesource.saga.shared.streams.StreamAppConfig;
+import io.simplesource.saga.shared.topics.TopicUtils;
 import io.simplesource.saga.testutils.*;
 import lombok.Value;
 import org.apache.avro.specific.SpecificRecord;
@@ -85,7 +86,7 @@ class EventSourcingStreamTests {
 
             // get actionRequestPublisher
             actionRequestPublisher = testContext.publisher(
-                    TopicNamer.forPrefix(Constants.ACTION_TOPIC_PREFIX, Constants.ACCOUNT_ACTION_TYPE)
+                    TopicNamer.forPrefix(Constants.ACTION_TOPIC_PREFIX, TopicUtils.actionTopicBaseName(Constants.ACCOUNT_ACTION_TYPE))
                             .apply(TopicTypes.ActionTopic.ACTION_REQUEST),
                     actionSerdes.sagaId(),
                     actionSerdes.request());
@@ -97,7 +98,7 @@ class EventSourcingStreamTests {
                     commandSerdes.commandResponse());
 
             actionResponsePublisher = testContext.publisher(
-                    TopicNamer.forPrefix(Constants.ACTION_TOPIC_PREFIX, Constants.ACCOUNT_ACTION_TYPE)
+                    TopicNamer.forPrefix(Constants.ACTION_TOPIC_PREFIX, TopicUtils.actionTopicBaseName(Constants.ACCOUNT_ACTION_TYPE))
                             .apply(TopicTypes.ActionTopic.ACTION_RESPONSE),
                     actionSerdes.sagaId(),
                     actionSerdes.response());
@@ -110,7 +111,7 @@ class EventSourcingStreamTests {
                     commandSerdes.commandRequest());
 
             actionResponseVerifier = testContext.verifier(
-                    TopicNamer.forPrefix(Constants.ACTION_TOPIC_PREFIX, Constants.ACCOUNT_ACTION_TYPE)
+                    TopicNamer.forPrefix(Constants.ACTION_TOPIC_PREFIX, TopicUtils.actionTopicBaseName(Constants.ACCOUNT_ACTION_TYPE))
                             .apply(TopicTypes.ActionTopic.ACTION_RESPONSE),
                     actionSerdes.sagaId(),
                     actionSerdes.response());
@@ -134,8 +135,8 @@ class EventSourcingStreamTests {
         AccountContext acc = new AccountContext();
 
         assertThat(acc.expectedTopics).containsExactlyInAnyOrder(
-                "saga_action_processor-sourcing_action_account-action_response",
-                "saga_action_processor-sourcing_action_account-action_request",
+                "saga_action_processor-saga_action-sourcing_action_account-action_response",
+                "saga_action_processor-saga_action-sourcing_action_account-action_request",
                 "saga_command-account-command_response",
                 "saga_command-account-command_request");
 
