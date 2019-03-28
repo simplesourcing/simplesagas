@@ -237,7 +237,8 @@ class AsyncStreamTests {
         assertThat(acc.expectedTopics).containsExactlyInAnyOrder(
                 "saga_action_processor-saga_action-async_action_test-action_response",
                 "saga_action_processor-saga_action-async_action_test-action_request",
-                "saga_action_processor-saga_action-async_action_test-action_request_unprocessed");
+                "saga_action_processor-saga_action-async_action_test-action_request_unprocessed",
+                "async_test_topic");
 
         AsyncValidation validation = AsyncValidation.create();
 
