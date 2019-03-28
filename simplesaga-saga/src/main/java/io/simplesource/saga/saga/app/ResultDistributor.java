@@ -31,7 +31,7 @@ public class ResultDistributor {
               .selectKey((k, v) -> ctx.idMapper.apply(v))
               .join(topicNameStream,
                       Tuple2::of,
-                      JoinWindows.of(retention),
+                      JoinWindows.of(retention).until(retention.toMillis() * 2 + 1),
                       Joined.with(serdes.key, serdes.value, Serdes.String()))
               .map((key, tuple) -> KeyValue.pair(String.format("%s:%s", tuple.v2(), ctx.keyToUuid.apply(key).toString()), tuple.v1()));
     joined.to(topicNameExtractor, Produced.with(Serdes.String(), serdes.value));

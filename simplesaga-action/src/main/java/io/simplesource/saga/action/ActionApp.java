@@ -13,7 +13,7 @@ public class ActionApp<A> {
 
     StreamApp<ActionSpec<A>> streamApp;
 
-    public ActionApp(ActionSpec<A> streamAppInput) {
+    private ActionApp(ActionSpec<A> streamAppInput) {
         streamApp = new StreamApp<>(streamAppInput);
     }
 

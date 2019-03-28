@@ -45,6 +45,8 @@ public final class KafkaSagaAPI<A> implements SagaAPI<A> {
                 .outputTopicConfig(sagaTopicConfig.topicSpecs.get(TopicTypes.SagaTopic.SAGA_RESPONSE))
                 .errorValue((request, error) -> new SagaResponse(request.sagaId, Result.failure(SagaError.of(SagaError.Reason.InternalError, error))))
                 .scheduler(scheduler)
+                .uuidToResponseId(SagaId::of)
+                .responseIdToUuid(SagaId::id)
                 .build();
 
         requestApi = new KafkaRequestAPI<>(apiContext);

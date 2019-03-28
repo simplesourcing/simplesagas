@@ -57,7 +57,8 @@ final class AsyncConsumerRunner<A, D, K, O, R> implements Runnable {
         KafkaConsumer<SagaId, ActionRequest<A>> consumer = new KafkaConsumer<>(consumerConfig,
                 actionSpec.serdes.sagaId().deserializer(),
                 actionSpec.serdes.request().deserializer());
-        consumer.subscribe(Collections.singletonList(asyncContext.actionTopicNamer.apply(TopicTypes.ActionTopic.ACTION_REQUEST_UNPROCESSED)));
+        String unprocessedTopicName = asyncContext.actionTopicNamer.apply(TopicTypes.ActionTopic.ACTION_REQUEST_UNPROCESSED);
+        consumer.subscribe(Collections.singletonList(unprocessedTopicName));
 
         this.consumer = Optional.of(consumer);
 

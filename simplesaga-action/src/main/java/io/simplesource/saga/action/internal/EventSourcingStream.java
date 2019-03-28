@@ -39,7 +39,7 @@ public final class EventSourcingStream {
     public static <A, D, K, C> void addSubTopology(ActionTopologyContext<A> topologyContext,
                                                    EventSourcingContext<A, D, K, C> sourcing) {
         KStream<K, CommandResponse<K>> commandResponseStream = EventSourcingConsumer.commandResponseStream(
-                sourcing.commandSpec, sourcing.commandTopicNamer, topologyContext.builder);
+                sourcing.eventSourcingSpec, sourcing.commandTopicNamer, topologyContext.builder);
         addSubTopology(sourcing, topologyContext.actionRequests, topologyContext.actionResponses, commandResponseStream);
     }
 
@@ -75,7 +75,7 @@ public final class EventSourcingStream {
      * Unfortunately we have to keep invoking this decoder step
      */
     private static <A, D> D getDecoded(EventSourcingContext<A, D, ?, ?> ctx, ActionRequest<A> aReq) {
-        D d = ctx.commandSpec.decode.apply(aReq.actionCommand.command).getOrElse(null);
+        D d = ctx.eventSourcingSpec.decode.apply(aReq.actionCommand.command).getOrElse(null);
         assert d != null; // this should have already been checked
         return d;
     }
@@ -90,7 +90,7 @@ public final class EventSourcingStream {
 
         KStream<SagaId, Tuple2<ActionRequest<A>, Result<Throwable, D>>> reqsWithDecoded =
                 actionRequests
-                        .mapValues((k, ar) -> Tuple2.of(ar, ctx.commandSpec.decode.apply(ar.actionCommand.command)))
+                        .mapValues((k, ar) -> Tuple2.of(ar, ctx.eventSourcingSpec.decode.apply(ar.actionCommand.command)))
                         .peek(StreamUtils.logValues(logger, "reqsWithDecoded"));
 
         KStream<SagaId, Tuple2<ActionRequest<A>, Result<Throwable, D>>>[] branchSuccessFailure = reqsWithDecoded.branch((k, v) -> v.v2().isSuccess(), (k, v) -> v.v2().isFailure());
@@ -116,19 +116,19 @@ public final class EventSourcingStream {
 
                     // use the input sequence for the first action, and the last sequence number for the aggregate in the saga otherwise
                     Sequence sequence = (seq == null) ?
-                            ctx.commandSpec.sequenceMapper.apply(decoded) :
+                            ctx.eventSourcingSpec.sequenceMapper.apply(decoded) :
                             Sequence.position(seq);
                     return new CommandRequest<>(
                             aReq.actionCommand.commandId,
-                            ctx.commandSpec.keyMapper.apply(decoded),
+                            ctx.eventSourcingSpec.keyMapper.apply(decoded),
                             sequence,
-                            ctx.commandSpec.commandMapper.apply(decoded));
+                            ctx.eventSourcingSpec.commandMapper.apply(decoded));
                 };
 
         KStream<K, CommandRequest<K, C>> commandRequestByAggregate = allGood.map((k, v) ->
         {
             D decoded = getDecoded(ctx, v.v1());
-            K key = ctx.commandSpec.keyMapper.apply(decoded);
+            K key = ctx.eventSourcingSpec.keyMapper.apply(decoded);
             return KeyValue.pair(Tuple2.of(key, v.v1().sagaId), v.v1());
         })
                 .leftJoin(latestSequenceNumbers, valueJoiner,
@@ -152,7 +152,7 @@ public final class EventSourcingStream {
         // Join the action request and command response by commandID
         KStream<CommandId, Tuple2<CommandResponse<K>, ActionRequest<A>>> crArByCi = commandResponseByAggregate
                 .selectKey((k, v) -> v.commandId())
-                .join(actionRequests.selectKey((k, v) -> v.actionCommand.commandId), Tuple2::of, JoinWindows.of(ctx.actionSpec().sagaDuration),
+                .join(actionRequests.selectKey((k, v) -> v.actionCommand.commandId), Tuple2::of, JoinWindows.of(ctx.actionSpec().sagaDuration).until(ctx.actionSpec().sagaDuration.toMillis() * 2 + 1),
                         Joined.with(cSerdes.commandId(), cSerdes.commandResponse(), aSerdes.request()));
 
 
@@ -174,7 +174,7 @@ public final class EventSourcingStream {
             EventSourcingContext<A, D, K, C> ctx,
             KStream<SagaId, ActionRequest<A>> actionRequests,
             KStream<CommandId, CommandResponse<K>> responseByCommandId) {
-        Duration timeout = ctx.commandSpec.timeout;
+        Duration timeout = ctx.eventSourcingSpec.timeout;
         // find the response for the request
         KStream<CommandId, Tuple2<ActionRequest<A>, CommandResponse<K>>> actionRequestWithResponse =
                 // join command response to action request by the command / action ID
@@ -184,7 +184,7 @@ public final class EventSourcingStream {
                         .join(
                                 responseByCommandId,
                                 Tuple2::of,
-                                JoinWindows.of(timeout),
+                                JoinWindows.of(timeout).until(timeout.toMillis() * 2 + 1),
                                 Joined.with(ctx.cSerdes().commandId(), ctx.aSerdes().request(), ctx.cSerdes().commandResponse())
                         )
                         .peek(StreamUtils.logValues(logger, "joinActionRequestAndCommandResponse"));

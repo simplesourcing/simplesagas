@@ -24,6 +24,7 @@ import io.simplesource.saga.saga.avro.generated.test.TransferFunds;
 import io.simplesource.saga.serialization.avro.AvroSerdes;
 import io.simplesource.saga.shared.topics.TopicNamer;
 import io.simplesource.saga.shared.topics.TopicTypes;
+import io.simplesource.saga.shared.topics.TopicUtils;
 import io.simplesource.saga.testutils.*;
 import lombok.Value;
 import org.apache.avro.specific.SpecificRecord;
@@ -34,6 +35,7 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static io.simplesource.saga.client.dsl.SagaDsl.inParallel;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -63,19 +65,19 @@ class SagaStreamTests {
 
         SagaCoordinatorContext() {
             TopicNamer sagaTopicNamer = TopicNamer.forPrefix(Constants.SAGA_TOPIC_PREFIX, TopicTypes.SagaTopic.SAGA_BASE_NAME);
-            TopicNamer accountActionTopicNamer = TopicNamer.forPrefix(Constants.ACTION_TOPIC_PREFIX, Constants.ACCOUNT_ACTION_TYPE);
-            TopicNamer userActionTopicNamer = TopicNamer.forPrefix(Constants.ACTION_TOPIC_PREFIX, Constants.USER_ACTION_TYPE);
+            TopicNamer accountActionTopicNamer = TopicNamer.forPrefix(Constants.ACTION_TOPIC_PREFIX, TopicUtils.actionTopicBaseName(Constants.ACCOUNT_ACTION_TYPE));
+            TopicNamer userActionTopicNamer = TopicNamer.forPrefix(Constants.ACTION_TOPIC_PREFIX, TopicUtils.actionTopicBaseName(Constants.USER_ACTION_TYPE));
 
-            SagaApp<SpecificRecord> sagaApp = new SagaApp<>(
+            SagaApp<SpecificRecord> sagaApp = SagaApp.of(
                     new SagaSpec<>(sagaSerdes, new WindowSpec(60)),
                     ActionSpec.of(actionSerdes, Duration.ofSeconds(60)),
                     topicBuilder -> topicBuilder.withTopicPrefix(Constants.SAGA_TOPIC_PREFIX));
 
-            sagaApp.addActionProcessor(
+            sagaApp.withAction(
                     Constants.ACCOUNT_ACTION_TYPE,
                     topicBuilder -> topicBuilder.withTopicPrefix(Constants.ACTION_TOPIC_PREFIX));
 
-            sagaApp.addActionProcessor(
+            sagaApp.withAction(
                     Constants.USER_ACTION_TYPE,
                     topicBuilder -> topicBuilder.withTopicPrefix(Constants.ACTION_TOPIC_PREFIX));
 
@@ -115,7 +117,6 @@ class SagaStreamTests {
                     sagaTopicNamer.apply(TopicTypes.SagaTopic.SAGA_RESPONSE),
                     sagaSerdes.sagaId(),
                     sagaSerdes.response());
-
         }
     }
 

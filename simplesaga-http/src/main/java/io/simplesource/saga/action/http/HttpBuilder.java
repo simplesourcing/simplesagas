@@ -31,6 +31,23 @@ public final class HttpBuilder {
 
         return AsyncBuilder.apply(asyncSpec, topicBuildFn, executor);
     }
+
+    public static <A, D, K, O, R> ActionProcessor<A> apply(
+            HttpSpec<A, D, K, O, R> spec,
+            TopicConfigBuilder.BuildSteps topicBuildFn) {
+        return apply(spec, topicBuildFn, null);
+    }
+
+    public static <A, D, K, O, R> ActionProcessor<A> apply(
+            HttpSpec<A, D, K, O, R> spec) {
+        return apply(spec, a -> a, null);
+    }
+
+    public static <A, D, K, O, R> ActionProcessor<A> apply(
+            HttpSpec<A, D, K, O, R> spec,
+            ScheduledExecutorService executor) {
+        return apply(spec, a -> a, executor);
+    }
 }
 
 

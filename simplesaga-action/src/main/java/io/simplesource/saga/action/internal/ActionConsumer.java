@@ -19,8 +19,9 @@ final class ActionConsumer {
     static <A> KStream<SagaId, ActionRequest<A>> actionRequestStream(ActionSpec<A> spec,
                                                                      TopicNamer actionTopicNamer,
                                                                      StreamsBuilder builder) {
+        String actionRequestTopic = actionTopicNamer.apply(TopicTypes.ActionTopic.ACTION_REQUEST);
         return builder.stream(
-                actionTopicNamer.apply(TopicTypes.ActionTopic.ACTION_REQUEST),
+                actionRequestTopic,
                 Consumed.with(spec.serdes.sagaId(), spec.serdes.request())
         ).peek(StreamUtils.logValues(logger, "actionRequestStream"));
     }
@@ -28,8 +29,9 @@ final class ActionConsumer {
     static <A> KStream<SagaId, ActionResponse> actionResponseStream(ActionSpec<A> spec,
                                                                     TopicNamer actionTopicNamer,
                                                                     StreamsBuilder builder) {
+        String actionResponseTopic = actionTopicNamer.apply(TopicTypes.ActionTopic.ACTION_RESPONSE);
         return builder.stream(
-                actionTopicNamer.apply(TopicTypes.ActionTopic.ACTION_RESPONSE),
+                actionResponseTopic,
                 Consumed.with(spec.serdes.sagaId(), spec.serdes.response())
         ).peek(StreamUtils.logValues(logger, "actionResponseStream"));
     }

@@ -77,6 +77,8 @@ public class StreamApp<I> {
         StreamAppUtils.createMissingTopics(config, streamBuildResult.topicCreations);
         StreamAppUtils.runStreamApp(config, streamBuildResult.topologySupplier.get());
 
-        streamBuildResult.shutdownHandlers.forEach(StreamAppUtils.ShutdownHandler::shutDown);
+        // streamBuildResult.shutdownHandlers.forEach(StreamAppUtils.ShutdownHandler::shutDown);
+        streamBuildResult.shutdownHandlers.forEach(StreamAppUtils::addShutdownHook);
+
     }
 }

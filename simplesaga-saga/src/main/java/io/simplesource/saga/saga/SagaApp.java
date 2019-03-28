@@ -40,7 +40,7 @@ final public class SagaApp<A> {
     private final List<TopicCreation> topics = new ArrayList<>();
     private final Map<String, TopicNamer> topicNamers = new HashMap<>();
 
-    public SagaApp(SagaSpec<A> sagaSpec, ActionSpec<A> actionSpec, TopicConfigBuilder.BuildSteps topicBuildFn) {
+    private SagaApp(SagaSpec<A> sagaSpec, ActionSpec<A> actionSpec, TopicConfigBuilder.BuildSteps topicBuildFn) {
         this.sagaSpec = sagaSpec;
         this.actionSpec = actionSpec;
         sagaTopicConfig = TopicConfigBuilder.build(
@@ -50,22 +50,35 @@ final public class SagaApp<A> {
                         org.apache.kafka.common.config.TopicConfig.CLEANUP_POLICY_CONFIG,
                         org.apache.kafka.common.config.TopicConfig.CLEANUP_POLICY_COMPACT
                 )),
-                topicBuildFn.withInitialStep(b -> b.withTopicBaseName(TopicTypes.SagaTopic.SAGA_BASE_NAME)));
+                topicBuildFn.withInitialStep(tcBuilder ->
+                        tcBuilder.withTopicBaseName(TopicTypes.SagaTopic.SAGA_BASE_NAME)));
 
         topics.addAll(sagaTopicConfig.allTopics());
     }
 
-    public SagaApp<A> addActionProcessor(String actionType, TopicConfigBuilder.BuildSteps buildFn) {
+    public static <A> SagaApp<A> of(SagaSpec<A> sagaSpec, ActionSpec<A> actionSpec, TopicConfigBuilder.BuildSteps topicBuildFn) {
+        return new SagaApp<>(sagaSpec, actionSpec, topicBuildFn);
+    }
+
+    public static <A> SagaApp<A> of(SagaSpec<A> sagaSpec, ActionSpec<A> actionSpec) {
+        return of(sagaSpec, actionSpec, b -> b);
+    }
+
+    public SagaApp<A> withAction(String actionType, TopicConfigBuilder.BuildSteps buildFn) {
         String atlc = actionType.toLowerCase();
         if (topicNamers.containsKey(atlc)) throw new RuntimeException("ActionType has already been added");
 
         TopicConfig actionTopicConfig = TopicConfigBuilder.build(
                 TopicTypes.ActionTopic.all,
-                buildFn.withInitialStep(builder -> builder.withTopicBaseName(atlc)));
+                buildFn.withInitialStep(builder -> builder.withTopicBaseName(TopicUtils.actionTopicBaseName(atlc))));
 
         topics.addAll(TopicCreation.allTopics(actionTopicConfig));
         topicNamers.put(atlc, actionTopicConfig.namer);
         return this;
+    }
+
+    public SagaApp<A> withAction(String actionType) {
+        return withAction(actionType, topicBuilder -> topicBuilder);
     }
 
     /**
