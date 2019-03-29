@@ -69,13 +69,7 @@ final public class SagaApp<A> {
         String atlc = actionType.toLowerCase();
         if (topicNamers.containsKey(atlc)) throw new RuntimeException(String.format("ActionType has already been added for action '%s'", actionType));
 
-        TopicConfig actionTopicConfig = TopicConfigBuilder.build(
-                TopicTypes.ActionTopic.all,
-                buildFn.withInitialStep(builder -> builder.withTopicBaseName(TopicUtils.actionTopicBaseName(atlc))));
-
-        topics.addAll(TopicCreation.allTopics(actionTopicConfig));
-        topicNamers.put(atlc, actionTopicConfig.namer);
-        return this;
+        return registerAction(atlc, buildFn);
     }
 
     public SagaApp<A> withActions(Collection<String> actionTypes, TopicConfigBuilder.BuildSteps buildFn) {
@@ -90,12 +84,22 @@ final public class SagaApp<A> {
         if (!intersection.isEmpty())
             throw new RuntimeException(String.format("%d actions are already present.", intersection.size()));
 
-        actionTypeSet.forEach(at -> withAction(at, buildFn));
+        actionTypeSet.forEach(at -> registerAction(at, buildFn));
         return this;
     }
 
     public SagaApp<A> withActions(String... actionTypes) {
         return withActions(Arrays.asList(actionTypes), b -> b);
+    }
+
+    private SagaApp<A> registerAction(String atlc, TopicConfigBuilder.BuildSteps buildFn) {
+        TopicConfig actionTopicConfig = TopicConfigBuilder.build(
+                TopicTypes.ActionTopic.all,
+                buildFn.withInitialStep(builder -> builder.withTopicBaseName(TopicUtils.actionTopicBaseName(atlc))));
+
+        topics.addAll(TopicCreation.allTopics(actionTopicConfig));
+        topicNamers.put(atlc, actionTopicConfig.namer);
+        return this;
     }
 
     /**
