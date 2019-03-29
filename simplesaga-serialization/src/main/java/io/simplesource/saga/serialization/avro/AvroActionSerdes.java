@@ -81,7 +81,7 @@ public class AvroActionSerdes<A> implements ActionSerdes<A> {
                         .setCommandId(r.commandId.id.toString())
                         .setResult(r.result.fold(SagaSerdeUtils::sagaErrorListToAvro, x -> x))
                         .build(),
-                ar -> new ActionResponse(
+                ar -> ActionResponse.of(
                         SagaId.fromString(ar.getSagaId()),
                         ActionId.fromString(ar.getActionId()),
                         CommandId.of(UUID.fromString(ar.getCommandId())),

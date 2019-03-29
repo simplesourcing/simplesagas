@@ -89,7 +89,7 @@ public final class SagaDsl {
                                      String actionType,
                                      ActionCommand<A> actionCommand,
                                      Optional<ActionCommand<A>> undoAction) {
-            SagaAction<A> action = new SagaAction<>(actionId,
+            SagaAction<A> action = SagaAction.of(actionId,
                     actionType,
                     actionCommand,
                     undoAction,
@@ -122,7 +122,7 @@ public final class SagaDsl {
             if (errors.isEmpty()) {
                 Map<ActionId, SagaAction<A>> newActions = actions.entrySet().stream().map(entry -> {
                     SagaAction<A> eAct = entry.getValue();
-                    return new SagaAction<>(eAct.actionId,
+                    return SagaAction.of(eAct.actionId,
                             eAct.actionType,
                             eAct.command,
                             eAct.undoCommand,

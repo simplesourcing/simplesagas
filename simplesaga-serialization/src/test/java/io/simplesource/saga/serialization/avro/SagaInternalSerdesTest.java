@@ -52,7 +52,7 @@ class SagaInternalSerdesTest {
     @Test
     void sagaTransitionInitialTest() {
         Saga<SpecificRecord> testSaga = SagaTestUtils.getTestSaga();
-        SagaStateTransition.SetInitialState<SpecificRecord> original = new SagaStateTransition.SetInitialState<>(testSaga);
+        SagaStateTransition.SetInitialState<SpecificRecord> original = SagaStateTransition.SetInitialState.of(testSaga);
 
         SagaStateTransition.SetInitialState deserialized = testTransition(original);
         SagaTestUtils.validataSaga(deserialized.sagaState, original.sagaState);
@@ -61,7 +61,7 @@ class SagaInternalSerdesTest {
 
     @Test
     void sagaTransitionActionStatusSuccessTest() {
-        SagaStateTransition.SagaActionStatusChanged original = new SagaStateTransition.SagaActionStatusChanged(
+        SagaStateTransition.SagaActionStatusChanged original = SagaStateTransition.SagaActionStatusChanged.of(
                 SagaId.random(),
                 ActionId.random(),
                 ActionStatus.Completed,
@@ -73,7 +73,7 @@ class SagaInternalSerdesTest {
 
     @Test
     void sagaTransitionActionStatusFailureTest() {
-        SagaStateTransition.SagaActionStatusChanged original = new SagaStateTransition.SagaActionStatusChanged(
+        SagaStateTransition.SagaActionStatusChanged original = SagaStateTransition.SagaActionStatusChanged.of(
                 SagaId.random(),
                 ActionId.random(),
                 ActionStatus.Failed,
@@ -89,7 +89,7 @@ class SagaInternalSerdesTest {
 
     @Test
     void sagaTransitionSagaStatusSuccessTest() {
-        SagaStateTransition.SagaStatusChanged original = new SagaStateTransition.SagaStatusChanged(
+        SagaStateTransition.SagaStatusChanged original = SagaStateTransition.SagaStatusChanged.of(
                 SagaId.random(),
                 SagaStatus.Completed,
                 Collections.emptyList());
@@ -102,7 +102,7 @@ class SagaInternalSerdesTest {
 
     @Test
     void sagaTransitionSagaStatusFailureTest() {
-        SagaStateTransition.SagaStatusChanged original = new SagaStateTransition.SagaStatusChanged(
+        SagaStateTransition.SagaStatusChanged original = SagaStateTransition.SagaStatusChanged.of(
                 SagaId.random(),
                 SagaStatus.Completed,
                 Lists.of(
@@ -117,15 +117,15 @@ class SagaInternalSerdesTest {
 
     @Test
     void sagaTransitionTransitionListTest() {
-        SagaStateTransition.TransitionList original = new SagaStateTransition.TransitionList(Lists.of(
-                new SagaStateTransition.SagaActionStatusChanged(
+        SagaStateTransition.TransitionList original = SagaStateTransition.TransitionList.of(Lists.of(
+                SagaStateTransition.SagaActionStatusChanged.of(
                         SagaId.random(),
                         ActionId.random(),
                         ActionStatus.Failed,
                         Lists.of(
                                 SagaError.of(SagaError.Reason.InternalError, "internal error"),
                                 SagaError.of(SagaError.Reason.Timeout, "timeout"))),
-                new SagaStateTransition.SagaActionStatusChanged(
+                SagaStateTransition.SagaActionStatusChanged.of(
                         SagaId.random(),
                         ActionId.random(),
                         ActionStatus.Completed,

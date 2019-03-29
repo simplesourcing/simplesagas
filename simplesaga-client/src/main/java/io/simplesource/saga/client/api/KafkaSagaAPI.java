@@ -43,7 +43,7 @@ public final class KafkaSagaAPI<A> implements SagaAPI<A> {
                 .responseValueSerde(serdes.response())
                 .responseWindowSpec(new WindowSpec(TimeUnit.DAYS.toSeconds(7)))
                 .outputTopicConfig(sagaTopicConfig.topicSpecs.get(TopicTypes.SagaTopic.SAGA_RESPONSE))
-                .errorValue((request, error) -> new SagaResponse(request.sagaId, Result.failure(SagaError.of(SagaError.Reason.InternalError, error))))
+                .errorValue((request, error) -> SagaResponse.of(request.sagaId, Result.failure(SagaError.of(SagaError.Reason.InternalError, error))))
                 .scheduler(scheduler)
                 .uuidToResponseId(SagaId::of)
                 .responseIdToUuid(SagaId::id)

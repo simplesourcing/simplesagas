@@ -13,7 +13,7 @@ import java.util.function.Function;
 
 public interface SagaStateTransition {
 
-    @Value
+    @Value(staticConstructor = "of")
     final class SetInitialState<A> implements SagaStateTransition {
         public final Saga<A> sagaState;
 
@@ -23,7 +23,7 @@ public interface SagaStateTransition {
         }
     }
 
-    @Value
+    @Value(staticConstructor = "of")
     final class SagaActionStatusChanged implements SagaStateTransition {
         public final SagaId sagaId;
         public final ActionId actionId;
@@ -36,7 +36,7 @@ public interface SagaStateTransition {
         }
     }
 
-    @Value
+    @Value(staticConstructor = "of")
     final class SagaStatusChanged implements SagaStateTransition {
         public final SagaId sagaId;
         public final SagaStatus sagaStatus;
@@ -49,7 +49,7 @@ public interface SagaStateTransition {
         }
     }
 
-    @Value
+    @Value(staticConstructor = "of")
     final class TransitionList implements SagaStateTransition {
         public final List<SagaActionStatusChanged> actions;
 

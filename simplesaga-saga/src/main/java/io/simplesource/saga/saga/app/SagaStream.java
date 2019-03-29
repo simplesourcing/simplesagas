@@ -92,7 +92,7 @@ final public class SagaStream {
 
         KStream<SagaId, Tuple2<SagaRequest<A>, List<SagaError>>>[] z = y.branch((k, reqWithErrors) -> reqWithErrors.v2().isEmpty(), (k, reqWithErrors) -> !reqWithErrors.v2().isEmpty());
         KStream<SagaId, SagaRequest<A>> validRequests = z[0].mapValues(Tuple2::v1);
-        KStream<SagaId, SagaResponse> inValidResponses = z[1].mapValues(Tuple2::v2).mapValues((k, v) -> new SagaResponse(k, Result.failure(NonEmptyList.fromList(v).get())));
+        KStream<SagaId, SagaResponse> inValidResponses = z[1].mapValues(Tuple2::v2).mapValues((k, v) -> SagaResponse.of(k, Result.failure(NonEmptyList.fromList(v).get())));
 
         return Tuple2.of(validRequests, inValidResponses);
     }
@@ -107,7 +107,7 @@ final public class SagaStream {
                 Joined.with(sSerdes.sagaId(), sSerdes.request(), sSerdes.state()))
                 .filter((k, tuple) -> tuple.v2());
 
-        return newRequestStream.mapValues((k, v) -> new SagaStateTransition.SetInitialState<>(v.v1().initialState));
+        return newRequestStream.mapValues((k, v) -> SagaStateTransition.SetInitialState.of(v.v1().initialState));
     }
 
     @Value
@@ -150,7 +150,7 @@ final public class SagaStream {
                 .mapValues((k, v) -> v.get());
 
         KStream<SagaId, SagaStateTransition> stateTransition = statusWithError.mapValues((sagaId, someStatus) ->
-                new SagaStateTransition.SagaStatusChanged(sagaId, someStatus.status, someStatus.errors.map(NonEmptyList::toList).orElse(Collections.emptyList())));
+                SagaStateTransition.SagaStatusChanged.of(sagaId, someStatus.status, someStatus.errors.map(NonEmptyList::toList).orElse(Collections.emptyList())));
 
         KStream<SagaId, SagaResponse> sagaResponses = statusWithError
                 .mapValues((sagaId, sWithE) -> {
@@ -162,7 +162,7 @@ final public class SagaStream {
                     return Optional.<Result<SagaError, Sequence>>empty();
                 })
                 .filter((sagaId, v) -> v.isPresent())
-                .mapValues((sagaId, v) -> new SagaResponse(sagaId, v.get()));
+                .mapValues((sagaId, v) -> SagaResponse.of(sagaId, v.get()));
 
         return Tuple2.of(stateTransition, sagaResponses);
     }
@@ -181,9 +181,9 @@ final public class SagaStream {
                 .filter((k, actions) -> !actions.isEmpty())
                 .<SagaStateTransition>mapValues((sagaId, actions) -> {
                     List<SagaStateTransition.SagaActionStatusChanged> transitions = actions.stream().map(action ->
-                            new SagaStateTransition.SagaActionStatusChanged(sagaId, action.actionId, action.status, Collections.emptyList())
+                            SagaStateTransition.SagaActionStatusChanged.of(sagaId, action.actionId, action.status, Collections.emptyList())
                     ).collect(Collectors.toList());
-                    return new SagaStateTransition.TransitionList(transitions);
+                    return SagaStateTransition.TransitionList.of(transitions);
                 })
                 .peek(logValues("stateUpdateNewActions"));
 
@@ -209,7 +209,7 @@ final public class SagaStream {
             Tuple2<ActionStatus, List<SagaError>> se = response.result.fold(
                     errors -> Tuple2.of(ActionStatus.Failed, errors.toList()), // TODO: FIX this
                     r -> Tuple2.of(ActionStatus.Completed, Collections.emptyList()));
-            return new SagaStateTransition.SagaActionStatusChanged(sagaId, response.actionId, se.v1(), se.v2());
+            return SagaStateTransition.SagaActionStatusChanged.of(sagaId, response.actionId, se.v1(), se.v2());
         }).peek(logValues("stateTransitionsActionResponse"));
     }
 }

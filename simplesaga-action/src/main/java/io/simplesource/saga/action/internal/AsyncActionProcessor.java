@@ -118,7 +118,7 @@ final class AsyncActionProcessor {
                 SagaError.of(SagaError.Reason.InternalError, es.head())),
                 r -> Result.success(true));
 
-        ActionResponse actionResponse = new ActionResponse(request.sagaId,
+        ActionResponse actionResponse = ActionResponse.of(request.sagaId,
                 request.actionId,
                 request.actionCommand.commandId,
                 booleanResult);

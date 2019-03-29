@@ -32,7 +32,7 @@ class SagaClientSerdesTest {
     @Test
     void responseTestSuccess() {
         SagaClientSerdes<?> serdes = AvroSerdes.Specific.sagaClientSerdes(SCHEMA_URL, true);
-        SagaResponse original = new SagaResponse(SagaId.random(), Result.success(Sequence.first().next().next()));
+        SagaResponse original = SagaResponse.of(SagaId.random(), Result.success(Sequence.first().next().next()));
         byte[] serialized = serdes.response().serializer().serialize(FAKE_TOPIC, original);
         SagaResponse deserialized = serdes.response().deserializer().deserialize(FAKE_TOPIC, serialized);
         assertThat(deserialized.toString()).isEqualTo(original.toString());
@@ -45,7 +45,7 @@ class SagaClientSerdesTest {
         SagaClientSerdes<?> serdes = AvroSerdes.Specific.sagaClientSerdes(SCHEMA_URL, true);
         SagaError sagaError1 = SagaError.of(SagaError.Reason.InternalError, "There was an error");
         SagaError sagaError2 = SagaError.of(SagaError.Reason.CommandError, "Invalid command");
-        SagaResponse original = new SagaResponse(SagaId.random(), Result.failure(sagaError1, sagaError2));
+        SagaResponse original = SagaResponse.of(SagaId.random(), Result.failure(sagaError1, sagaError2));
         byte[] serialized = serdes.response().serializer().serialize(FAKE_TOPIC, original);
         SagaResponse deserialized = serdes.response().deserializer().deserialize(FAKE_TOPIC, serialized);
         assertThat(deserialized).isEqualToIgnoringGivenFields(original, "result");
@@ -64,8 +64,8 @@ class SagaClientSerdesTest {
 
         Saga<SpecificRecord> saga = SagaTestUtils.getTestSaga();
 
-        // SagaRequest<SpecificRecord> original = new SagaRequest<>(UUID.randomUUID(), saga);
-        SagaRequest<SpecificRecord> original = new SagaRequest<>(saga.sagaId , saga);
+        // SagaRequest<SpecificRecord> original = SagaRequest.of(UUID.randomUUID(), saga);
+        SagaRequest<SpecificRecord> original = SagaRequest.of(saga.sagaId , saga);
 
         byte[] serialized = serdes.request().serializer().serialize(FAKE_TOPIC, original);
         SagaRequest<SpecificRecord> deserialized = serdes.request().deserializer().deserialize(FAKE_TOPIC, serialized);

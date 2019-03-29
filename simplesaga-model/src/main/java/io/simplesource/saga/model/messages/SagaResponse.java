@@ -6,7 +6,7 @@ import io.simplesource.saga.model.saga.SagaError;
 import io.simplesource.saga.model.saga.SagaId;
 import lombok.Value;
 
-@Value
+@Value(staticConstructor = "of")
 public class SagaResponse {
     public final SagaId sagaId;
     public final Result<SagaError, Sequence> result;

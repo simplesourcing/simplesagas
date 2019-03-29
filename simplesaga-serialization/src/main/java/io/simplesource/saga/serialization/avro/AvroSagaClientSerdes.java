@@ -56,7 +56,7 @@ public class AvroSagaClientSerdes<A> implements SagaClientSerdes<A> {
         }, (topic, asr) -> {
             AvroSaga as = asr.getInitialState();
             Saga<A> saga = sagaFromAvro(topic, as);
-            return new SagaRequest<>(SagaId.fromString(asr.getSagaId()), saga);
+            return SagaRequest.of(SagaId.fromString(asr.getSagaId()), saga);
         });
     }
 
@@ -73,9 +73,9 @@ public class AvroSagaClientSerdes<A> implements SagaClientSerdes<A> {
                                         .toList(),
                                 Sequence::getSeq))
                         .build(),
-                ar -> new SagaResponse(
+                ar -> SagaResponse.of(
                         SagaId.fromString(ar.getSagaId()),
-                        SagaSerdeUtils.<Long, Sequence>sagaResultFromAvro(ar.getResult(), x -> Sequence.position(x))));
+                        SagaSerdeUtils.<Long, Sequence>sagaResultFromAvro(ar.getResult(), Sequence::position)));
 
     }
 
@@ -84,12 +84,12 @@ public class AvroSagaClientSerdes<A> implements SagaClientSerdes<A> {
         Map<ActionId, SagaAction<A>> actions = new HashMap<>();
         aActions.forEach((id, aa) -> {
             ActionId actionId = ActionId.fromString(aa.getActionId());
-            SagaAction<A> action = new SagaAction<>(
+            SagaAction<A> action = SagaAction.of(
                     actionId,
                     aa.getActionType(),
                     SagaSerdeUtils.actionCommandFromAvro(payloadSerde, topic, aa.getActionType(), aa.getActionCommand()),
                     Optional.ofNullable(SagaSerdeUtils.actionCommandFromAvro(payloadSerde, topic, aa.getActionType() + "-undo", aa.getUndoCommand())),
-                    aa.getDependencies().stream().map(actIdStr -> ActionId.fromString(actIdStr)).collect(Collectors.toSet()),
+                    aa.getDependencies().stream().map(ActionId::fromString).collect(Collectors.toSet()),
                     ActionStatus.valueOf(aa.getActionStatus()),
                     SagaSerdeUtils.sagaErrorListFromAvro(aa.getActionErrors()));
             actions.put(actionId, action);
