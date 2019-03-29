@@ -18,11 +18,7 @@ public class ActionApp<A> {
     }
 
     public static <A> ActionApp<A> of(ActionSerdes<A> serdes) {
-        return of(serdes, Duration.ofDays(1L));
-    }
-
-    public static <A> ActionApp<A> of(ActionSerdes<A> serdes, Duration maxSagaDuration) {
-        return new ActionApp<>(ActionSpec.of(serdes, maxSagaDuration));
+        return new ActionApp<>(ActionSpec.of(serdes));
     }
 
     public ActionApp<A> withActionProcessor(ActionProcessor<A> processorBuildStep) {

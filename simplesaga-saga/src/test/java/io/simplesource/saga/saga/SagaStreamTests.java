@@ -70,7 +70,7 @@ class SagaStreamTests {
 
             SagaApp<SpecificRecord> sagaApp = SagaApp.of(
                     new SagaSpec<>(sagaSerdes, new WindowSpec(60)),
-                    ActionSpec.of(actionSerdes, Duration.ofSeconds(60)),
+                    ActionSpec.of(actionSerdes),
                     topicBuilder -> topicBuilder.withTopicPrefix(Constants.SAGA_TOPIC_PREFIX));
 
             sagaApp.withAction(

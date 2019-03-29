@@ -140,7 +140,7 @@ class AsyncStreamTests {
                     actionSerdes.request());
 
             asyncContext = new AsyncContext<>(
-                    ActionSpec.of(actionSerdes, Duration.ofSeconds(60)),
+                    ActionSpec.of(actionSerdes),
                     TopicNamer.forPrefix(Constants.ACTION_TOPIC_PREFIX, TopicUtils.actionTopicBaseName(Constants.ASYNC_TEST_ACTION_TYPE)),
                     asyncSpec,
                     executor);
