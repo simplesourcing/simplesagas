@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * SagaApp (the "Saga Coordinator") accepts a dependency graph of saga actions.
@@ -66,8 +67,32 @@ final public class SagaApp<A> {
 
     public SagaApp<A> withAction(String actionType, TopicConfigBuilder.BuildSteps buildFn) {
         String atlc = actionType.toLowerCase();
-        if (topicNamers.containsKey(atlc)) throw new RuntimeException("ActionType has already been added");
+        if (topicNamers.containsKey(atlc)) throw new RuntimeException(String.format("ActionType has already been added for action '%s'", actionType));
 
+        return registerAction(atlc, buildFn);
+    }
+
+    public SagaApp<A> withActions(Collection<String> actionTypes, TopicConfigBuilder.BuildSteps buildFn) {
+        Set<String> actionTypeSet = actionTypes
+                .stream()
+                .map(String::toLowerCase)
+                .collect(Collectors.toSet());
+
+        // throw if any one is already there
+        Set<String> intersection = new HashSet<>(actionTypeSet);
+        intersection.retainAll(topicNamers.keySet());
+        if (!intersection.isEmpty())
+            throw new RuntimeException(String.format("%d actions are already present.", intersection.size()));
+
+        actionTypeSet.forEach(at -> registerAction(at, buildFn));
+        return this;
+    }
+
+    public SagaApp<A> withActions(String... actionTypes) {
+        return withActions(Arrays.asList(actionTypes), b -> b);
+    }
+
+    private SagaApp<A> registerAction(String atlc, TopicConfigBuilder.BuildSteps buildFn) {
         TopicConfig actionTopicConfig = TopicConfigBuilder.build(
                 TopicTypes.ActionTopic.all,
                 buildFn.withInitialStep(builder -> builder.withTopicBaseName(TopicUtils.actionTopicBaseName(atlc))));
@@ -75,10 +100,6 @@ final public class SagaApp<A> {
         topics.addAll(TopicCreation.allTopics(actionTopicConfig));
         topicNamers.put(atlc, actionTopicConfig.namer);
         return this;
-    }
-
-    public SagaApp<A> withAction(String actionType) {
-        return withAction(actionType, topicBuilder -> topicBuilder);
     }
 
     /**
