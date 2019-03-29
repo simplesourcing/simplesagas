@@ -8,8 +8,7 @@ import java.util.Optional;
 import java.util.Set;
 
 
-
-@Value
+@Value(staticConstructor = "of")
 public class SagaAction<A> {
     public final ActionId actionId;
     public final String actionType;

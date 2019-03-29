@@ -6,8 +6,7 @@ import io.simplesource.saga.model.saga.SagaId;
 import lombok.Builder;
 import lombok.Value;
 
-
-@Value
+@Value(staticConstructor = "of")
 @Builder
 public class ActionRequest<A> {
     public final SagaId sagaId;

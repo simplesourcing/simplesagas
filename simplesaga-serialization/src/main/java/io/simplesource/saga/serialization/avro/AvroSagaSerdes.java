@@ -58,14 +58,14 @@ public class AvroSagaSerdes<A> extends AvroSagaClientSerdes<A> implements SagaSe
         }, (topic, at) -> {
             Object t = at.getTransition();
             if (t instanceof AvroSagaTransitionInitial) {
-                return new SagaStateTransition.SetInitialState<>(sagaFromAvro(topic, ((AvroSagaTransitionInitial)t).getSagaState()));
+                return SagaStateTransition.SetInitialState.of(sagaFromAvro(topic, ((AvroSagaTransitionInitial)t).getSagaState()));
             }
             if (t instanceof AvroSagaTransitionActionStatusChange) {
                 return actionStatusChangeFromAvro((AvroSagaTransitionActionStatusChange) t);
             }
             if (t instanceof AvroSagaTransitionSagaStatusChange) {
                 AvroSagaTransitionSagaStatusChange st = (AvroSagaTransitionSagaStatusChange) t;
-                return new SagaStateTransition.SagaStatusChanged(
+                return SagaStateTransition.SagaStatusChanged.of(
                         SagaId.fromString(st.getSagaId()),
                         SagaStatus.valueOf(st.getSagaStatus()),
                         SagaSerdeUtils.sagaErrorListFromAvro(st.getSagaErrors()));
@@ -74,7 +74,7 @@ public class AvroSagaSerdes<A> extends AvroSagaClientSerdes<A> implements SagaSe
                 AvroSagaTransitionList l = (AvroSagaTransitionList) t;
                 List<SagaStateTransition.SagaActionStatusChanged> actions =
                         l.getActionChanges().stream().map(AvroSagaSerdes::actionStatusChangeFromAvro).collect(Collectors.toList());
-                return new SagaStateTransition.TransitionList(actions);
+                return SagaStateTransition.TransitionList.of(actions);
             }
             throw new RuntimeException("Unexpected exception. Avro failed to validate SagaStateTransition union type.");
         });
@@ -90,7 +90,7 @@ public class AvroSagaSerdes<A> extends AvroSagaClientSerdes<A> implements SagaSe
     }
 
     private static SagaStateTransition.SagaActionStatusChanged actionStatusChangeFromAvro(AvroSagaTransitionActionStatusChange actionChange) {
-        return new SagaStateTransition.SagaActionStatusChanged(
+        return SagaStateTransition.SagaActionStatusChanged.of(
                 SagaId.fromString(actionChange.getSagaId()),
                 ActionId.fromString(actionChange.getActionId()),
                 ActionStatus.valueOf(actionChange.getActionStatus()),

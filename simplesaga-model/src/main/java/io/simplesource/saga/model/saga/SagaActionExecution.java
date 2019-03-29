@@ -7,7 +7,7 @@ import lombok.Value;
 
 import java.util.Optional;
 
-@Value
+@Value(staticConstructor = "of")
 public class SagaActionExecution<A> {
     public final ActionId actionId;
     public final String actionType;

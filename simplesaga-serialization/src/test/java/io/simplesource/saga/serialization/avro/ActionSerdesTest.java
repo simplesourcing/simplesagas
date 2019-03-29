@@ -96,7 +96,7 @@ class ActionSerdesTest {
     @Test
     void responseTestSuccess() {
         ActionSerdes<?> serdes = AvroSerdes.Specific.actionSerdes(SCHEMA_URL, true);
-        ActionResponse original = new ActionResponse(SagaId.random(), ActionId.random(), CommandId.random(), Result.success(true));
+        ActionResponse original = ActionResponse.of(SagaId.random(), ActionId.random(), CommandId.random(), Result.success(true));
         byte[] serialized = serdes.response().serializer().serialize(FAKE_TOPIC, original);
         ActionResponse deserialized = serdes.response().deserializer().deserialize(FAKE_TOPIC, serialized);
         assertThat(deserialized).isEqualToIgnoringGivenFields(original, "result");
@@ -108,7 +108,7 @@ class ActionSerdesTest {
         ActionSerdes<?> serdes = AvroSerdes.Specific.actionSerdes(SCHEMA_URL, true);
         SagaError sagaError1 = SagaError.of(SagaError.Reason.InternalError, "There was an error");
         SagaError sagaError2 = SagaError.of(SagaError.Reason.CommandError, "Invalid command");
-        ActionResponse original = new ActionResponse(SagaId.random(), ActionId.random(), CommandId.random(),
+        ActionResponse original = ActionResponse.of(SagaId.random(), ActionId.random(), CommandId.random(),
                 Result.failure(sagaError1, sagaError2));
         byte[] serialized = serdes.response().serializer().serialize(FAKE_TOPIC, original);
         ActionResponse deserialized = serdes.response().deserializer().deserialize(FAKE_TOPIC, serialized);
