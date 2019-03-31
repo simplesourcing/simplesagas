@@ -129,15 +129,12 @@ final class AsyncActionProcessor {
             ActionRequest<A> request,
             AsyncPublisher<SagaId, ActionResponse<A>> responsePublisher,
             Throwable failure) {
-
-        Result<Throwable, Optional<A>> result = Result.failure(failure);
-
         publishActionResult(
                 asyncContext,
                 sagaId,
                 request,
                 responsePublisher,
-                result);
+                Result.failure(failure));
     }
 
     private static <A, D, K, O, R> void publishActionResult(

@@ -195,6 +195,12 @@ public final class EventSourcingStream {
                 .mapValues((k, v) -> {
                             ActionRequest<A> aReq = v.v1();
                             CommandResponse<K> cResp = v.v2();
+
+                            // get the undo action if present
+                            D decodedInput = getDecoded(ctx, aReq);
+                            C command = ctx.eventSourcingSpec.commandMapper.apply(decodedInput);
+                            Optional<A> undoAction = ctx.eventSourcingSpec.undoCommand.apply(command);
+
                             Result<CommandError, Sequence> sequenceResult =
                                     (cResp == null) ?
                                             Result.failure(CommandError.of(CommandError.Reason.Timeout,
@@ -205,7 +211,7 @@ public final class EventSourcingStream {
                                                 String message = String.join(",", errors.map(CommandError::getMessage));
                                                 return Result.failure(SagaError.of(SagaError.Reason.CommandError, message));
                                             },
-                                            seq -> Result.success(Optional.empty()));
+                                            seq -> Result.success(undoAction));
 
                             return ActionResponse.of(aReq.sagaId,
                                     aReq.actionId,

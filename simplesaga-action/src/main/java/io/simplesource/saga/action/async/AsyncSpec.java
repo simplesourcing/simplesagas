@@ -24,7 +24,7 @@ import java.util.function.Function;
 public final class AsyncSpec<A, D, K, O, R> {
 
     public interface UndoFunction<A, D, K, R> {
-        Optional<A> apply(D decoded, K key, R result);
+        Optional<A> apply(D decodedInput, K outputKey, R result);
     }
 
     @Value(staticConstructor = "of")
