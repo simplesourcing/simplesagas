@@ -15,7 +15,7 @@ public final class AsyncActionProcessorProxy {
             AsyncContext<A, D, K, O, R> asyncContext,
             SagaId sagaId,
             ActionRequest<A> request,
-            AsyncPublisher<SagaId, ActionResponse> responsePublisher,
+            AsyncPublisher<SagaId, ActionResponse<A>> responsePublisher,
             Function<TopicSerdes<K, R>, AsyncPublisher<K, R>> outputPublisher) {
         AsyncActionProcessor.processRecord(asyncContext, sagaId, request, responsePublisher, outputPublisher);
     }

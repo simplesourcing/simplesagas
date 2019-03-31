@@ -20,6 +20,6 @@ public final class HttpSpec<A, K, B, O, R> {
     public final HttpRequest.HttpRequestDecoder<A, K, B> decoder;
     public final BiConsumer<HttpRequest<K, B>, Callback<O>> asyncHttpClient;
     public final String groupId;
-    public final Optional<HttpOutput<K, O, R>> outputSpec;
+    public final Optional<HttpOutput<A, K, B, O, R>> outputSpec;
     public final Optional<Duration> timeout;
 }

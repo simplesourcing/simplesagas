@@ -28,6 +28,7 @@ import org.apache.kafka.streams.Topology;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -50,24 +51,27 @@ class EventSourcingStreamTests {
         // publishers
         final RecordPublisher<SagaId, ActionRequest<SpecificRecord>> actionRequestPublisher;
         final RecordPublisher<AccountId, CommandResponse<AccountId>> commandResponsePublisher;
-        final RecordPublisher<SagaId, ActionResponse> actionResponsePublisher;
+        final RecordPublisher<SagaId, ActionResponse<SpecificRecord>> actionResponsePublisher;
 
         // verifiers
         final RecordVerifier<AccountId, CommandRequest<AccountId, AccountCommand>> commandRequestVerifier;
-        final RecordVerifier<SagaId, ActionResponse> actionResponseVerifier;
+        final RecordVerifier<SagaId, ActionResponse<SpecificRecord>> actionResponseVerifier;
 
         final Set<String> expectedTopics;
 
         AccountContext() {
-            EventSourcingSpec<SpecificRecord, AccountCommand, AccountId, AccountCommand> sourcingSpec = new EventSourcingSpec<>(
-                    Constants.ACCOUNT_ACTION_TYPE,
-                    a -> Result.success((AccountCommand) a),
-                    c -> c,
-                    AccountCommand::getId,
-                    c -> Sequence.position(c.getSequence()),
-                    commandSerdes,
-                    Duration.ofSeconds(20),
-                    Constants.ACCOUNT_AGGREGATE_NAME);
+            EventSourcingSpec<SpecificRecord, AccountCommand, AccountId, AccountCommand> sourcingSpec =
+                    EventSourcingSpec.<SpecificRecord, AccountCommand, AccountId, AccountCommand>builder()
+                            .actionType(Constants.ACCOUNT_ACTION_TYPE)
+                            .aggregateName(Constants.ACCOUNT_AGGREGATE_NAME)
+                            .decode(a -> Result.success((AccountCommand) a))
+                            .commandMapper(c -> c)
+                            .keyMapper(AccountCommand::getId)
+                            .sequenceMapper(c -> Sequence.position(c.getSequence()))
+                            .undoCommand(c -> Optional.empty())
+                            .commandSerdes(commandSerdes)
+                            .timeout(Duration.ofSeconds(20))
+                            .build();
 
             ActionApp<SpecificRecord> streamApp = ActionApp.of(actionSerdes);
 

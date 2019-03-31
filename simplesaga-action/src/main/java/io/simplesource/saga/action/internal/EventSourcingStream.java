@@ -25,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
+import java.util.Optional;
 
 public final class EventSourcingStream {
 
@@ -45,7 +46,7 @@ public final class EventSourcingStream {
 
     private static <A, D, K, C> void addSubTopology(EventSourcingContext<A, D, K, C> ctx,
                                                     KStream<SagaId, ActionRequest<A>> actionRequest,
-                                                    KStream<SagaId, ActionResponse> actionResponse,
+                                                    KStream<SagaId, ActionResponse<A>> actionResponse,
                                                     KStream<K, CommandResponse<K>> commandResponseByAggregate) {
         KStream<CommandId, CommandResponse<K>> commandResponseByCommandId = commandResponseByAggregate.selectKey((k, v) -> v.commandId());
 
@@ -54,14 +55,14 @@ public final class EventSourcingStream {
                 actionResponse);
 
         // get new command requests
-        Tuple2<KStream<SagaId, ActionResponse>, KStream<K, CommandRequest<K, C>>> requestResp =
+        Tuple2<KStream<SagaId, ActionResponse<A>>, KStream<K, CommandRequest<K, C>>> requestResp =
                 handleActionRequest(ctx, idempotentAction.unprocessedRequests, commandResponseByAggregate);
 
-        KStream<SagaId, ActionResponse> requestErrorResponses = requestResp.v1();
+        KStream<SagaId, ActionResponse<A>> requestErrorResponses = requestResp.v1();
         KStream<K, CommandRequest<K, C>> commandRequests = requestResp.v2();
 
         // handle incoming command responses
-        KStream<SagaId, ActionResponse> newActionResponses = handleCommandResponse(ctx, actionRequest, commandResponseByCommandId);
+        KStream<SagaId, ActionResponse<A>> newActionResponses = handleCommandResponse(ctx, actionRequest, commandResponseByCommandId);
 
         ActionContext<A> actionCtx = ctx.getActionContext();
 
@@ -83,7 +84,7 @@ public final class EventSourcingStream {
     /**
      * Translate simplesaga action requests to simplesourcing command requests.
      */
-    private static <A, D, K, C> Tuple2<KStream<SagaId, ActionResponse>, KStream<K, CommandRequest<K, C>>> handleActionRequest(
+    private static <A, D, K, C> Tuple2<KStream<SagaId, ActionResponse<A>>, KStream<K, CommandRequest<K, C>>> handleActionRequest(
             EventSourcingContext<A, D, K, C> ctx,
             KStream<SagaId, ActionRequest<A>> actionRequests,
             KStream<K, CommandResponse<K>> commandResponseByAggregate) {
@@ -95,7 +96,7 @@ public final class EventSourcingStream {
 
         KStream<SagaId, Tuple2<ActionRequest<A>, Result<Throwable, D>>>[] branchSuccessFailure = reqsWithDecoded.branch((k, v) -> v.v2().isSuccess(), (k, v) -> v.v2().isFailure());
 
-        KStream<SagaId, ActionResponse> errorActionResponses = branchSuccessFailure[1].mapValues((k, v) -> {
+        KStream<SagaId, ActionResponse<A>> errorActionResponses = branchSuccessFailure[1].mapValues((k, v) -> {
             ActionRequest<A> request = v.v1();
             NonEmptyList<Throwable> reasons = v.v2().failureReasons().get();
             return ActionResponse.of(request.sagaId, request.actionId, request.actionCommand.commandId, Result.failure(
@@ -170,7 +171,7 @@ public final class EventSourcingStream {
     /**
      * Receives command response from simplesourcing, and convert to simplesaga action response.
      */
-    private static <A, D, K, C> KStream<SagaId, ActionResponse> handleCommandResponse(
+    private static <A, D, K, C> KStream<SagaId, ActionResponse<A>> handleCommandResponse(
             EventSourcingContext<A, D, K, C> ctx,
             KStream<SagaId, ActionRequest<A>> actionRequests,
             KStream<CommandId, CommandResponse<K>> responseByCommandId) {
@@ -199,12 +200,12 @@ public final class EventSourcingStream {
                                             Result.failure(CommandError.of(CommandError.Reason.Timeout,
                                                     "Timed out waiting for response from Command Processor")) :
                                             cResp.sequenceResult();
-                            Result<SagaError, Boolean> result =
+                            Result<SagaError, Optional<A>> result =
                                     sequenceResult.fold(errors -> {
                                                 String message = String.join(",", errors.map(CommandError::getMessage));
                                                 return Result.failure(SagaError.of(SagaError.Reason.CommandError, message));
                                             },
-                                            seq -> Result.success(true));
+                                            seq -> Result.success(Optional.empty()));
 
                             return ActionResponse.of(aReq.sagaId,
                                     aReq.actionId,

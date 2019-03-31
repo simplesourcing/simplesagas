@@ -59,7 +59,7 @@ final class AsyncTransform {
         if (useTransactions)
             producer.initTransactions();
 
-        AsyncPublisher<SagaId, ActionResponse> responsePublisher = new AsyncKafkaPublisher<>(producer, asyncContext.actionSpec.serdes.sagaId(), asyncContext.actionSpec.serdes.response());
+        AsyncPublisher<SagaId, ActionResponse<A>> responsePublisher = new AsyncKafkaPublisher<>(producer, asyncContext.actionSpec.serdes.sagaId(), asyncContext.actionSpec.serdes.response());
         Function<TopicSerdes<K, R>, AsyncPublisher<K, R>> outputPublisher = serdes -> new AsyncKafkaPublisher<>(producer, serdes.key, serdes.value);
 
         final AsyncConsumerRunner<A, D, K, O, R> runner = new AsyncConsumerRunner<>(asyncContext, consumerConfig, responsePublisher, outputPublisher, closed -> {

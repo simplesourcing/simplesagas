@@ -9,7 +9,7 @@ import org.apache.kafka.streams.kstream.Produced;
 
 final class ActionPublisher {
 
-    static <A> void publishActionResponse(ActionContext<A> ctx, KStream<SagaId, ActionResponse> actionResponseStream) {
+    static <A> void publishActionResponse(ActionContext<A> ctx, KStream<SagaId, ActionResponse<A>> actionResponseStream) {
         actionResponseStream.to(
                 ctx.actionTopicNamer.apply(TopicTypes.ActionTopic.ACTION_RESPONSE),
                 Produced.with(ctx.actionSpec.serdes.sagaId(), ctx.actionSpec.serdes.response()));

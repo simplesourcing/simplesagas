@@ -2,10 +2,10 @@ package io.simplesource.saga.action.http;
 
 import io.simplesource.saga.action.app.ActionProcessor;
 import io.simplesource.saga.action.async.AsyncBuilder;
-import io.simplesource.saga.action.async.AsyncOutput;
 import io.simplesource.saga.action.async.AsyncSpec;
 import io.simplesource.saga.shared.topics.TopicConfigBuilder;
 
+import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
 
 // TODO: does this belong in userland?
@@ -18,16 +18,18 @@ public final class HttpBuilder {
 
         AsyncSpec<A, HttpRequest<K, B>, K, O, R> asyncSpec =
                 new AsyncSpec<>(
-                httpSpec.actionType,
-                httpSpec.decoder::decode,
-                httpSpec.asyncHttpClient,
-                httpSpec.groupId,
-                httpSpec.outputSpec.map(o ->
-                        new AsyncOutput<>(o.decoder::decode, o.outputSerdes,
-                                r -> r.key,
-                                r -> r.topicName,
-                                o.topicCreations)),
-                httpSpec.timeout);
+                        httpSpec.actionType,
+                        httpSpec.decoder::decode,
+                        httpSpec.asyncHttpClient,
+                        httpSpec.groupId,
+                        httpSpec.outputSpec.map(o ->
+                                AsyncSpec.AsyncResult.of(
+                                        o.decoder::decode,
+                                        r -> r.key,
+                                        (request, k, r) -> o.undoFunction.apply(request, r),
+                                        Optional.of(o.outputSerdes)
+                                )),
+                        httpSpec.timeout);
 
         return AsyncBuilder.apply(asyncSpec, topicBuildFn, executor);
     }

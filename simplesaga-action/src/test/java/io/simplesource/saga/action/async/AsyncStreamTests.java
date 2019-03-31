@@ -5,6 +5,7 @@ import io.simplesource.api.CommandId;
 import io.simplesource.data.Result;
 import io.simplesource.kafka.spec.TopicSpec;
 import io.simplesource.saga.action.ActionApp;
+import io.simplesource.saga.action.app.ActionProcessor;
 import io.simplesource.saga.model.serdes.TopicSerdes;
 import io.simplesource.saga.action.internal.AsyncActionProcessorProxy;
 import io.simplesource.saga.action.internal.AsyncPublisher;
@@ -21,6 +22,7 @@ import io.simplesource.saga.model.specs.ActionSpec;
 import io.simplesource.saga.serialization.avro.AvroSerdes;
 import io.simplesource.saga.serialization.avro.SpecificSerdeUtils;
 import io.simplesource.saga.shared.streams.StreamBuildResult;
+import io.simplesource.saga.shared.streams.StreamBuildSpec;
 import io.simplesource.saga.shared.topics.TopicCreation;
 import io.simplesource.saga.shared.topics.TopicNamer;
 import io.simplesource.saga.shared.topics.TopicTypes;
@@ -67,7 +69,7 @@ class AsyncStreamTests {
 
         // publishers
         final RecordPublisher<SagaId, ActionRequest<SpecificRecord>> actionRequestPublisher;
-        final RecordPublisher<SagaId, ActionResponse> actionResponsePublisher;
+        final RecordPublisher<SagaId, ActionResponse<SpecificRecord>> actionResponsePublisher;
         final RecordPublisher<AsyncTestId, AsyncTestOutput> actionOutputPublisher;
 
         // verifiers
@@ -92,20 +94,23 @@ class AsyncStreamTests {
                     a -> Result.success((AsyncTestCommand) a),
                     asyncFunction,
                     "group_id",
-                    Optional.of(new AsyncOutput<>(
+                    Optional.of(AsyncSpec.AsyncResult.of(
                             o -> Optional.of(Result.success(new AsyncTestOutput(o))),
-                            asyncSerdes,
                             AsyncTestCommand::getId,
-                            x -> Optional.of(ASYNC_TEST_OUTPUT_TOPIC),
-                            Collections.singletonList(new TopicCreation(ASYNC_TEST_OUTPUT_TOPIC, new TopicSpec(6, (short) 1, Collections.emptyMap()))
-                            ))),
+                            (d, k, r) -> Optional.empty(),
+                            Optional.of(asyncSerdes))),
                     timeout);
 
             ActionApp<SpecificRecord> actionApp = ActionApp.of(actionSerdes);
 
-            actionApp.withActionProcessor(AsyncBuilder.apply(
+            ActionProcessor<SpecificRecord> processor = AsyncBuilder.apply(
                     asyncSpec,
-                    topicBuilder -> topicBuilder.withTopicPrefix(Constants.ACTION_TOPIC_PREFIX)));
+                    topicBuilder -> topicBuilder
+                            .withTopicPrefix(Constants.ACTION_TOPIC_PREFIX)
+                            .withTopicNameOverride(TopicTypes.ActionTopic.ACTION_OUTPUT, ASYNC_TEST_OUTPUT_TOPIC)
+            );
+
+            actionApp.withActionProcessor(processor);
 
             Properties config = StreamAppConfig.getConfig(new StreamAppConfig("app-id", "http://localhost:9092"));
 
@@ -115,16 +120,18 @@ class AsyncStreamTests {
 
             testContext = TestContextBuilder.of(topology).build();
 
+            TopicNamer topicNamer = TopicUtils.topicNamerOverride(
+                    TopicNamer.forPrefix(Constants.ACTION_TOPIC_PREFIX, TopicUtils.actionTopicBaseName(Constants.ASYNC_TEST_ACTION_TYPE)),
+                    Collections.singletonMap(TopicTypes.ActionTopic.ACTION_OUTPUT, ASYNC_TEST_OUTPUT_TOPIC));
+
             // get actionRequestPublisher
             actionRequestPublisher = testContext.publisher(
-                    TopicNamer.forPrefix(Constants.ACTION_TOPIC_PREFIX, TopicUtils.actionTopicBaseName(Constants.ASYNC_TEST_ACTION_TYPE))
-                            .apply(TopicTypes.ActionTopic.ACTION_REQUEST),
+                    topicNamer.apply(TopicTypes.ActionTopic.ACTION_REQUEST),
                     actionSerdes.sagaId(),
                     actionSerdes.request());
 
             actionResponsePublisher = testContext.publisher(
-                    TopicNamer.forPrefix(Constants.ACTION_TOPIC_PREFIX, TopicUtils.actionTopicBaseName(Constants.ASYNC_TEST_ACTION_TYPE))
-                            .apply(TopicTypes.ActionTopic.ACTION_RESPONSE),
+                    topicNamer.apply(TopicTypes.ActionTopic.ACTION_RESPONSE),
                     actionSerdes.sagaId(),
                     actionSerdes.response());
 
@@ -134,14 +141,13 @@ class AsyncStreamTests {
                     asyncSerdes.value);
 
             actionUnprocessedRequestVerifier = testContext.verifier(
-                    TopicNamer.forPrefix(Constants.ACTION_TOPIC_PREFIX, TopicUtils.actionTopicBaseName(Constants.ASYNC_TEST_ACTION_TYPE))
-                            .apply(TopicTypes.ActionTopic.ACTION_REQUEST_UNPROCESSED),
+                    topicNamer.apply(TopicTypes.ActionTopic.ACTION_REQUEST_UNPROCESSED),
                     actionSerdes.sagaId(),
                     actionSerdes.request());
 
             asyncContext = new AsyncContext<>(
                     ActionSpec.of(actionSerdes),
-                    TopicNamer.forPrefix(Constants.ACTION_TOPIC_PREFIX, TopicUtils.actionTopicBaseName(Constants.ASYNC_TEST_ACTION_TYPE)),
+                    topicNamer,
                     asyncSpec,
                     executor);
         }
@@ -178,17 +184,17 @@ class AsyncStreamTests {
 
     @Value
     private static class AsyncValidation {
-        final List<ValidationRecord<SagaId, ActionResponse>> responseRecords = new ArrayList<>();
+        final List<ValidationRecord<SagaId, ActionResponse<SpecificRecord>>> responseRecords = new ArrayList<>();
         final List<ValidationRecord<AsyncTestId, AsyncTestOutput>> outputRecords = new ArrayList<>();
         final String responseTopic = TopicNamer.forPrefix(Constants.ACTION_TOPIC_PREFIX, TopicUtils.actionTopicBaseName(Constants.ASYNC_TEST_ACTION_TYPE))
                 .apply(TopicTypes.ActionTopic.ACTION_RESPONSE);
 
-        private final RecordPublisher<SagaId, ActionResponse> actionResponsePublisher;
-        final AsyncPublisher<SagaId, ActionResponse> responseProducer;
+        private final RecordPublisher<SagaId, ActionResponse<SpecificRecord>> actionResponsePublisher;
+        final AsyncPublisher<SagaId, ActionResponse<SpecificRecord>> responseProducer;
 
         final Function<TopicSerdes<AsyncTestId, AsyncTestOutput>, AsyncPublisher<AsyncTestId, AsyncTestOutput>> outputProducer;
 
-        AsyncValidation(RecordPublisher<SagaId, ActionResponse> actionResponsePublisher) {
+        AsyncValidation(RecordPublisher<SagaId, ActionResponse<SpecificRecord>> actionResponsePublisher) {
             this.actionResponsePublisher = actionResponsePublisher;
             this.responseProducer = (topic, key, value) -> {
                 assertThat(topic).isEqualTo(responseTopic);
@@ -203,7 +209,7 @@ class AsyncStreamTests {
         }
 
         static AsyncValidation create() { return new AsyncValidation(null);}
-        static AsyncValidation create(RecordPublisher<SagaId, ActionResponse> actionResponsePublisher) { return new AsyncValidation(actionResponsePublisher);}
+        static AsyncValidation create(RecordPublisher<SagaId, ActionResponse<SpecificRecord>> actionResponsePublisher) { return new AsyncValidation(actionResponsePublisher);}
     }
 
     private static void delayMillis(int millis) {

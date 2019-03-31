@@ -12,5 +12,5 @@ public interface ActionSerdes<A> {
     Serde<ActionId> actionId();
     Serde<CommandId> commandId();
     Serde<ActionRequest<A>> request();
-    Serde<ActionResponse> response();
+    Serde<ActionResponse<A>> response();
 }

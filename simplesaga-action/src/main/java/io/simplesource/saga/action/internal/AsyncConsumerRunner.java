@@ -32,13 +32,13 @@ final class AsyncConsumerRunner<A, D, K, O, R> implements Runnable {
     private final Logger logger = LoggerFactory.getLogger(AsyncConsumerRunner.class);
     private final Properties consumerConfig;
     private final AsyncContext<A, D, K, O, R> asyncContext;
-    private final AsyncPublisher<SagaId, ActionResponse> responsePublisher;
+    private final AsyncPublisher<SagaId, ActionResponse<A>> responsePublisher;
     private final Function<TopicSerdes<K, R>, AsyncPublisher<K, R>> outputPublisher;
 
     AsyncConsumerRunner(
             AsyncContext<A, D, K, O, R> asyncContext,
             Properties consumerConfig,
-            AsyncPublisher<SagaId, ActionResponse> responsePublisher,
+            AsyncPublisher<SagaId, ActionResponse<A>> responsePublisher,
             Function<TopicSerdes<K, R>, AsyncPublisher<K, R>> outputPublisher,
             Consumer<Boolean> onClose) {
         asyncSpec = asyncContext.asyncSpec;

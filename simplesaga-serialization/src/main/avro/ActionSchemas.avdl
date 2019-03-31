@@ -17,11 +17,15 @@ protocol SagaSchemas {
     string message;
   }
 
+  record AvroActionUndoCommand {
+    union { bytes, null } command;
+  }
+
   record AvroActionResponse {
     string sagaId;
     string actionId;
     string commandId;
-    union { array<AvroSagaError>, boolean } result;
+    union { array<AvroSagaError>, AvroActionUndoCommand } result;
   }
 
   record AvroSagaResponse {

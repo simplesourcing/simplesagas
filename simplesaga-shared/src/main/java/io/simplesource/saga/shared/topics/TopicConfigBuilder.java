@@ -21,6 +21,7 @@ public class TopicConfigBuilder {
     private Map<String, TopicSpec> configMap = new HashMap<>();
     private Function<String, TopicSpec> defaultSpec = topicType -> defaultMap(1, 1, 7, topicType);
     private ResourceNamingStrategy namingStrategy = null;
+    private Map<String, String> topicNameOverride = new HashMap<>();
     private String topicBaseName = null;
     private TopicNamer topicNamer = null;
 
@@ -62,7 +63,12 @@ public class TopicConfigBuilder {
         return this;
     }
 
-    public TopicConfigBuilder withConfig(String topicType, TopicSpec tSpec) {
+    public TopicConfigBuilder withTopicNameOverride(String topicType, String topicName) {
+        topicNameOverride.put(topicType, topicName);
+        return this;
+    }
+
+    public TopicConfigBuilder withConfigOverride(String topicType, TopicSpec tSpec) {
         configMap.put(topicType, tSpec);
         return this;
     }
@@ -72,12 +78,21 @@ public class TopicConfigBuilder {
         return this;
     }
 
-    private TopicNamer getTopicNamer() {
+    private TopicNamer baseTopicNamer() {
         if (topicNamer != null) return topicNamer;
         if (topicBaseName != null) return TopicNamer.forStrategy(
-                namingStrategy != null ? namingStrategy : new PrefixResourceNamingStrategy(""),
+                namingStrategy != null ? namingStrategy : new PrefixResourceNamingStrategy(),
                 topicBaseName);
         return name -> name;
+    }
+
+    private TopicNamer getTopicNamer() {
+        TopicNamer baseNamer = baseTopicNamer();
+        return name -> {
+            String override = topicNameOverride.get(name);
+            if (override != null) return override;
+            return baseNamer.apply(name);
+        };
     }
 
     public TopicConfig build() {

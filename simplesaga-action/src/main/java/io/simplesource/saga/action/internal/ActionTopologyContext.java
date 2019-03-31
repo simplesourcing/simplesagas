@@ -18,14 +18,14 @@ import java.util.Properties;
 public final class ActionTopologyContext<A> {
     public final StreamsBuilder builder;
     public final KStream<SagaId, ActionRequest<A>> actionRequests;
-    public final KStream<SagaId, ActionResponse> actionResponses;
+    public final KStream<SagaId, ActionResponse<A>> actionResponses;
     public final Properties properties;
 
     public static <A> ActionTopologyContext<A> of(
             ActionSpec<A> actionSpec, TopicNamer actionTopicNamer, Properties config, StreamsBuilder builder) {
         KStream<SagaId, ActionRequest<A>> actionRequests =
                 ActionConsumer.actionRequestStream(actionSpec, actionTopicNamer, builder);
-        KStream<SagaId, ActionResponse> actionResponses =
+        KStream<SagaId, ActionResponse<A>> actionResponses =
                 ActionConsumer.actionResponseStream(actionSpec, actionTopicNamer, builder);
 
         return new ActionTopologyContext<>(builder, actionRequests, actionResponses, config);

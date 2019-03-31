@@ -22,17 +22,23 @@ import java.util.function.Supplier;
 final class AsyncActionProcessor {
 
     @Value
-    private static class ResultGeneration<K, R> {
+    private static class ResultGeneration<A, K, R> {
+        @Value
+        static class ToTopic<K, R> {
+            public final String topicName;
+            public final TopicSerdes<K, R> outputSerdes;
+        }
+
         public final K key;
-        public final String topicName;
-        public final TopicSerdes<K, R> outputSerdes;
         public final R result;
+        public final Optional<ToTopic<K, R>> toTopic;
+        public final Optional<A> undoCommand;
     }
 
     static <A, D, K, O, R> void processRecord(
             AsyncContext<A, D, K, O, R> asyncContext,
             SagaId sagaId, ActionRequest<A> request,
-            AsyncPublisher<SagaId, ActionResponse> responsePublisher,
+            AsyncPublisher<SagaId, ActionResponse<A>> responsePublisher,
             Function<TopicSerdes<K, R>, AsyncPublisher<K, R>> outputPublisher) {
         AsyncSpec<A, D, K, O, R> asyncSpec = asyncContext.asyncSpec;
         Result<Throwable, D> decodedInputResult = tryWrap(() ->
@@ -41,34 +47,45 @@ final class AsyncActionProcessor {
         AtomicBoolean completed = new AtomicBoolean(false);
         Function<D, Callback<O>> callbackProvider = input -> result -> {
             if (completed.compareAndSet(false, true)) {
-                Result<Throwable, Optional<ResultGeneration<K, R>>> resultWithOutput = tryWrap(() ->
+                Result<Throwable, Optional<ResultGeneration<A, K, R>>> resultWithOutput = tryWrap(() ->
                         result.flatMap(output -> {
-                            Optional<Result<Throwable, ResultGeneration<K, R>>> x =
-                                    asyncSpec.outputSpec.flatMap(oSpec -> {
-                                        K outputKey = oSpec.keyMapper.apply(input);
-                                        Optional<String> topicNameOpt = oSpec.topicName.apply(input);
-                                        return topicNameOpt.flatMap(tName ->
-                                                oSpec.outputDecoder.apply(output)).map(t ->
-                                                t.map(r -> new ResultGeneration<>(outputKey, topicNameOpt.get(), oSpec.outputSerdes, r)));
+                            Optional<Result<Throwable, ResultGeneration<A, K, R>>> x =
+                                    asyncSpec.resultSpec.flatMap(rSpec -> {
+                                        K outputKey = rSpec.keyMapper.apply(input);
+
+                                        Optional<Result<Throwable, ResultGeneration<A, K, R>>> resultGeneration = rSpec.outputMapper.apply(output).map(t -> t.map(r -> {
+                                            Optional<A> undo = rSpec.undoFunction.apply(input, outputKey, r);
+
+                                            Optional<ResultGeneration.ToTopic<K, R>> toTopic = rSpec.outputSerdes.map(outputSerdes ->
+                                                    new ResultGeneration.ToTopic<>(
+                                                            asyncContext.actionTopicNamer.apply(TopicTypes.ActionTopic.ACTION_OUTPUT),
+                                                            outputSerdes));
+
+                                            return new ResultGeneration<>(outputKey, r, toTopic, undo);
+                                        }));
+
+                                        return resultGeneration;
                                     });
 
                             // this is just `sequence` in FP - swapping Result and Option
-                            Optional<Result<Throwable, Optional<ResultGeneration<K, R>>>> y = x.map(r -> r.fold(Result::failure, r0 -> Result.success(Optional.of(r0))));
+                            Optional<Result<Throwable, Optional<ResultGeneration<A, K, R>>>> y = x.map(r -> r.fold(Result::failure, r0 -> Result.success(Optional.of(r0))));
                             return y.orElseGet(() -> Result.success(Optional.empty()));
                         }));
 
                 resultWithOutput.ifSuccessful(resultGenOpt ->
                         resultGenOpt.ifPresent(rg -> {
-                            AsyncPublisher<K, R> publisher = outputPublisher.apply(rg.outputSerdes);
-                            publisher.send(rg.topicName, rg.key, rg.result);
+                            rg.toTopic.ifPresent(toTopic -> {
+                                AsyncPublisher<K, R> publisher = outputPublisher.apply(toTopic.outputSerdes);
+                                publisher.send(toTopic.topicName, rg.key, rg.result);
+                            });
                         }));
 
-                publishActionResult(asyncContext, sagaId, request, responsePublisher, resultWithOutput);
+                publishActionResult(asyncContext, sagaId, request, responsePublisher, resultWithOutput.map(rg -> rg.flatMap(r -> r.undoCommand)));
             }
         };
 
         if (decodedInputResult.isFailure()) {
-            publishActionResult(asyncContext, sagaId, request, responsePublisher, decodedInputResult);
+            publishActionFailure(asyncContext, sagaId, request, responsePublisher, decodedInputResult.failureReasons().get().head());
         } else {
             D decodedInput = decodedInputResult.getOrElse(null);
 
@@ -77,9 +94,10 @@ final class AsyncActionProcessor {
             asyncSpec.timeout.ifPresent(tmOut -> {
                         asyncContext.executor.schedule(() -> {
                             if (completed.compareAndSet(false, true)) {
-                                Result<Throwable, O> timeoutResult = Result.failure(new TimeoutException("Timeout after " + tmOut.toString()));
+                                TimeoutException timeout = new TimeoutException("Timeout after " + tmOut.toString());
+                                Result<Throwable, O> timeoutResult = Result.failure(timeout);
                                 callback.complete(timeoutResult);
-                                publishActionResult(asyncContext, sagaId, request, responsePublisher, timeoutResult);
+                                publishActionFailure(asyncContext, sagaId, request, responsePublisher, timeout);
                             }
                         }, tmOut.toMillis(), TimeUnit.MILLISECONDS);
                     }
@@ -88,8 +106,7 @@ final class AsyncActionProcessor {
                 try {
                     asyncSpec.asyncFunction.accept(decodedInput, callback);
                 } catch (Throwable e) {
-                    Result<Throwable, O> failure = Result.failure(e);
-                    publishActionResult(asyncContext, sagaId, request, responsePublisher, failure);
+                    publishActionFailure(asyncContext, sagaId, request, responsePublisher, e);
                 }
             });
         }
@@ -106,17 +123,36 @@ final class AsyncActionProcessor {
         }
     }
 
+    private static <A, D, K, O, R> void publishActionFailure(
+            AsyncContext<A, D, K, O, R> asyncContext,
+            SagaId sagaId,
+            ActionRequest<A> request,
+            AsyncPublisher<SagaId, ActionResponse<A>> responsePublisher,
+            Throwable failure) {
+
+        Result<Throwable, Optional<A>> result = Result.failure(failure);
+
+        publishActionResult(
+                asyncContext,
+                sagaId,
+                request,
+                responsePublisher,
+                result);
+    }
+
     private static <A, D, K, O, R> void publishActionResult(
             AsyncContext<A, D, K, O, R> asyncContext,
             SagaId sagaId,
             ActionRequest<A> request,
-            AsyncPublisher<SagaId, ActionResponse> responsePublisher,
-            Result<Throwable, ?> result) {
+            AsyncPublisher<SagaId, ActionResponse<A>> responsePublisher,
+            Result<Throwable, Optional<A>> result) {
 
         // TODO: capture timeout exception as SagaError.Reason.Timeout
-        Result<SagaError, Boolean> booleanResult = result.fold(es -> Result.failure(
+        Result<SagaError, Optional<A>> booleanResult = result.fold(es -> Result.failure(
                 SagaError.of(SagaError.Reason.InternalError, es.head())),
-                r -> Result.success(true));
+                r -> {
+                    return Result.success(Optional.empty());
+                });
 
         ActionResponse actionResponse = ActionResponse.of(request.sagaId,
                 request.actionId,

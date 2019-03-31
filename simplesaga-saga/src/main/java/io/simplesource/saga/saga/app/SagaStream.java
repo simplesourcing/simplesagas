@@ -30,7 +30,7 @@ final public class SagaStream {
                                    KStream<SagaId, SagaRequest<A>> sagaRequestStream,
                                    KStream<SagaId, SagaStateTransition> stateTransitionStream,
                                    KStream<SagaId, Saga<A>> stateStream,
-                                   KStream<SagaId, ActionResponse> actionResponseStream) {
+                                   KStream<SagaId, ActionResponse<A>> actionResponseStream) {
 
         // create the state table from the state stream
         KTable<SagaId, Saga<A>> stateTable = createStateTable(ctx, stateStream);
@@ -202,7 +202,7 @@ final public class SagaStream {
         return Tuple2.of(stateUpdateNewActions, actionRequests);
     }
 
-    static private KStream<SagaId, SagaStateTransition> addActionResponses(KStream<SagaId, ActionResponse> actionResponses) {
+    static private <A> KStream<SagaId, SagaStateTransition> addActionResponses(KStream<SagaId, ActionResponse<A>> actionResponses) {
 
         // TODO: simplify the error handling
         return actionResponses.<SagaStateTransition>mapValues((sagaId, response) -> {
