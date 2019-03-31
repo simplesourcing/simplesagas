@@ -68,7 +68,7 @@ class EventSourcingStreamTests {
                             .commandMapper(c -> c)
                             .keyMapper(AccountCommand::getId)
                             .sequenceMapper(c -> Sequence.position(c.getSequence()))
-                            .undoCommand(c -> Optional.empty())
+                            .undoCommand((k, c) -> Optional.empty())
                             .commandSerdes(commandSerdes)
                             .timeout(Duration.ofSeconds(20))
                             .build();

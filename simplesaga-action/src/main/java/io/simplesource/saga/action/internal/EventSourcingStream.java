@@ -26,6 +26,8 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.util.Optional;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 public final class EventSourcingStream {
 
@@ -179,7 +181,7 @@ public final class EventSourcingStream {
         // find the response for the request
         KStream<CommandId, Tuple2<ActionRequest<A>, CommandResponse<K>>> actionRequestWithResponse =
                 // join command response to action request by the command / action ID
-                // TODO: timeouts - will be easy to do timeouts with a left join once https://issues.apache.org/jira/browse/KAFKA-6556 has been released
+                // TODO: timeouts - will be easy to do timeouts with a left join once  has been released
                 actionRequests
                         .selectKey((k, aReq) -> aReq.actionCommand.commandId)
                         .join(
@@ -199,7 +201,11 @@ public final class EventSourcingStream {
                             // get the undo action if present
                             D decodedInput = getDecoded(ctx, aReq);
                             C command = ctx.eventSourcingSpec.commandMapper.apply(decodedInput);
-                            Optional<A> undoAction = ctx.eventSourcingSpec.undoCommand.apply(command);
+                            K key = ctx.eventSourcingSpec.keyMapper.apply(decodedInput);
+                            BiFunction<K, C, Optional<A>> undoFunction = ctx.eventSourcingSpec.undoCommand;
+                            Optional<A> undoAction = undoFunction == null ?
+                                    Optional.empty() :
+                                    undoFunction.apply(key, command);
 
                             Result<CommandError, Sequence> sequenceResult =
                                     (cResp == null) ?

@@ -9,6 +9,7 @@ import lombok.Value;
 
 import java.time.Duration;
 import java.util.Optional;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
@@ -27,7 +28,7 @@ public final class EventSourcingSpec<A, D, K, C> {
     public final Function<D, C> commandMapper;
     public final Function<D, K> keyMapper;
     public final Function<D, Sequence> sequenceMapper;
-    public final Function<C, Optional<A>> undoCommand;
+    public final BiFunction<K, C, Optional<A>> undoCommand;
     public final CommandSerdes<K, C> commandSerdes;
     public final Duration timeout;
 }
