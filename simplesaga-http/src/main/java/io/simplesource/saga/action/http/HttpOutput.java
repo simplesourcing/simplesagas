@@ -1,6 +1,7 @@
 package io.simplesource.saga.action.http;
 
 import io.simplesource.data.Result;
+import io.simplesource.saga.model.messages.UndoCommand;
 import io.simplesource.saga.model.serdes.TopicSerdes;
 import io.simplesource.saga.shared.topics.TopicCreation;
 import lombok.Value;
@@ -22,5 +23,5 @@ public final class HttpOutput<A, K, B, O, R> {
 
     public final HttpResultDecoder<O, R> decoder;
     public final TopicSerdes<K, R> outputSerdes;
-    public final BiFunction<HttpRequest<K, B>, R, Optional<A>> undoFunction;
+    public final BiFunction<HttpRequest<K, B>, R, Optional<UndoCommand<A>>> undoFunction;
 }

@@ -1,6 +1,7 @@
 package io.simplesource.saga.action.async;
 
 import io.simplesource.data.Result;
+import io.simplesource.saga.model.messages.UndoCommand;
 import io.simplesource.saga.model.serdes.TopicSerdes;
 import io.simplesource.saga.shared.topics.TopicCreation;
 import lombok.*;
@@ -24,7 +25,7 @@ import java.util.function.Function;
 public final class AsyncSpec<A, D, K, O, R> {
 
     public interface UndoFunction<A, D, K, R> {
-        Optional<A> apply(D decodedInput, K outputKey, R result);
+        Optional<UndoCommand<A>> apply(D decodedInput, K outputKey, R result);
     }
 
     @Value(staticConstructor = "of")

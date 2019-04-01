@@ -33,7 +33,7 @@ final class AsyncActionProcessor {
         public final K key;
         public final R result;
         public final Optional<ToTopic<K, R>> toTopic;
-        public final Optional<A> undoCommand;
+        public final Optional<UndoCommand<A>> undoCommand;
     }
 
     static <A, D, K, O, R> void processRecord(
@@ -55,7 +55,7 @@ final class AsyncActionProcessor {
                                         K outputKey = rSpec.keyMapper.apply(input);
 
                                         Optional<Result<Throwable, ResultGeneration<A, K, R>>> resultGeneration = rSpec.outputMapper.apply(output).map(t -> t.map(r -> {
-                                            Optional<A> undo = rSpec.undoFunction == null ?
+                                            Optional<UndoCommand<A>> undo = rSpec.undoFunction == null || request.isUndo ?
                                                     Optional.empty() :
                                                     rSpec.undoFunction.apply(input, outputKey, r);
 
@@ -83,7 +83,8 @@ final class AsyncActionProcessor {
                             });
                         }));
 
-                publishActionResult(asyncContext, sagaId, request, responsePublisher, resultWithOutput.map(rg -> rg.flatMap(r -> r.undoCommand)));
+                Result<Throwable, Optional<UndoCommand<A>>> e = resultWithOutput.map(rg -> rg.flatMap(r -> r.undoCommand));
+                publishActionResult(asyncContext, sagaId, request, responsePublisher, e);
             }
         };
 
@@ -145,12 +146,12 @@ final class AsyncActionProcessor {
             SagaId sagaId,
             ActionRequest<A> request,
             AsyncPublisher<SagaId, ActionResponse<A>> responsePublisher,
-            Result<Throwable, Optional<A>> result) {
+            Result<Throwable, Optional<UndoCommand<A>>> result) {
 
         // TODO: capture timeout exception as SagaError.Reason.Timeout
         Result<SagaError, Optional<UndoCommand<A>>> resultWithUndo = result.fold(es -> Result.failure(
                 SagaError.of(SagaError.Reason.InternalError, es.head())),
-                r -> Result.success(Optional.empty()));
+                Result::success);
 
         ActionResponse actionResponse = ActionResponse.of(request.sagaId,
                 request.actionId,

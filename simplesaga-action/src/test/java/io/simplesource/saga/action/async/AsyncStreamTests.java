@@ -5,6 +5,7 @@ import io.simplesource.api.CommandId;
 import io.simplesource.data.Result;
 import io.simplesource.saga.action.ActionApp;
 import io.simplesource.saga.action.app.ActionProcessor;
+import io.simplesource.saga.model.messages.UndoCommand;
 import io.simplesource.saga.model.serdes.TopicSerdes;
 import io.simplesource.saga.action.internal.AsyncActionProcessorProxy;
 import io.simplesource.saga.action.internal.AsyncPublisher;
@@ -75,30 +76,21 @@ class AsyncStreamTests {
         final MockSchemaRegistryClient regClient = new MockSchemaRegistryClient();
 
         private final TopicSerdes<AsyncTestId, AsyncTestOutput> asyncSerdes;
-        private final AsyncContext<SpecificRecord, AsyncTestCommand, AsyncTestId, Integer, AsyncTestOutput> asyncContext;
+        private final AsyncContext<SpecificRecord, AsyncTestCommand, AsyncTestId, Double, AsyncTestOutput> asyncContext;
 
-        private AsyncTestContext(int executionDelayMillis, Optional<Duration> timeout, BiConsumer<AsyncTestCommand, Callback<Integer>> asyncFunctionOverride) {
+        private AsyncTestContext(int executionDelayMillis, Optional<Duration> timeout, BiConsumer<AsyncTestCommand, Callback<Double>> asyncFunctionOverride) {
             asyncSerdes = new TopicSerdes<>(SpecificSerdeUtils.specificAvroSerde(SCHEMA_URL, true, regClient),
                     SpecificSerdeUtils.specificAvroSerde(SCHEMA_URL, false, regClient));
 
-            BiConsumer<AsyncTestCommand, Callback<Integer>> asyncFunction = (asyncFunctionOverride != null) ?
-                    asyncFunctionOverride :
-                    (i, callBack) -> executor.schedule(() ->
-                            callBack.complete(Result.success(i.getValue() * i.getValue())), executionDelayMillis, TimeUnit.MILLISECONDS);
-
-            AsyncSpec<SpecificRecord, AsyncTestCommand, AsyncTestId, Integer, AsyncTestOutput> asyncSpec =
-                    getAsyncContext(Constants.ASYNC_TEST_ACTION_TYPE, timeout, asyncFunction);
-
             ActionApp<SpecificRecord> actionApp = ActionApp.of(actionSerdes);
 
-            ActionProcessor<SpecificRecord> processor = AsyncBuilder.apply(
-                    asyncSpec,
-                    topicBuilder -> topicBuilder
-                            .withTopicPrefix(Constants.ACTION_TOPIC_PREFIX)
-                            .withTopicNameOverride(TopicTypes.ActionTopic.ACTION_OUTPUT, ASYNC_TEST_OUTPUT_TOPIC)
-            );
+            AsyncSpec<SpecificRecord, AsyncTestCommand, AsyncTestId, Double, AsyncTestOutput> asyncSpec =
+                    getAsyncSpec(executionDelayMillis, timeout, asyncFunctionOverride);
+            AsyncSpec<SpecificRecord, AsyncTestCommand, AsyncTestId, Double, AsyncTestOutput> undoSpec =
+                    getAsyncSpec(executionDelayMillis, timeout, (i, callBack) -> executor.schedule(() ->
+                            callBack.complete(Result.success(Math.sqrt(i.getValue()))), executionDelayMillis, TimeUnit.MILLISECONDS));
 
-            actionApp.withActionProcessor(processor);
+            actionApp.withActionProcessor(getActionProcessor(asyncSpec));
 
             Properties config = StreamAppConfig.getConfig(new StreamAppConfig("app-id", "http://localhost:9092"));
 
@@ -140,10 +132,29 @@ class AsyncStreamTests {
                     executor);
         }
 
-        private AsyncSpec<SpecificRecord, AsyncTestCommand, AsyncTestId, Integer, AsyncTestOutput> getAsyncContext(
+        private ActionProcessor<SpecificRecord> getActionProcessor(AsyncSpec<SpecificRecord, AsyncTestCommand, AsyncTestId, Double, AsyncTestOutput> asyncSpec) {
+            return AsyncBuilder.apply(
+                            asyncSpec,
+                            topicBuilder -> topicBuilder
+                                    .withTopicPrefix(Constants.ACTION_TOPIC_PREFIX)
+                                    .withTopicNameOverride(TopicTypes.ActionTopic.ACTION_OUTPUT, ASYNC_TEST_OUTPUT_TOPIC)
+                    );
+        }
+
+        private AsyncSpec<SpecificRecord, AsyncTestCommand, AsyncTestId, Double, AsyncTestOutput> getAsyncSpec(int executionDelayMillis, Optional<Duration> timeout, BiConsumer<AsyncTestCommand, Callback<Double>> asyncFunctionOverride) {
+            BiConsumer<AsyncTestCommand, Callback<Double>> asyncFunction = (asyncFunctionOverride != null) ?
+                    asyncFunctionOverride :
+                    (i, callBack) -> executor.schedule(() ->
+                            callBack.complete(Result.success(i.getValue() * i.getValue())), executionDelayMillis, TimeUnit.MILLISECONDS);
+
+            return getAsyncContext(Constants.ASYNC_TEST_ACTION_TYPE, timeout, asyncFunction, Optional.of(Constants.ASYNC_TEST_UNDO_ACTION_TYPE));
+        }
+
+        private AsyncSpec<SpecificRecord, AsyncTestCommand, AsyncTestId, Double, AsyncTestOutput> getAsyncContext(
                 String actionType,
                 Optional<Duration> timeout,
-                BiConsumer<AsyncTestCommand, Callback<Integer>> asyncFunction) {
+                BiConsumer<AsyncTestCommand, Callback<Double>> asyncFunction,
+                Optional<String> undoActionType) {
             return new AsyncSpec<>(
                             actionType,
                             a -> Result.success((AsyncTestCommand) a),
@@ -152,7 +163,8 @@ class AsyncStreamTests {
                             Optional.of(AsyncSpec.AsyncResult.of(
                                     o -> Optional.of(Result.success(new AsyncTestOutput(o))),
                                     AsyncTestCommand::getId,
-                                    (d, k, r) -> Optional.empty(),
+                                    (d, k, r) -> undoActionType.map(uat ->
+                                            UndoCommand.of(new AsyncTestCommand(d.getId(), r.getValue()), uat)),
                                     Optional.of(asyncSerdes))),
                             timeout);
         }
@@ -165,17 +177,17 @@ class AsyncStreamTests {
             return new AsyncTestContext(executionDelayMillis, Optional.of(Duration.ofMillis(timeoutMillis)), null);
         }
 
-        static AsyncTestContext of(BiConsumer<AsyncTestCommand, Callback<Integer>> asyncFunction) {
+        static AsyncTestContext of(BiConsumer<AsyncTestCommand, Callback<Double>> asyncFunction) {
             return new AsyncTestContext(0, Optional.empty(), asyncFunction);
         }
     }
 
     private static ActionRequest<SpecificRecord> createRequest(AsyncTestCommand asyncTestCommand, CommandId commandId) {
-        return createRequest(asyncTestCommand, commandId, false);
+        return createRequest(asyncTestCommand, commandId, Constants.ASYNC_TEST_ACTION_TYPE, false);
     }
 
-    private static ActionRequest<SpecificRecord> createRequest(AsyncTestCommand asyncTestCommand, CommandId commandId, Boolean isUndo) {
-        ActionCommand<SpecificRecord> actionCommand = ActionCommand.of(commandId, asyncTestCommand, Constants.ASYNC_TEST_ACTION_TYPE);
+    private static ActionRequest<SpecificRecord> createRequest(AsyncTestCommand asyncTestCommand, CommandId commandId, String actionType, Boolean isUndo) {
+        ActionCommand<SpecificRecord> actionCommand = ActionCommand.of(commandId, asyncTestCommand, actionType);
         return ActionRequest.of(
                 SagaId.random(),
                 ActionId.random(),
@@ -232,7 +244,7 @@ class AsyncStreamTests {
 
         AsyncTestContext acc = AsyncTestContext.of(100);
 
-        AsyncTestCommand accountCommand = new AsyncTestCommand(new AsyncTestId("id"), 12);
+        AsyncTestCommand accountCommand = new AsyncTestCommand(new AsyncTestId("id"), 12.0);
 
         ActionRequest<SpecificRecord> actionRequest = createRequest(accountCommand, CommandId.random());
 
@@ -245,7 +257,7 @@ class AsyncStreamTests {
     }
 
     @Test
-    void publishesResponseAndOutput() {
+    void topicTypes() {
         AsyncTestContext acc = AsyncTestContext.of(100);
 
         assertThat(acc.expectedTopics).containsExactlyInAnyOrder(
@@ -253,11 +265,16 @@ class AsyncStreamTests {
                 "saga_action_processor-saga_action-async_action_test-action_request",
                 "saga_action_processor-saga_action-async_action_test-action_request_unprocessed",
                 "async_test_topic");
+    }
+
+    @Test
+    void publishesResponseAndOutput() {
+        AsyncTestContext acc = AsyncTestContext.of(100);
 
         AsyncValidation validation = AsyncValidation.create();
 
-        AsyncTestCommand accountCommand = new AsyncTestCommand(new AsyncTestId("id"), 12);
-        ActionRequest<SpecificRecord> actionRequest = createRequest(new AsyncTestCommand(new AsyncTestId("id"), 12),CommandId.random());
+        AsyncTestCommand accountCommand = new AsyncTestCommand(new AsyncTestId("id"), 12.0);
+        ActionRequest<SpecificRecord> actionRequest = createRequest(new AsyncTestCommand(new AsyncTestId("id"), 12.0),CommandId.random());
         acc.actionRequestPublisher.publish(actionRequest.sagaId, actionRequest);
 
         AsyncActionProcessorProxy.processRecord(acc.asyncContext, actionRequest.sagaId, actionRequest, validation.responseProducer, validation.outputProducer);
@@ -277,7 +294,7 @@ class AsyncStreamTests {
         AsyncTestContext acc = AsyncTestContext.of(99);
 
         AsyncTestId testId = new AsyncTestId("id");
-        AsyncTestCommand accountCommand = new AsyncTestCommand(testId, 12);
+        AsyncTestCommand accountCommand = new AsyncTestCommand(testId, 12.0);
 
         ActionRequest<SpecificRecord> actionRequest = createRequest(accountCommand, CommandId.random());
         acc.actionRequestPublisher.publish(actionRequest.sagaId, actionRequest);
@@ -294,7 +311,7 @@ class AsyncStreamTests {
         AsyncTestContext acc = AsyncTestContext.of(200, 300);
 
         AsyncTestId testId = new AsyncTestId("id");
-        AsyncTestCommand accountCommand = new AsyncTestCommand(testId, 12);
+        AsyncTestCommand accountCommand = new AsyncTestCommand(testId, 12.0);
 
         ActionRequest<SpecificRecord> actionRequest = createRequest(accountCommand, CommandId.random());
         acc.actionRequestPublisher.publish(actionRequest.sagaId, actionRequest);
@@ -314,7 +331,7 @@ class AsyncStreamTests {
         AsyncTestContext acc = AsyncTestContext.of(201, 50);
 
         AsyncTestId testId = new AsyncTestId("id");
-        AsyncTestCommand accountCommand = new AsyncTestCommand(testId, 12);
+        AsyncTestCommand accountCommand = new AsyncTestCommand(testId, 12.0);
 
         ActionRequest<SpecificRecord> actionRequest = createRequest(accountCommand, CommandId.random());
         acc.actionRequestPublisher.publish(actionRequest.sagaId, actionRequest);
@@ -335,7 +352,7 @@ class AsyncStreamTests {
                 callBack.complete(Result.failure(new Exception("Exception occurred"))), 100, TimeUnit.MILLISECONDS));
 
         AsyncTestId testId = new AsyncTestId("id");
-        AsyncTestCommand accountCommand = new AsyncTestCommand(testId, 12);
+        AsyncTestCommand accountCommand = new AsyncTestCommand(testId, 12.0);
 
         ActionRequest<SpecificRecord> actionRequest = createRequest(accountCommand, CommandId.random());
         acc.actionRequestPublisher.publish(actionRequest.sagaId, actionRequest);
@@ -361,7 +378,7 @@ class AsyncStreamTests {
         // { throw new Exception("An exception was thrown"); }, 100, TimeUnit.MILLISECONDS));
         // Not sure if there should though
         AsyncTestId testId = new AsyncTestId("id");
-        AsyncTestCommand accountCommand = new AsyncTestCommand(testId, 12);
+        AsyncTestCommand accountCommand = new AsyncTestCommand(testId, 12.0);
 
         ActionRequest<SpecificRecord> actionRequest = createRequest(accountCommand, CommandId.random());
         acc.actionRequestPublisher.publish(actionRequest.sagaId, actionRequest);
@@ -383,7 +400,7 @@ class AsyncStreamTests {
         AsyncTestContext acc = AsyncTestContext.of(100);
         AsyncValidation validation = AsyncValidation.create(acc.actionResponsePublisher);
 
-        ActionRequest<SpecificRecord> actionRequest = createRequest(new AsyncTestCommand(new AsyncTestId("id"), 12), CommandId.random());
+        ActionRequest<SpecificRecord> actionRequest = createRequest(new AsyncTestCommand(new AsyncTestId("id"), 12.0), CommandId.random());
         acc.actionRequestPublisher.publish(actionRequest.sagaId, actionRequest);
 
         acc.actionUnprocessedRequestVerifier.verifySingle((id, req) -> { });
@@ -399,4 +416,47 @@ class AsyncStreamTests {
         acc.actionUnprocessedRequestVerifier.verifyNoRecords();
     }
 
+    @Test
+    void returnsNoUndoCommandIfInUndo() {
+        returnsAnUndoCommand(true);
+    }
+
+
+    @Test
+    void returnsUndoCommand() {
+        returnsAnUndoCommand(false);
+    }
+
+    void returnsAnUndoCommand(boolean isUndo) {
+        AsyncTestContext acc = AsyncTestContext.of(100);
+
+        AsyncValidation validation = AsyncValidation.create();
+
+        ActionRequest<SpecificRecord> actionRequest = createRequest(
+                new AsyncTestCommand(new AsyncTestId("id"), 12.0),
+                CommandId.random(),
+                Constants.ASYNC_TEST_ACTION_TYPE,
+                isUndo);
+        acc.actionRequestPublisher.publish(actionRequest.sagaId, actionRequest);
+
+        AsyncActionProcessorProxy.processRecord(acc.asyncContext, actionRequest.sagaId, actionRequest, validation.responseProducer, validation.outputProducer);
+
+        delayMillis(200);
+        assertThat(validation.responseRecords).hasSize(1);
+        ValidationRecord<SagaId, ActionResponse<SpecificRecord>> record = validation.responseRecords.get(0);
+        assertThat(record.key).isEqualTo(actionRequest.sagaId);
+        assertThat(record.value.result.isSuccess()).isTrue();
+        Optional<UndoCommand<SpecificRecord>> undoCommandOpt = record.value.result.getOrElse(null);
+
+        if (isUndo) {
+            assertThat(undoCommandOpt.isPresent()).isFalse();
+        } else {
+            assertThat(undoCommandOpt.isPresent()).isTrue();
+            UndoCommand<SpecificRecord> undoCommand = undoCommandOpt.orElse(null);
+
+            AsyncTestCommand undoParams = new AsyncTestCommand(new AsyncTestId("id"), 144.0);
+            assertThat(undoCommand.command).isEqualTo(undoParams);
+            assertThat(undoCommand.actionType).isEqualTo(Constants.ASYNC_TEST_UNDO_ACTION_TYPE);
+        }
+    }
 }

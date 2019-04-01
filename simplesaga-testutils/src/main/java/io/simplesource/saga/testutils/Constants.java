@@ -16,4 +16,5 @@ public class Constants {
     public static final String USER_ACTION_TYPE = "sourcing_action_user";
 
     public static final String ASYNC_TEST_ACTION_TYPE = "async_action_test";
+    public static final String ASYNC_TEST_UNDO_ACTION_TYPE = "async_action_test_undo";
 }
