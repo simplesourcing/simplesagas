@@ -2,6 +2,7 @@ package io.simplesource.saga.action.internal;
 
 import io.simplesource.data.Result;
 import io.simplesource.saga.action.async.AsyncContext;
+import io.simplesource.saga.model.messages.UndoCommand;
 import io.simplesource.saga.model.serdes.TopicSerdes;
 import io.simplesource.saga.action.async.AsyncSpec;
 import io.simplesource.saga.action.async.Callback;
@@ -54,7 +55,9 @@ final class AsyncActionProcessor {
                                         K outputKey = rSpec.keyMapper.apply(input);
 
                                         Optional<Result<Throwable, ResultGeneration<A, K, R>>> resultGeneration = rSpec.outputMapper.apply(output).map(t -> t.map(r -> {
-                                            Optional<A> undo = rSpec.undoFunction.apply(input, outputKey, r);
+                                            Optional<A> undo = rSpec.undoFunction == null ?
+                                                    Optional.empty() :
+                                                    rSpec.undoFunction.apply(input, outputKey, r);
 
                                             Optional<ResultGeneration.ToTopic<K, R>> toTopic = rSpec.outputSerdes.map(outputSerdes ->
                                                     new ResultGeneration.ToTopic<>(
@@ -145,16 +148,14 @@ final class AsyncActionProcessor {
             Result<Throwable, Optional<A>> result) {
 
         // TODO: capture timeout exception as SagaError.Reason.Timeout
-        Result<SagaError, Optional<A>> booleanResult = result.fold(es -> Result.failure(
+        Result<SagaError, Optional<UndoCommand<A>>> resultWithUndo = result.fold(es -> Result.failure(
                 SagaError.of(SagaError.Reason.InternalError, es.head())),
-                r -> {
-                    return Result.success(Optional.empty());
-                });
+                r -> Result.success(Optional.empty()));
 
         ActionResponse actionResponse = ActionResponse.of(request.sagaId,
                 request.actionId,
                 request.actionCommand.commandId,
-                booleanResult);
+                resultWithUndo);
 
         responsePublisher.send(asyncContext.actionTopicNamer.apply(TopicTypes.ActionTopic.ACTION_RESPONSE),
                 sagaId,

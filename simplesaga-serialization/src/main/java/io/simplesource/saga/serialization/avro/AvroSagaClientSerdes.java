@@ -86,7 +86,6 @@ public class AvroSagaClientSerdes<A> implements SagaClientSerdes<A> {
             ActionId actionId = ActionId.fromString(aa.getActionId());
             SagaAction<A> action = SagaAction.of(
                     actionId,
-                    aa.getActionType(),
                     SagaSerdeUtils.actionCommandFromAvro(payloadSerde, topic, aa.getActionCommand()),
                     Optional.ofNullable(SagaSerdeUtils.actionCommandFromAvro(payloadSerde, topic, aa.getUndoCommand())),
                     aa.getDependencies().stream().map(ActionId::fromString).collect(Collectors.toSet()),
@@ -118,7 +117,6 @@ public class AvroSagaClientSerdes<A> implements SagaClientSerdes<A> {
                             topic,
                             uc)).orElse(null))
                     .setActionStatus(act.status.toString())
-                    .setActionType(act.actionType)
                     .setDependencies(act.dependencies
                             .stream()
                             .map(ActionId::toString)

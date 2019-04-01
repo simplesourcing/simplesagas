@@ -68,7 +68,7 @@ final class AsyncConsumerRunner<A, D, K, O, R> implements Runnable {
                 for (ConsumerRecord<SagaId, ActionRequest<A>> x : records) {
                     SagaId sagaId = x.key();
                     ActionRequest<A> request = x.value();
-                    if (request.actionType.equals(asyncSpec.actionType)) {
+                    if (request.actionCommand.actionType.equals(asyncSpec.actionType)) { // TODO: remove - should always be true
                         AsyncActionProcessor.processRecord(asyncContext, sagaId, request, responsePublisher, outputPublisher);
                     }
                 }

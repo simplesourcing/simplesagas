@@ -83,7 +83,7 @@ final public class SagaStream {
         // check that all action types are valid (may add other validations at some point)
         KStream<SagaId, Tuple2<SagaRequest<A>, List<SagaError>>> y = sagaRequestStream.mapValues((id, request) -> {
             List<SagaError> errors = request.initialState.actions.values().stream().map(action -> {
-                String at = action.actionType.toLowerCase();
+                String at = action.command.actionType.toLowerCase();
                 SagaError error = !actionTypes.contains(at) ? SagaError.of(SagaError.Reason.InvalidSaga, String.format("Unknown action type '%s'", at)) : null;
                 return error;
             }).filter(Objects::nonNull).collect(Collectors.toList());
@@ -191,12 +191,10 @@ final public class SagaStream {
                 nextActionsStream
                         .filter((sagaId, v) -> v.command.isPresent())
                         .mapValues((sagaId, ae) ->
-                                ActionRequest.<A>builder()
-                                        .sagaId(sagaId)
-                                        .actionId(ae.actionId)
-                                        .actionCommand(ae.command.get())
-                                        .actionType(ae.actionType)
-                                        .build())
+                                ActionRequest.of(sagaId,
+                                        ae.actionId,
+                                        ae.command.get(),
+                                        ae.isUndo))
                         .peek(logValues("publishActionRequests"));
 
         return Tuple2.of(stateUpdateNewActions, actionRequests);

@@ -12,6 +12,7 @@ import io.simplesource.kafka.model.CommandResponse;
 import io.simplesource.saga.action.eventsourcing.EventSourcingContext;
 import io.simplesource.saga.model.messages.ActionRequest;
 import io.simplesource.saga.model.messages.ActionResponse;
+import io.simplesource.saga.model.messages.UndoCommand;
 import io.simplesource.saga.model.saga.SagaError;
 import io.simplesource.saga.model.saga.SagaId;
 import io.simplesource.saga.model.serdes.ActionSerdes;
@@ -27,7 +28,6 @@ import org.slf4j.LoggerFactory;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 
 public final class EventSourcingStream {
 
@@ -199,20 +199,25 @@ public final class EventSourcingStream {
                             CommandResponse<K> cResp = v.v2();
 
                             // get the undo action if present
-                            D decodedInput = getDecoded(ctx, aReq);
-                            C command = ctx.eventSourcingSpec.commandMapper.apply(decodedInput);
-                            K key = ctx.eventSourcingSpec.keyMapper.apply(decodedInput);
-                            BiFunction<K, C, Optional<A>> undoFunction = ctx.eventSourcingSpec.undoCommand;
-                            Optional<A> undoAction = undoFunction == null ?
-                                    Optional.empty() :
-                                    undoFunction.apply(key, command);
+                            Optional<UndoCommand<A>> undoAction;
+                            if (aReq.isUndo) {
+                                undoAction = Optional.empty();
+                            } else {
+                                D decodedInput = getDecoded(ctx, aReq);
+                                C command = ctx.eventSourcingSpec.commandMapper.apply(decodedInput);
+                                K key = ctx.eventSourcingSpec.keyMapper.apply(decodedInput);
+                                BiFunction<K, C, Optional<A>> undoFunction = ctx.eventSourcingSpec.undoCommand;
+                                undoAction = undoFunction == null ?
+                                        Optional.empty() :
+                                        undoFunction.apply(key, command).map(undoA -> UndoCommand.of(undoA, aReq.actionCommand.actionType));
+                            }
 
                             Result<CommandError, Sequence> sequenceResult =
                                     (cResp == null) ?
                                             Result.failure(CommandError.of(CommandError.Reason.Timeout,
                                                     "Timed out waiting for response from Command Processor")) :
                                             cResp.sequenceResult();
-                            Result<SagaError, Optional<A>> result =
+                            Result<SagaError, Optional<UndoCommand<A>>> result =
                                     sequenceResult.fold(errors -> {
                                                 String message = String.join(",", errors.map(CommandError::getMessage));
                                                 return Result.failure(SagaError.of(SagaError.Reason.CommandError, message));

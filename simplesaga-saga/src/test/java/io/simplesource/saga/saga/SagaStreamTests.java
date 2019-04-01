@@ -300,8 +300,8 @@ class SagaStreamTests {
 
         scc.accountActionRequestVerifier.verifySingle((id, actionRequest) -> {
             assertThat(id).isEqualTo(saga.sagaId);
-            assertThat(actionRequest.actionType).isEqualTo(Constants.ACCOUNT_ACTION_TYPE);
             assertThat(actionRequest.actionId).isEqualTo(createAccountId);
+            assertThat(actionRequest.actionCommand.actionType).isEqualTo(Constants.ACCOUNT_ACTION_TYPE);
             assertThat(actionRequest.actionCommand.commandId).isEqualTo(commandIds.get(createAccountId).action);
         });
         scc.accountActionRequestVerifier.verifyNoRecords();
@@ -373,8 +373,8 @@ class SagaStreamTests {
         scc.accountActionRequestVerifier.verifySingle((id, actionRequest) -> {
             assertThat(id).isEqualTo(saga.sagaId);
             assertThat(actionRequest.sagaId).isEqualTo(saga.sagaId);
-            assertThat(actionRequest.actionType).isEqualTo(Constants.ACCOUNT_ACTION_TYPE);
             assertThat(actionRequest.actionId).isEqualTo(addFundsId1);
+            assertThat(actionRequest.actionCommand.actionType).isEqualTo(Constants.ACCOUNT_ACTION_TYPE);
             assertThat(actionRequest.actionCommand.commandId).isEqualTo(commandIds.get(addFundsId1).action);
         });
         scc.accountActionRequestVerifier.verifyNoRecords();
@@ -614,8 +614,8 @@ class SagaStreamTests {
         scc.accountActionRequestVerifier.verifySingle((id, actionRequest) -> {
             assertThat(id).isEqualTo(saga.sagaId);
             assertThat(actionRequest.sagaId).isEqualTo(saga.sagaId);
-            assertThat(actionRequest.actionType).isEqualTo(Constants.ACCOUNT_ACTION_TYPE);
             assertThat(actionRequest.actionId).isEqualTo(addFundsId1);
+            assertThat(actionRequest.actionCommand.actionType).isEqualTo(Constants.ACCOUNT_ACTION_TYPE);
             assertThat(actionRequest.actionCommand.commandId).isEqualTo(commandIds.get(addFundsId1).undoAction);
         });
         scc.accountActionRequestVerifier.verifyNoRecords();
@@ -669,8 +669,8 @@ class SagaStreamTests {
 
         scc.accountActionRequestVerifier.verifyMultiple(2, (i, id, actionRequest) -> {
             assertThat(id).isEqualTo(saga.sagaId);
-            assertThat(actionRequest.actionType).isEqualTo(Constants.ACCOUNT_ACTION_TYPE);
             assertThat(actionRequest.actionId).isIn(addFundsId1, addFundsId2);
+            assertThat(actionRequest.actionCommand.actionType).isEqualTo(Constants.ACCOUNT_ACTION_TYPE);
         });
         scc.accountActionRequestVerifier.verifyNoRecords();
 
@@ -708,8 +708,8 @@ class SagaStreamTests {
 
         scc.accountActionRequestVerifier.verifyMultiple(2, (i, id, actionRequest) -> {
             assertThat(id).isEqualTo(saga.sagaId);
-            assertThat(actionRequest.actionType).isEqualTo(Constants.ACCOUNT_ACTION_TYPE);
             assertThat(actionRequest.actionId).isIn(addFundsId1, addFundsId2);
+            assertThat(actionRequest.actionCommand.actionType).isEqualTo(Constants.ACCOUNT_ACTION_TYPE);
         });
         scc.accountActionRequestVerifier.verifyNoRecords();
 
@@ -737,8 +737,8 @@ class SagaStreamTests {
         scc.accountActionRequestVerifier.verifySingle((id, actionRequest) -> {
             assertThat(id).isEqualTo(saga.sagaId);
             assertThat(actionRequest.sagaId).isEqualTo(saga.sagaId);
-            assertThat(actionRequest.actionType).isEqualTo(Constants.ACCOUNT_ACTION_TYPE);
             assertThat(actionRequest.actionId).isEqualTo(addFundsId1);
+            assertThat(actionRequest.actionCommand.actionType).isEqualTo(Constants.ACCOUNT_ACTION_TYPE);
             assertThat(actionRequest.actionCommand.commandId).isEqualTo(commandIds.get(addFundsId1).undoAction);
         });
         scc.accountActionRequestVerifier.verifyNoRecords();
@@ -824,7 +824,7 @@ class SagaStreamTests {
         scc.accountActionRequestVerifier.verifyMultiple(2, (i, id, actionRequest) -> {
             assertThat(id).isEqualTo(saga.sagaId);
             assertThat(actionRequest.sagaId).isEqualTo(saga.sagaId);
-            assertThat(actionRequest.actionType).isEqualTo(Constants.ACCOUNT_ACTION_TYPE);
+            assertThat(actionRequest.actionCommand.actionType).isEqualTo(Constants.ACCOUNT_ACTION_TYPE);
             assertThat(actionRequest.actionCommand.commandId).isIn(commandIds.get(addFundsId1).undoAction, commandIds.get(transferFundsId).undoAction);
         });
         scc.accountActionRequestVerifier.verifyNoRecords();
@@ -852,7 +852,7 @@ class SagaStreamTests {
 
         scc.userActionRequestVerifier.verifySingle((id, actionRequest) -> {
             assertThat(id).isEqualTo(saga.sagaId);
-            assertThat(actionRequest.actionType).isEqualTo(Constants.USER_ACTION_TYPE);
+            assertThat(actionRequest.actionCommand.actionType).isEqualTo(Constants.USER_ACTION_TYPE);
             assertThat(actionRequest.actionId).isEqualTo(createUserId);
         });
         scc.userActionRequestVerifier.verifyNoRecords();
@@ -864,7 +864,7 @@ class SagaStreamTests {
         scc.accountActionRequestVerifier.verifySingle((id, actionRequest) -> {
             assertThat(id).isEqualTo(saga.sagaId);
             assertThat(actionRequest.sagaId).isEqualTo(saga.sagaId);
-            assertThat(actionRequest.actionType).isEqualTo(Constants.ACCOUNT_ACTION_TYPE);
+            assertThat(actionRequest.actionCommand.actionType).isEqualTo(Constants.ACCOUNT_ACTION_TYPE);
             assertThat(actionRequest.actionId).isEqualTo(createAccountId);
         });
         scc.accountActionRequestVerifier.verifyNoRecords();

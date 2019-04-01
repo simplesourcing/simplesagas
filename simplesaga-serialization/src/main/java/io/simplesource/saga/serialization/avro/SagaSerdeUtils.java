@@ -4,6 +4,7 @@ import io.simplesource.api.CommandId;
 import io.simplesource.data.NonEmptyList;
 import io.simplesource.data.Result;
 import io.simplesource.saga.model.action.ActionCommand;
+import io.simplesource.saga.model.messages.UndoCommand;
 import io.simplesource.saga.model.saga.SagaError;
 import io.simplesource.saga.serialization.avro.generated.AvroActionCommand;
 import io.simplesource.saga.serialization.avro.generated.AvroActionUndoCommand;
@@ -14,7 +15,6 @@ import org.apache.kafka.common.serialization.Serde;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -86,23 +86,29 @@ public class SagaSerdeUtils {
                 .newBuilder()
                 .setCommandId(ac.commandId.id().toString())
                 .setCommand(serializedPayload)
+                .setActionType(ac.actionType)
                 .build();
     }
 
-    static <A> Optional<A> actionUndoCommandFromAvro(Serde<A> payloadSerde, String payloadTopic, AvroActionUndoCommand auc) {
-        if (auc == null || auc.getCommand() == null) return Optional.empty();
+    static <A> UndoCommand<A> actionUndoCommandFromAvro(Serde<A> payloadSerde, String payloadTopic, AvroActionUndoCommand auc) {
+        if (auc == null) return null;
         A command = deserializeCommand(payloadSerde, payloadTopic, auc.getCommand());
-        return Optional.of(command);
+        return UndoCommand.of(command, auc.getActionType());
     }
 
-    static <A> AvroActionUndoCommand actionUndoCommandToAvro(Serde<A> payloadSerde, String payloadTopic, Optional<A> ac) {
-        return new AvroActionUndoCommand(ac.map(a -> serializeCommand(payloadSerde, payloadTopic, a)).orElse(null));
+    static <A> AvroActionUndoCommand actionUndoCommandToAvro(Serde<A> payloadSerde, String payloadTopic, UndoCommand<A> ac) {
+        ByteBuffer serializedPayload = serializeCommand(payloadSerde, payloadTopic, ac.command);
+        return AvroActionUndoCommand
+                .newBuilder()
+                .setCommand(serializedPayload)
+                .setActionType(ac.actionType)
+                .build();
     }
 
     static <A> ActionCommand<A> actionCommandFromAvro(Serde<A> payloadSerde, String payloadTopic, AvroActionCommand ac) {
         if (ac == null) return null;
         A command = deserializeCommand(payloadSerde, payloadTopic, ac.getCommand());
-        return ActionCommand.of(CommandId.of(UUID.fromString(ac.getCommandId())), command);
+        return ActionCommand.of(CommandId.of(UUID.fromString(ac.getCommandId())), command, ac.getActionType());
     }
 
     public static <A> ByteBuffer serializeCommand(Serde<A> payloadSerde, String payloadTopic, A command) {

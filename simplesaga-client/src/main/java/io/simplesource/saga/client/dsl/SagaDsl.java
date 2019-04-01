@@ -86,11 +86,9 @@ public final class SagaDsl {
         private List<String> errors = new ArrayList<>();
 
         private SubSaga<A> addAction(ActionId actionId,
-                                     String actionType,
                                      ActionCommand<A> actionCommand,
                                      Optional<ActionCommand<A>> undoAction) {
             SagaAction<A> action = SagaAction.of(actionId,
-                    actionType,
                     actionCommand,
                     undoAction,
                     Collections.emptySet(),
@@ -108,14 +106,14 @@ public final class SagaDsl {
         public SubSaga<A> addAction(ActionId actionId,
                                     String actionType,
                                     A actionCommand) {
-            return addAction(actionId, actionType, ActionCommand.of(CommandId.random(), actionCommand), Optional.empty());
+            return addAction(actionId, ActionCommand.of(CommandId.random(), actionCommand, actionType), Optional.empty());
         }
 
         public SubSaga<A> addAction(ActionId actionId,
                                     String actionType,
                                     A actionCommand,
                                     A undoActionCommand) {
-            return addAction(actionId, actionType, ActionCommand.of(CommandId.random(), actionCommand), Optional.of(ActionCommand.of(CommandId.random(), undoActionCommand)));
+            return addAction(actionId, ActionCommand.of(CommandId.random(), actionCommand, actionType), Optional.of(ActionCommand.of(CommandId.random(), undoActionCommand, actionType)));
         }
 
         public Result<SagaError, Saga<A>> build() {
@@ -123,7 +121,6 @@ public final class SagaDsl {
                 Map<ActionId, SagaAction<A>> newActions = actions.entrySet().stream().map(entry -> {
                     SagaAction<A> eAct = entry.getValue();
                     return SagaAction.of(eAct.actionId,
-                            eAct.actionType,
                             eAct.command,
                             eAct.undoCommand,
                             dependencies.get(entry.getKey()),

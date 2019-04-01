@@ -14,7 +14,7 @@ final class SagaProducer {
     static <A> void publishActionRequests(SagaContext<A> ctx, KStream<SagaId, ActionRequest<A>> actionRequests) {
         actionRequests
                 .to((x, actionRequest, z) -> {
-                            String actionType = actionRequest.actionType();
+                            String actionType = actionRequest.actionCommand.actionType();
                             return ctx.actionTopicNamers.get(actionType.toLowerCase()).apply(TopicTypes.ActionTopic.ACTION_REQUEST);
                     },
                     Produced.with(ctx.sSerdes.sagaId(), ctx.aSerdes.request()));

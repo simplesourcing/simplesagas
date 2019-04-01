@@ -68,7 +68,7 @@ final class SagaUtils {
                     .values()
                     .stream()
                     .filter(action -> action.status == ActionStatus.Pending && doneKeys.containsAll(action.dependencies))
-                    .map(a -> SagaActionExecution.of(a.actionId, a.actionType, Optional.of(a.command), ActionStatus.InProgress))
+                    .map(a -> SagaActionExecution.of(a.actionId, Optional.of(a.command), ActionStatus.InProgress, false))
                     .collect(Collectors.toList());
             return pendingActions;
         } else if (sagaState.status == SagaStatus.InFailure) {
@@ -104,7 +104,7 @@ final class SagaUtils {
                     .stream()
                     .map(a -> {
                         ActionStatus status = a.undoCommand.map(c -> ActionStatus.InUndo).orElse(ActionStatus.UndoBypassed);
-                        return SagaActionExecution.of(a.actionId, a.actionType, a.undoCommand, status);
+                        return SagaActionExecution.of(a.actionId, a.undoCommand, status, true);
 
                     })
                     .collect(Collectors.toList());
@@ -133,7 +133,7 @@ final class SagaUtils {
                         else if (sagaActionStatusChanged.actionStatus == ActionStatus.Failed) newStatus = ActionStatus.UndoFailed;
                     }
                     SagaAction<A> action =
-                            SagaAction.of(oa.actionId, oa.actionType, oa.command, oa.undoCommand, oa.dependencies, newStatus, sagaActionStatusChanged.actionErrors);
+                            SagaAction.of(oa.actionId, oa.command, oa.undoCommand, oa.dependencies, newStatus, sagaActionStatusChanged.actionErrors);
 
                     // TODO: add a MapUtils updated
                     Map<ActionId, SagaAction<A>> actionMap = new HashMap<>();

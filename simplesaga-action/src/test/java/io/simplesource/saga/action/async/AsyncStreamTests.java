@@ -3,7 +3,6 @@ package io.simplesource.saga.action.async;
 import io.confluent.kafka.schemaregistry.client.MockSchemaRegistryClient;
 import io.simplesource.api.CommandId;
 import io.simplesource.data.Result;
-import io.simplesource.kafka.spec.TopicSpec;
 import io.simplesource.saga.action.ActionApp;
 import io.simplesource.saga.action.app.ActionProcessor;
 import io.simplesource.saga.model.serdes.TopicSerdes;
@@ -22,8 +21,6 @@ import io.simplesource.saga.model.specs.ActionSpec;
 import io.simplesource.saga.serialization.avro.AvroSerdes;
 import io.simplesource.saga.serialization.avro.SpecificSerdeUtils;
 import io.simplesource.saga.shared.streams.StreamBuildResult;
-import io.simplesource.saga.shared.streams.StreamBuildSpec;
-import io.simplesource.saga.shared.topics.TopicCreation;
 import io.simplesource.saga.shared.topics.TopicNamer;
 import io.simplesource.saga.shared.topics.TopicTypes;
 import io.simplesource.saga.shared.streams.StreamAppConfig;
@@ -89,17 +86,8 @@ class AsyncStreamTests {
                     (i, callBack) -> executor.schedule(() ->
                             callBack.complete(Result.success(i.getValue() * i.getValue())), executionDelayMillis, TimeUnit.MILLISECONDS);
 
-            AsyncSpec<SpecificRecord, AsyncTestCommand, AsyncTestId, Integer, AsyncTestOutput> asyncSpec = new AsyncSpec<>(
-                    Constants.ASYNC_TEST_ACTION_TYPE,
-                    a -> Result.success((AsyncTestCommand) a),
-                    asyncFunction,
-                    "group_id",
-                    Optional.of(AsyncSpec.AsyncResult.of(
-                            o -> Optional.of(Result.success(new AsyncTestOutput(o))),
-                            AsyncTestCommand::getId,
-                            (d, k, r) -> Optional.empty(),
-                            Optional.of(asyncSerdes))),
-                    timeout);
+            AsyncSpec<SpecificRecord, AsyncTestCommand, AsyncTestId, Integer, AsyncTestOutput> asyncSpec =
+                    getAsyncContext(Constants.ASYNC_TEST_ACTION_TYPE, timeout, asyncFunction);
 
             ActionApp<SpecificRecord> actionApp = ActionApp.of(actionSerdes);
 
@@ -152,6 +140,23 @@ class AsyncStreamTests {
                     executor);
         }
 
+        private AsyncSpec<SpecificRecord, AsyncTestCommand, AsyncTestId, Integer, AsyncTestOutput> getAsyncContext(
+                String actionType,
+                Optional<Duration> timeout,
+                BiConsumer<AsyncTestCommand, Callback<Integer>> asyncFunction) {
+            return new AsyncSpec<>(
+                            actionType,
+                            a -> Result.success((AsyncTestCommand) a),
+                            asyncFunction,
+                            "group_id",
+                            Optional.of(AsyncSpec.AsyncResult.of(
+                                    o -> Optional.of(Result.success(new AsyncTestOutput(o))),
+                                    AsyncTestCommand::getId,
+                                    (d, k, r) -> Optional.empty(),
+                                    Optional.of(asyncSerdes))),
+                            timeout);
+        }
+
         static AsyncTestContext of(int executionDelayMillis) {
             return new AsyncTestContext(executionDelayMillis, Optional.empty(), null);
         }
@@ -165,14 +170,17 @@ class AsyncStreamTests {
         }
     }
 
-    private static ActionRequest<SpecificRecord> createRequest(AsyncTestCommand AsyncTestCommand, CommandId commandId) {
-        ActionCommand<SpecificRecord> actionCommand = ActionCommand.of(commandId, AsyncTestCommand);
-        return ActionRequest.<SpecificRecord>builder()
-                .sagaId(SagaId.random())
-                .actionId(ActionId.random())
-                .actionCommand(actionCommand)
-                .actionType(Constants.ASYNC_TEST_ACTION_TYPE)
-                .build();
+    private static ActionRequest<SpecificRecord> createRequest(AsyncTestCommand asyncTestCommand, CommandId commandId) {
+        return createRequest(asyncTestCommand, commandId, false);
+    }
+
+    private static ActionRequest<SpecificRecord> createRequest(AsyncTestCommand asyncTestCommand, CommandId commandId, Boolean isUndo) {
+        ActionCommand<SpecificRecord> actionCommand = ActionCommand.of(commandId, asyncTestCommand, Constants.ASYNC_TEST_ACTION_TYPE);
+        return ActionRequest.of(
+                SagaId.random(),
+                ActionId.random(),
+                actionCommand,
+                isUndo);
     }
 
 
