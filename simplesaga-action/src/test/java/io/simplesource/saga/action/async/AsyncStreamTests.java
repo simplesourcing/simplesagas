@@ -155,12 +155,12 @@ class AsyncStreamTests {
                 Optional<Duration> timeout,
                 BiConsumer<AsyncTestCommand, Callback<Double>> asyncFunction,
                 Optional<String> undoActionType) {
-            return new AsyncSpec<>(
+            return AsyncSpec.of(
                             actionType,
                             a -> Result.success((AsyncTestCommand) a),
                             asyncFunction,
                             "group_id",
-                            Optional.of(AsyncSpec.AsyncResult.of(
+                            Optional.of(AsyncResult.of(
                                     o -> Optional.of(Result.success(new AsyncTestOutput(o))),
                                     AsyncTestCommand::getId,
                                     (d, k, r) -> undoActionType.map(uat ->

@@ -20,7 +20,7 @@ import java.util.function.Function;
   */
 @Value
 @Builder
-@AllArgsConstructor
+@AllArgsConstructor(staticName = "of")
 public final class EventSourcingSpec<A, D, K, C> {
     public final String actionType;
     public final String aggregateName;
