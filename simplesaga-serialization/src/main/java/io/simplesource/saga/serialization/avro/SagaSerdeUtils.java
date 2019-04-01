@@ -27,8 +27,8 @@ public class SagaSerdeUtils {
         // TODO: remove the casting
         Result<SagaError, T> result;
         if (aRes instanceof GenericArray) {
-            GenericArray<Object> v = (GenericArray) aRes;
-            Stream<AvroSagaError> avroErrors = v.stream()
+            GenericArray<Object> aResArray = (GenericArray) aRes;
+            Stream<AvroSagaError> avroErrors = aResArray.stream()
                     .map(x -> (AvroSagaError) x)
                     .filter(Objects::nonNull);
             result = sagaErrorFromAvro(avroErrors);

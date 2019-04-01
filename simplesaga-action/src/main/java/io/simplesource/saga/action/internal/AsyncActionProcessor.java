@@ -50,7 +50,7 @@ final class AsyncActionProcessor {
             if (completed.compareAndSet(false, true)) {
                 Result<Throwable, Optional<ResultGeneration<A, K, R>>> resultWithOutput = tryWrap(() ->
                         result.flatMap(output -> {
-                            Optional<Result<Throwable, ResultGeneration<A, K, R>>> x =
+                            Optional<Result<Throwable, ResultGeneration<A, K, R>>> optResultGen =
                                     asyncSpec.resultSpec.flatMap(rSpec -> {
                                         K outputKey = rSpec.keyMapper.apply(input);
 
@@ -71,7 +71,7 @@ final class AsyncActionProcessor {
                                     });
 
                             // this is just `sequence` in FP - swapping Result and Option
-                            Optional<Result<Throwable, Optional<ResultGeneration<A, K, R>>>> y = x.map(r -> r.fold(Result::failure, r0 -> Result.success(Optional.of(r0))));
+                            Optional<Result<Throwable, Optional<ResultGeneration<A, K, R>>>> y = optResultGen.map(r -> r.fold(Result::failure, r0 -> Result.success(Optional.of(r0))));
                             return y.orElseGet(() -> Result.success(Optional.empty()));
                         }));
 

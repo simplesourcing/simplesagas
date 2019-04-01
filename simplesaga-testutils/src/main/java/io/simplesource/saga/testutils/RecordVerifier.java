@@ -36,8 +36,8 @@ public class RecordVerifier<K, V> {
     }
 
     public void verifyNoRecords() {
-        V x = verifyAndReturn(null);
-        assertThat(x).isNull();
+        V v = verifyAndReturn(null);
+        assertThat(v).isNull();
 
     }
 

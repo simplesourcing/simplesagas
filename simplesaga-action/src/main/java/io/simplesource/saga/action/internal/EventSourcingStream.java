@@ -181,7 +181,7 @@ public final class EventSourcingStream {
         // find the response for the request
         KStream<CommandId, Tuple2<ActionRequest<A>, CommandResponse<K>>> actionRequestWithResponse =
                 // join command response to action request by the command / action ID
-                // TODO: timeouts - will be easy to do timeouts with a left join once  has been released
+                // TODO: timeouts - will be easy to do timeouts with a left join once https://issues.apache.org/jira/browse/KAFKA-6556 has been released
                 actionRequests
                         .selectKey((k, aReq) -> aReq.actionCommand.commandId)
                         .join(
