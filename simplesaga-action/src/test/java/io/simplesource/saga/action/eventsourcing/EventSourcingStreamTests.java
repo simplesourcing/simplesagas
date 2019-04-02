@@ -13,6 +13,7 @@ import io.simplesource.saga.model.action.ActionCommand;
 import io.simplesource.saga.model.action.ActionId;
 import io.simplesource.saga.model.messages.ActionRequest;
 import io.simplesource.saga.model.messages.ActionResponse;
+import io.simplesource.saga.model.messages.UndoCommand;
 import io.simplesource.saga.model.saga.SagaId;
 import io.simplesource.saga.model.serdes.ActionSerdes;
 import io.simplesource.saga.serialization.avro.AvroSerdes;
@@ -28,6 +29,7 @@ import org.apache.kafka.streams.Topology;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -50,24 +52,27 @@ class EventSourcingStreamTests {
         // publishers
         final RecordPublisher<SagaId, ActionRequest<SpecificRecord>> actionRequestPublisher;
         final RecordPublisher<AccountId, CommandResponse<AccountId>> commandResponsePublisher;
-        final RecordPublisher<SagaId, ActionResponse> actionResponsePublisher;
+        final RecordPublisher<SagaId, ActionResponse<SpecificRecord>> actionResponsePublisher;
 
         // verifiers
         final RecordVerifier<AccountId, CommandRequest<AccountId, AccountCommand>> commandRequestVerifier;
-        final RecordVerifier<SagaId, ActionResponse> actionResponseVerifier;
+        final RecordVerifier<SagaId, ActionResponse<SpecificRecord>> actionResponseVerifier;
 
         final Set<String> expectedTopics;
 
         AccountContext() {
-            EventSourcingSpec<SpecificRecord, AccountCommand, AccountId, AccountCommand> sourcingSpec = new EventSourcingSpec<>(
-                    Constants.ACCOUNT_ACTION_TYPE,
-                    a -> Result.success((AccountCommand) a),
-                    c -> c,
-                    AccountCommand::getId,
-                    c -> Sequence.position(c.getSequence()),
-                    commandSerdes,
-                    Duration.ofSeconds(20),
-                    Constants.ACCOUNT_AGGREGATE_NAME);
+            EventSourcingSpec<SpecificRecord, AccountCommand, AccountId, AccountCommand> sourcingSpec =
+                    EventSourcingSpec.<SpecificRecord, AccountCommand, AccountId, AccountCommand>builder()
+                            .actionType(Constants.ACCOUNT_ACTION_TYPE)
+                            .aggregateName(Constants.ACCOUNT_AGGREGATE_NAME)
+                            .decode(a -> Result.success((AccountCommand) a))
+                            .commandMapper(c -> c)
+                            .keyMapper(AccountCommand::getId)
+                            .sequenceMapper(c -> Sequence.position(c.getSequence()))
+                            .undoCommand((k, c) -> getUndoAccountCommand(c))
+                            .commandSerdes(commandSerdes)
+                            .timeout(Duration.ofSeconds(20))
+                            .build();
 
             ActionApp<SpecificRecord> streamApp = ActionApp.of(actionSerdes);
 
@@ -117,16 +122,30 @@ class EventSourcingStreamTests {
                     actionSerdes.response());
 
         }
+
+        private Optional<SpecificRecord> getUndoAccountCommand(AccountCommand c) {
+            AccountId id = c.getId();
+            Object command = c.getCommand();
+            Object undoCommand = null;
+            if (command instanceof TransferFunds) {
+                TransferFunds transfer = (TransferFunds) command;
+                undoCommand = new TransferFunds(transfer.getToId(), transfer.getFromId(), transfer.getAmount());
+            }
+            return Optional.ofNullable(undoCommand).map(uc -> new AccountCommand(id, 0L, uc));
+        }
+    }
+
+    private static ActionRequest<SpecificRecord> createRequest(SagaId sagaId, AccountCommand accountCommand, CommandId commandId, Boolean isUndo) {
+        ActionCommand<SpecificRecord> actionCommand = ActionCommand.of(commandId, accountCommand, Constants.ACCOUNT_ACTION_TYPE);
+        return ActionRequest.of(
+                sagaId,
+                ActionId.random(),
+                actionCommand,
+                isUndo);
     }
 
     private static ActionRequest<SpecificRecord> createRequest(SagaId sagaId, AccountCommand accountCommand, CommandId commandId) {
-        ActionCommand<SpecificRecord> actionCommand = ActionCommand.of(commandId, accountCommand);
-        return ActionRequest.<SpecificRecord>builder()
-                .sagaId(sagaId)
-                .actionId(ActionId.random())
-                .actionCommand(actionCommand)
-                .actionType(Constants.ACCOUNT_ACTION_TYPE)
-                .build();
+        return createRequest(sagaId, accountCommand, commandId, false);
     }
 
     @Test
@@ -268,5 +287,66 @@ class EventSourcingStreamTests {
         });
 
         acc.commandRequestVerifier.verifyNoRecords();
+    }
+
+    @Test
+    void validateUndoCommandForRegularAction() {
+        validateUndoCommand(false);
+    }
+
+    @Test
+    void validateUndoCommandForUndoAction() {
+        validateUndoCommand(true);
+    }
+
+    void validateUndoCommand(Boolean isUndo) {
+
+        AccountContext acc = new AccountContext();
+
+        CreateAccount createAccount = new CreateAccount(ACCOUNT_ID, "user name");
+        AccountCommand createCommand = new AccountCommand(new AccountId(createAccount.getId()), 100L, createAccount);
+
+        CommandId createCommandId = CommandId.random();
+        SagaId sagaId = SagaId.random();
+        ActionRequest<SpecificRecord> createActionRequest = createRequest(sagaId, createCommand, createCommandId);
+
+        acc.actionRequestPublisher.publish(sagaId, createActionRequest);
+        acc.commandRequestVerifier.drainAll();
+
+        CommandResponse<AccountId> createCommandResponse = new CommandResponse<>(createCommandId, createCommand.getId(), Sequence.position(185L), Result.success(Sequence.position(186L)));
+        acc.commandResponsePublisher.publish(new AccountId(createAccount.getId()), createCommandResponse);
+
+        acc.actionResponseVerifier.verifySingle((sId, actionResponse) -> {
+            assertThat(actionResponse.result.isSuccess()).isEqualTo(true);
+        });
+        acc.actionResponseVerifier.verifyNoRecords();
+
+        // let another saga try (or the same saga if isSameSaga = true)
+        CommandId transferCommandId = CommandId.random();
+
+        TransferFunds transferFunds = new TransferFunds(ACCOUNT_ID, "account id 2", 50.0);
+        TransferFunds undoTransferFunds = new TransferFunds("account id 2", ACCOUNT_ID, 50.0);
+        AccountCommand transferCommand = new AccountCommand(createCommand.getId(), 186L, transferFunds);
+        ActionRequest<SpecificRecord> transferRequest = createRequest(sagaId, transferCommand, transferCommandId, isUndo);
+        acc.actionRequestPublisher.publish(sagaId, transferRequest);
+
+        CommandResponse<AccountId> transferCommandResponse = new CommandResponse<>(transferCommandId, transferCommand.getId(), Sequence.position(186L), Result.success(Sequence.position(187L)));
+        acc.commandResponsePublisher.publish(new AccountId(createAccount.getId()), transferCommandResponse);
+
+        acc.actionResponseVerifier.verifySingle((sId, actionResponse) -> {
+            assertThat(actionResponse.result.isSuccess()).isEqualTo(true);
+            Optional<UndoCommand<SpecificRecord>> undoActionOpt = actionResponse.result.getOrElse(Optional.empty());
+            if (isUndo) {
+                assertThat(undoActionOpt.isPresent()).isFalse();
+            } else {
+                assertThat(undoActionOpt.isPresent()).isTrue();
+                AccountCommand undoAction = (AccountCommand) undoActionOpt.map(UndoCommand::command).get();
+                assertThat(undoAction.getId()).isEqualTo(transferCommand.getId());
+                assertThat(undoAction.getCommand()).isInstanceOfAny(TransferFunds.class);
+                assertThat(undoAction.getCommand()).isEqualTo(undoTransferFunds);
+            }
+        });
+
+        acc.actionResponseVerifier.verifyNoRecords();
     }
 }

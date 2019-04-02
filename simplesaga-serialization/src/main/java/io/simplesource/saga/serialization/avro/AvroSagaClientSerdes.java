@@ -86,9 +86,8 @@ public class AvroSagaClientSerdes<A> implements SagaClientSerdes<A> {
             ActionId actionId = ActionId.fromString(aa.getActionId());
             SagaAction<A> action = SagaAction.of(
                     actionId,
-                    aa.getActionType(),
-                    SagaSerdeUtils.actionCommandFromAvro(payloadSerde, topic, aa.getActionType(), aa.getActionCommand()),
-                    Optional.ofNullable(SagaSerdeUtils.actionCommandFromAvro(payloadSerde, topic, aa.getActionType() + "-undo", aa.getUndoCommand())),
+                    SagaSerdeUtils.actionCommandFromAvro(payloadSerde, topic, aa.getActionCommand()),
+                    Optional.ofNullable(SagaSerdeUtils.actionCommandFromAvro(payloadSerde, topic, aa.getUndoCommand())),
                     aa.getDependencies().stream().map(ActionId::fromString).collect(Collectors.toSet()),
                     ActionStatus.valueOf(aa.getActionStatus()),
                     SagaSerdeUtils.sagaErrorListFromAvro(aa.getActionErrors()));
@@ -112,15 +111,12 @@ public class AvroSagaClientSerdes<A> implements SagaClientSerdes<A> {
                     .setActionCommand(SagaSerdeUtils.actionCommandToAvro(
                             payloadSerde,
                             topic,
-                            act.actionType,
                             act.command))
                     .setUndoCommand(act.undoCommand.map(uc -> SagaSerdeUtils.actionCommandToAvro(
                             payloadSerde,
                             topic,
-                            act.actionType + "-undo",
                             uc)).orElse(null))
                     .setActionStatus(act.status.toString())
-                    .setActionType(act.actionType)
                     .setDependencies(act.dependencies
                             .stream()
                             .map(ActionId::toString)

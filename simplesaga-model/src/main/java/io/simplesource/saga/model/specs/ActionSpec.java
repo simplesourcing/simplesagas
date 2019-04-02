@@ -8,5 +8,4 @@ import java.time.Duration;
 @Value(staticConstructor = "of")
 public class ActionSpec<A> {
     public final ActionSerdes<A> serdes;
-    public final Duration sagaDuration;
 }

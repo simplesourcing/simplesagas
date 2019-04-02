@@ -8,6 +8,8 @@ import lombok.Builder;
 import lombok.Value;
 
 import java.time.Duration;
+import java.util.Optional;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
@@ -18,14 +20,15 @@ import java.util.function.Function;
   */
 @Value
 @Builder
-@AllArgsConstructor
+@AllArgsConstructor(staticName = "of")
 public final class EventSourcingSpec<A, D, K, C> {
     public final String actionType;
+    public final String aggregateName;
     public final Function<A, Result<Throwable, D>> decode;
     public final Function<D, C> commandMapper;
     public final Function<D, K> keyMapper;
     public final Function<D, Sequence> sequenceMapper;
+    public final BiFunction<K, C, Optional<A>> undoCommand;
     public final CommandSerdes<K, C> commandSerdes;
     public final Duration timeout;
-    public final String aggregateName;
 }

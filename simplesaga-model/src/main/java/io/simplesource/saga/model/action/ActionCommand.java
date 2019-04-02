@@ -7,5 +7,6 @@ import lombok.Value;
 public class ActionCommand<A> {
     public final CommandId commandId;
     public final A command;
+    public final String actionType;
 }
 

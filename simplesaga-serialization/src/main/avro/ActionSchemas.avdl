@@ -1,27 +1,37 @@
 @namespace("io.simplesource.saga.serialization.avro.generated")
 protocol SagaSchemas {
-   record AvroActionCommand {
+  record AvroActionCommand {
     string commandId;
     bytes command;
+    string actionType;
   }
 
   record AvroActionRequest {
     string sagaId;
     string actionId;
     AvroActionCommand actionCommand;
+    boolean isUndo;
+  }
+
+  record AvroSagaError {
+    string reason;
+    string message;
+  }
+
+  record AvroActionUndoCommand {
+    bytes command;
     string actionType;
   }
 
-   record AvroSagaError {
-    string reason;
-    string message;
+  record AvroActionUndoCommandOption {
+    union { AvroActionUndoCommand, null } undoCommand;
   }
 
   record AvroActionResponse {
     string sagaId;
     string actionId;
     string commandId;
-    union { array<AvroSagaError>, boolean } result;
+    union { array<AvroSagaError>, AvroActionUndoCommandOption } result;
   }
 
   record AvroSagaResponse {
@@ -31,7 +41,6 @@ protocol SagaSchemas {
 
   record AvroSagaAction {
     string actionId;
-    string actionType;
     AvroActionCommand actionCommand;
     union { AvroActionCommand, null } undoCommand;
     array<string> dependencies;

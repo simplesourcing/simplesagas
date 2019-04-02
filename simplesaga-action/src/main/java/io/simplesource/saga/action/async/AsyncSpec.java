@@ -1,6 +1,7 @@
 package io.simplesource.saga.action.async;
 
 import io.simplesource.data.Result;
+import io.simplesource.saga.model.messages.UndoCommand;
 import lombok.*;
 
 import java.time.Duration;
@@ -17,12 +18,13 @@ import java.util.function.Function;
   */
 @Value
 @Builder
-@AllArgsConstructor
+@AllArgsConstructor(staticName = "of")
 public final class AsyncSpec<A, D, K, O, R> {
+
     public final String actionType;
     public final Function<A, Result<Throwable, D>> inputDecoder;
     public final BiConsumer<D, Callback<O>> asyncFunction;
     public final String groupId;
-    public final Optional<AsyncOutput<D, K, O, R>> outputSpec;
+    public final Optional<AsyncResult<A, D, K, O, R>> resultSpec;
     public final Optional<Duration> timeout;
 }

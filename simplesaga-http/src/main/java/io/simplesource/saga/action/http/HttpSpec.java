@@ -1,6 +1,8 @@
 package io.simplesource.saga.action.http;
 
 import io.simplesource.saga.action.async.Callback;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Value;
 
 import java.time.Duration;
@@ -14,12 +16,15 @@ import java.util.function.BiConsumer;
   * @param <O> - value returned by the Http request - also normally quite generic
   * @param <R> - final result type that ends up in value topic
   */
+
 @Value
+@Builder
+@AllArgsConstructor(staticName = "of")
 public final class HttpSpec<A, K, B, O, R> {
     public final String actionType;
     public final HttpRequest.HttpRequestDecoder<A, K, B> decoder;
     public final BiConsumer<HttpRequest<K, B>, Callback<O>> asyncHttpClient;
     public final String groupId;
-    public final Optional<HttpOutput<K, O, R>> outputSpec;
+    public final Optional<HttpOutput<A, K, B, O, R>> outputSpec;
     public final Optional<Duration> timeout;
 }

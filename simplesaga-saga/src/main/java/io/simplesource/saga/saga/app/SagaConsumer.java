@@ -48,7 +48,7 @@ final class SagaConsumer {
                 Consumed.with(spec.serdes.sagaId(), spec.serdes.state()));
     }
 
-    static <A> KStream<SagaId, ActionResponse> actionResponse(ActionSpec<A> actionSpec,
+    static <A> KStream<SagaId, ActionResponse<A>> actionResponse(ActionSpec<A> actionSpec,
                                                               Map<String, TopicNamer> topicNamers,
                                                               StreamsBuilder builder) {
         List<String> actionResponseNames = topicNamers.values()

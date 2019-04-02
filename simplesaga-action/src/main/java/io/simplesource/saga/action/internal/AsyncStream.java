@@ -17,7 +17,7 @@ public final class AsyncStream {
 
     private static <A, D, K, O, R> void addSubTopology(AsyncContext<A, D, K, O, R> ctx,
                                                        KStream<SagaId, ActionRequest<A>> actionRequest,
-                                                       KStream<SagaId, ActionResponse> actionResponse) {
+                                                       KStream<SagaId, ActionResponse<A>> actionResponse) {
         // join the action request with corresponding prior command responses
         IdempotentStream.IdempotentAction<A> idempotentAction = IdempotentStream.getActionRequestsWithResponse(
                 ctx.actionSpec, actionRequest, actionResponse);

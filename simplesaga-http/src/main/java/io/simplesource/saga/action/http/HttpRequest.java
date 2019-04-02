@@ -39,7 +39,7 @@ public final class HttpRequest<K, B> {
         return new HttpRequest<>(key, verb, url, Collections.emptyMap(), Optional.empty(), Optional.ofNullable(topicName));
     }
 
-    public static <K, B> HttpRequest<K, B> ofWithBody(K key, HttpVerb verb, String url, String topicName, B body) {
+    public static <K, B> HttpRequest<K, B> of(K key, HttpVerb verb, String url, String topicName, B body) {
         return new HttpRequest<>(key, verb, url, Collections.emptyMap(), Optional.ofNullable(body), Optional.ofNullable(topicName));
     }
 }

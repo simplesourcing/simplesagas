@@ -26,7 +26,7 @@ final class ActionConsumer {
         ).peek(StreamUtils.logValues(logger, "actionRequestStream"));
     }
 
-    static <A> KStream<SagaId, ActionResponse> actionResponseStream(ActionSpec<A> spec,
+    static <A> KStream<SagaId, ActionResponse<A>> actionResponseStream(ActionSpec<A> spec,
                                                                     TopicNamer actionTopicNamer,
                                                                     StreamsBuilder builder) {
         String actionResponseTopic = actionTopicNamer.apply(TopicTypes.ActionTopic.ACTION_RESPONSE);

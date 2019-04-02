@@ -15,9 +15,10 @@ public class TopicTypes {
 
     public static final class ActionTopic {
         public static final String ACTION_REQUEST = "action_request";
-        public static final String ACTION_REQUEST_UNPROCESSED = "action_request_unprocessed";
         public static final String ACTION_RESPONSE = "action_response";
         public static final List<String> all = Lists.of(ACTION_REQUEST, ACTION_RESPONSE);
+        public static final String ACTION_REQUEST_UNPROCESSED = "action_request_unprocessed";
+        public static final String ACTION_OUTPUT = "action_output";
     }
 
     public static final class SagaTopic {

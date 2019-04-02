@@ -7,10 +7,13 @@ import io.simplesource.saga.model.saga.SagaError;
 import io.simplesource.saga.model.saga.SagaId;
 import lombok.Value;
 
-@Value(staticConstructor = "of")
-public class ActionResponse {
+import java.util.Optional;
+
+@Value(staticConstructor="of")
+public class ActionResponse<A> {
+
     public final SagaId sagaId;
     public final ActionId actionId;
     public final CommandId commandId;
-    public final Result<SagaError, Boolean> result;
+    public final Result<SagaError, Optional<UndoCommand<A>>> result;
 }

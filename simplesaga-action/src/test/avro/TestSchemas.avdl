@@ -36,10 +36,10 @@ protocol Schemas {
 
   record AsyncTestCommand {
     AsyncTestId id;
-    int value;
+    double value;
   }
 
   record AsyncTestOutput {
-    int value;
+    double value;
   }
 }

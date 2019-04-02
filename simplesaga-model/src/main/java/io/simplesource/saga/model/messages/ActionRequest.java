@@ -7,11 +7,9 @@ import lombok.Builder;
 import lombok.Value;
 
 @Value(staticConstructor = "of")
-@Builder
 public class ActionRequest<A> {
     public final SagaId sagaId;
     public final ActionId actionId;
     public final ActionCommand<A> actionCommand;
-    public final String actionType;
+    public final Boolean isUndo;
 }
-

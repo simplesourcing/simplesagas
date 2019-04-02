@@ -23,13 +23,13 @@ class DslTest {
     }
 
     void dependsOnSet(String action, Set<String> dependsOn, Saga<String> saga) {
-        Set<String> z = saga.actions.values().stream().filter(x -> x.actionType.equals("actionType-" + action))
+        Set<String> z = saga.actions.values().stream().filter(x -> x.command.actionType.equals("actionType-" + action))
                 .findFirst()
                 .get()
                 .dependencies
                 .stream()
                 .map(saga.actions::get)
-                .map(x -> x.actionType).collect(Collectors.toSet());
+                .map(x -> x.command.actionType).collect(Collectors.toSet());
         assertThat(z).isEqualTo(dependsOn.stream().map(x -> "actionType-" + x).collect(Collectors.toSet()));
     }
 

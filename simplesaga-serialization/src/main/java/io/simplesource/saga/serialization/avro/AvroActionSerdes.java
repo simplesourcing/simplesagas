@@ -7,6 +7,7 @@ import io.simplesource.saga.model.action.ActionCommand;
 import io.simplesource.saga.model.action.ActionId;
 import io.simplesource.saga.model.messages.ActionRequest;
 import io.simplesource.saga.model.messages.ActionResponse;
+import io.simplesource.saga.model.messages.UndoCommand;
 import io.simplesource.saga.model.saga.SagaId;
 import io.simplesource.saga.model.serdes.ActionSerdes;
 import io.simplesource.saga.serialization.avro.generated.*;
@@ -14,6 +15,7 @@ import io.simplesource.saga.serialization.utils.SerdeUtils;
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serdes;
 
+import java.util.Optional;
 import java.util.UUID;
 
 public class AvroActionSerdes<A> implements ActionSerdes<A> {
@@ -34,7 +36,9 @@ public class AvroActionSerdes<A> implements ActionSerdes<A> {
     }
 
     @Override
-    public Serde<SagaId> sagaId() { return SerdeUtils.iMap(Serdes.UUID(), SagaId::id, SagaId::of); }
+    public Serde<SagaId> sagaId() {
+        return SerdeUtils.iMap(Serdes.UUID(), SagaId::id, SagaId::of);
+    }
 
     @Override
     public Serde<ActionId> actionId() {
@@ -52,39 +56,42 @@ public class AvroActionSerdes<A> implements ActionSerdes<A> {
                 (topic, r) -> AvroActionRequest.newBuilder()
                         .setActionId(r.actionId.toString())
                         .setSagaId(r.sagaId.toString())
-                        .setActionType(r.actionType)
                         .setActionCommand(SagaSerdeUtils.actionCommandToAvro(
                                 payloadSerde,
                                 topic,
-                                r.actionType,
                                 r.actionCommand))
+                        .setIsUndo(r.isUndo)
                         .build(),
                 (topic, ar) -> {
                     AvroActionCommand aac = ar.getActionCommand();
-                    ActionCommand<A> ac = SagaSerdeUtils.actionCommandFromAvro(payloadSerde, topic, ar.getActionType(), aac);
-                    return ActionRequest.<A>builder()
-                            .sagaId(SagaId.fromString(ar.getSagaId()))
-                            .actionId(ActionId.fromString(ar.getActionId()))
-                            .actionCommand(ac)
-                            .actionType(ar.getActionType())
-                            .build();
+                    ActionCommand<A> ac = SagaSerdeUtils.actionCommandFromAvro(payloadSerde, topic, aac);
+                    return ActionRequest.of(SagaId.fromString(ar.getSagaId()),
+                            ActionId.fromString(ar.getActionId()),
+                            ac,
+                            ar.getIsUndo());
+
                 }
         );
     }
 
     @Override
-    public Serde<ActionResponse> response() {
+    public Serde<ActionResponse<A>> response() {
         return SerdeUtils.iMap(avroActionResponseSerde,
-                r -> AvroActionResponse.newBuilder()
+                (topic, r) -> AvroActionResponse.newBuilder()
                         .setSagaId(r.sagaId.toString())
                         .setActionId(r.actionId.toString())
                         .setCommandId(r.commandId.id.toString())
-                        .setResult(r.result.fold(SagaSerdeUtils::sagaErrorListToAvro, x -> x))
+                        .setResult(r.result.fold(SagaSerdeUtils::sagaErrorListToAvro,
+                                optUac -> new AvroActionUndoCommandOption(optUac.map(uc -> SagaSerdeUtils.actionUndoCommandToAvro(payloadSerde, topic, uc)).orElse(null))))
                         .build(),
-                ar -> ActionResponse.of(
+                (topic, ar) -> ActionResponse.of(
                         SagaId.fromString(ar.getSagaId()),
                         ActionId.fromString(ar.getActionId()),
                         CommandId.of(UUID.fromString(ar.getCommandId())),
-                        SagaSerdeUtils.<Boolean, Boolean>sagaResultFromAvro(ar.getResult(), x -> x)));
+                        SagaSerdeUtils.<AvroActionUndoCommandOption, Optional<UndoCommand<A>>>sagaResultFromAvro(ar.getResult(),
+                                aucOption -> {
+                                    AvroActionUndoCommand undoCommandOpt = aucOption.getUndoCommand();
+                                    return Optional.ofNullable(SagaSerdeUtils.actionUndoCommandFromAvro(payloadSerde, topic, undoCommandOpt));
+                                })));
     }
 }

@@ -11,7 +11,6 @@ import java.util.Set;
 @Value(staticConstructor = "of")
 public class SagaAction<A> {
     public final ActionId actionId;
-    public final String actionType;
     public final ActionCommand<A> command;
     public final Optional<ActionCommand<A>> undoCommand;
     public final Set<ActionId> dependencies;
