@@ -14,7 +14,7 @@ import io.simplesource.saga.serialization.utils.SerdeUtils;
 import org.apache.kafka.common.serialization.Serde;
 
 import java.util.List;
-import java.util.UUID;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class AvroSagaSerdes<A> extends AvroSagaClientSerdes<A> implements SagaSerdes<A> {
@@ -43,7 +43,7 @@ public class AvroSagaSerdes<A> extends AvroSagaClientSerdes<A> implements SagaSe
         return SerdeUtils.iMap(avroSagaTransitionSerde, (topic, at) -> {
             Object transition = at.cata(
                     initial -> new AvroSagaTransitionInitial(sagaToAvro(topic, (Saga<A>)initial.sagaState)),
-                    AvroSagaSerdes::actionStatusChangeToAvro,
+                    ac -> actionStatusChangeToAvro(ac, topic),
                     sagaChange -> AvroSagaTransitionSagaStatusChange.newBuilder()
                             .setSagaId(sagaChange.sagaId.toString())
                             .setSagaStatus(sagaChange.sagaStatus.toString())
@@ -52,7 +52,7 @@ public class AvroSagaSerdes<A> extends AvroSagaClientSerdes<A> implements SagaSe
                     changeList -> new AvroSagaTransitionList(
                             changeList.actions
                                     .stream()
-                                    .map(AvroSagaSerdes::actionStatusChangeToAvro)
+                                    .map(ac -> actionStatusChangeToAvro(ac, topic))
                                     .collect(Collectors.toList())));
             return new AvroSagaTransition(transition);
         }, (topic, at) -> {
@@ -60,8 +60,8 @@ public class AvroSagaSerdes<A> extends AvroSagaClientSerdes<A> implements SagaSe
             if (t instanceof AvroSagaTransitionInitial) {
                 return SagaStateTransition.SetInitialState.of(sagaFromAvro(topic, ((AvroSagaTransitionInitial)t).getSagaState()));
             }
-            if (t instanceof AvroSagaTransitionActionStatusChange) {
-                return actionStatusChangeFromAvro((AvroSagaTransitionActionStatusChange) t);
+            if (t instanceof AvroSagaTransitionActionStateChange) {
+                return actionStatusChangeFromAvro((AvroSagaTransitionActionStateChange) t, topic);
             }
             if (t instanceof AvroSagaTransitionSagaStatusChange) {
                 AvroSagaTransitionSagaStatusChange st = (AvroSagaTransitionSagaStatusChange) t;
@@ -72,28 +72,33 @@ public class AvroSagaSerdes<A> extends AvroSagaClientSerdes<A> implements SagaSe
             }
             if (t instanceof AvroSagaTransitionList) {
                 AvroSagaTransitionList l = (AvroSagaTransitionList) t;
-                List<SagaStateTransition.SagaActionStatusChanged> actions =
-                        l.getActionChanges().stream().map(AvroSagaSerdes::actionStatusChangeFromAvro).collect(Collectors.toList());
+                List<SagaStateTransition.SagaActionStateChanged> actions =
+                        l.getActionChanges().stream().map(ac -> actionStatusChangeFromAvro(ac, topic)).collect(Collectors.toList());
                 return SagaStateTransition.TransitionList.of(actions);
             }
             throw new RuntimeException("Unexpected exception. Avro failed to validate SagaStateTransition union type.");
         });
     }
 
-    private static AvroSagaTransitionActionStatusChange actionStatusChangeToAvro(SagaStateTransition.SagaActionStatusChanged actionChange) {
-        return AvroSagaTransitionActionStatusChange.newBuilder()
+    private AvroSagaTransitionActionStateChange actionStatusChangeToAvro(SagaStateTransition.SagaActionStateChanged<A> actionChange, String topic) {
+        return AvroSagaTransitionActionStateChange.newBuilder()
                 .setSagaId(actionChange.sagaId.toString())
                 .setActionId(actionChange.actionId.toString())
                 .setActionStatus(actionChange.actionStatus.toString())
                 .setActionErrors(SagaSerdeUtils.sagaErrorListToAvro(actionChange.actionErrors))
+                .setUndoCommand(actionChange.undoCommand.map(uc -> SagaSerdeUtils.actionUndoCommandToAvro(
+                        payloadSerde,
+                        topic,
+                        uc)).orElse(null))
                 .build();
     }
 
-    private static SagaStateTransition.SagaActionStatusChanged actionStatusChangeFromAvro(AvroSagaTransitionActionStatusChange actionChange) {
-        return SagaStateTransition.SagaActionStatusChanged.of(
+    private SagaStateTransition.SagaActionStateChanged actionStatusChangeFromAvro(AvroSagaTransitionActionStateChange actionChange, String topic) {
+        return SagaStateTransition.SagaActionStateChanged.of(
                 SagaId.fromString(actionChange.getSagaId()),
                 ActionId.fromString(actionChange.getActionId()),
                 ActionStatus.valueOf(actionChange.getActionStatus()),
-                SagaSerdeUtils.sagaErrorListFromAvro(actionChange.getActionErrors()));
+                SagaSerdeUtils.sagaErrorListFromAvro(actionChange.getActionErrors()),
+                Optional.ofNullable(SagaSerdeUtils.actionUndoCommandFromAvro(payloadSerde, topic, actionChange.getUndoCommand())));
     }
 }

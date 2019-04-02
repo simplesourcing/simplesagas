@@ -3,16 +3,19 @@ package io.simplesource.saga.serialization.avro;
 import io.simplesource.saga.model.action.ActionId;
 import io.simplesource.saga.model.action.ActionStatus;
 import io.simplesource.saga.model.messages.SagaStateTransition;
+import io.simplesource.saga.model.messages.UndoCommand;
 import io.simplesource.saga.model.saga.Saga;
 import io.simplesource.saga.model.saga.SagaError;
 import io.simplesource.saga.model.saga.SagaId;
 import io.simplesource.saga.model.saga.SagaStatus;
 import io.simplesource.saga.model.serdes.SagaSerdes;
+import io.simplesource.saga.serialization.avro.generated.test.TransferFunds;
 import io.simplesource.saga.shared.utils.Lists;
 import org.apache.avro.specific.SpecificRecord;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -61,29 +64,31 @@ class SagaInternalSerdesTest {
 
     @Test
     void sagaTransitionActionStatusSuccessTest() {
-        SagaStateTransition.SagaActionStatusChanged original = SagaStateTransition.SagaActionStatusChanged.of(
+        SagaStateTransition.SagaActionStateChanged original = SagaStateTransition.SagaActionStateChanged.of(
                 SagaId.random(),
                 ActionId.random(),
                 ActionStatus.Completed,
-                Collections.emptyList());
+                Collections.emptyList(),
+                Optional.empty());
 
-        SagaStateTransition.SagaActionStatusChanged deserialized = testTransition(original);
+        SagaStateTransition.SagaActionStateChanged deserialized = testTransition(original);
         assertThat(deserialized).isEqualToComparingFieldByField(original);
     }
 
     @Test
     void sagaTransitionActionStatusFailureTest() {
-        SagaStateTransition.SagaActionStatusChanged original = SagaStateTransition.SagaActionStatusChanged.of(
+        SagaStateTransition.SagaActionStateChanged original = SagaStateTransition.SagaActionStateChanged.of(
                 SagaId.random(),
                 ActionId.random(),
                 ActionStatus.Failed,
                 Lists.of(
                         SagaError.of(SagaError.Reason.InternalError, "internal error"),
-                        SagaError.of(SagaError.Reason.Timeout, "timeout")));
+                        SagaError.of(SagaError.Reason.Timeout, "timeout")),
+                Optional.empty());
 
         testTransition(original);
 
-        SagaStateTransition.SagaActionStatusChanged deserialized = testTransition(original);
+        SagaStateTransition.SagaActionStateChanged deserialized = testTransition(original);
         assertThat(deserialized).isEqualToComparingFieldByField(original);
     }
 
@@ -118,18 +123,41 @@ class SagaInternalSerdesTest {
     @Test
     void sagaTransitionTransitionListTest() {
         SagaStateTransition.TransitionList original = SagaStateTransition.TransitionList.of(Lists.of(
-                SagaStateTransition.SagaActionStatusChanged.of(
+                SagaStateTransition.SagaActionStateChanged.of(
                         SagaId.random(),
                         ActionId.random(),
                         ActionStatus.Failed,
                         Lists.of(
                                 SagaError.of(SagaError.Reason.InternalError, "internal error"),
-                                SagaError.of(SagaError.Reason.Timeout, "timeout"))),
-                SagaStateTransition.SagaActionStatusChanged.of(
+                                SagaError.of(SagaError.Reason.Timeout, "timeout")),
+                        Optional.empty()),
+                SagaStateTransition.SagaActionStateChanged.of(
                         SagaId.random(),
                         ActionId.random(),
                         ActionStatus.Completed,
-                        Collections.emptyList())));
+                        Collections.emptyList(),
+                        Optional.empty())));
+
+        testTransition(original);
+    }
+
+    @Test
+    void sagaTransitionTransitionUndoActionTest() {
+        SagaStateTransition.TransitionList original = SagaStateTransition.TransitionList.of(Lists.of(
+                SagaStateTransition.SagaActionStateChanged.of(
+                        SagaId.random(),
+                        ActionId.random(),
+                        ActionStatus.Failed,
+                        Lists.of(
+                                SagaError.of(SagaError.Reason.InternalError, "internal error"),
+                                SagaError.of(SagaError.Reason.Timeout, "timeout")),
+                        Optional.of(UndoCommand.of(new TransferFunds("id1", "id2", 50.0), "action_undo_type"))),
+                SagaStateTransition.SagaActionStateChanged.of(
+                        SagaId.random(),
+                        ActionId.random(),
+                        ActionStatus.Completed,
+                        Collections.emptyList(),
+                        Optional.of(UndoCommand.of(new TransferFunds("id1", "id2", 50.0), "action_undo_type")))));
 
         testTransition(original);
     }

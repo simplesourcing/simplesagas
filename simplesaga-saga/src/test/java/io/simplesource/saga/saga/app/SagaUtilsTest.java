@@ -294,7 +294,7 @@ class SagaUtilsTest {
                         .command(ActionCommand.of(CommandId.random(), new CreateAccount("id3", "username3"), "action_type"))
                         .build())
                 .build();
-        SagaStateTransition transition = SagaStateTransition.SagaActionStatusChanged.of(sagaId, action1, ActionStatus.Completed, Collections.emptyList());
+        SagaStateTransition transition = SagaStateTransition.SagaActionStateChanged.of(sagaId, action1, ActionStatus.Completed, Collections.emptyList(), Optional.empty());
         Saga<SpecificRecord> result = SagaUtils.applyTransition(transition, saga);
         assertThat(result.status).isEqualTo(SagaStatus.InProgress);
         assertThat(result.actions.get(action1).status).isEqualTo(ActionStatus.Completed);
@@ -329,7 +329,7 @@ class SagaUtilsTest {
                         .undoCommand(ActionCommand.of(CommandId.random(), new AddFunds("id3", -10.0), "action_type"))
                         .build())
                 .build();
-        SagaStateTransition transition = SagaStateTransition.SagaActionStatusChanged.of(sagaId, action1, ActionStatus.Completed, Collections.emptyList());
+        SagaStateTransition transition = SagaStateTransition.SagaActionStateChanged.of(sagaId, action1, ActionStatus.Completed, Collections.emptyList(), Optional.empty());
         Saga<SpecificRecord> result = SagaUtils.applyTransition(transition, saga);
         assertThat(result.status).isEqualTo(SagaStatus.InFailure);
         assertThat(result.actions.get(action1).status).isEqualTo(ActionStatus.Undone);
@@ -364,7 +364,7 @@ class SagaUtilsTest {
                         .undoCommand(ActionCommand.of(CommandId.random(), new AddFunds("id3", -10.0), "action_type"))
                         .build())
                 .build();
-        SagaStateTransition transition = SagaStateTransition.SagaActionStatusChanged.of(sagaId, action1, ActionStatus.Failed, Collections.emptyList());
+        SagaStateTransition transition = SagaStateTransition.SagaActionStateChanged.of(sagaId, action1, ActionStatus.Failed, Collections.emptyList(), Optional.empty());
         Saga<SpecificRecord> result = SagaUtils.applyTransition(transition, saga);
         assertThat(result.status).isEqualTo(SagaStatus.InFailure);
         assertThat(result.actions.get(action1).status).isEqualTo(ActionStatus.UndoFailed);
@@ -426,9 +426,9 @@ class SagaUtilsTest {
                         .command(ActionCommand.of(CommandId.random(), new CreateAccount("id3", "username3"), "action_type"))
                         .build())
                 .build();
-        List<SagaStateTransition.SagaActionStatusChanged> transitions = Stream.of(
-                SagaStateTransition.SagaActionStatusChanged.of(sagaId, action1, ActionStatus.Completed, Collections.emptyList()),
-                SagaStateTransition.SagaActionStatusChanged.of(sagaId, action3, ActionStatus.Failed, Collections.emptyList())
+        List<SagaStateTransition.SagaActionStateChanged> transitions = Stream.of(
+                SagaStateTransition.SagaActionStateChanged.of(sagaId, action1, ActionStatus.Completed, Collections.emptyList(), Optional.empty()),
+                SagaStateTransition.SagaActionStateChanged.of(sagaId, action3, ActionStatus.Failed, Collections.emptyList(), Optional.empty())
         ).collect(Collectors.toList());
         SagaStateTransition transition = SagaStateTransition.TransitionList.of(transitions);
         Saga<SpecificRecord> result = SagaUtils.applyTransition(transition, saga);

@@ -9,15 +9,12 @@ import io.simplesource.saga.model.messages.*;
 import io.simplesource.saga.model.saga.*;
 import io.simplesource.saga.model.serdes.SagaSerdes;
 import lombok.Value;
-import org.apache.kafka.common.utils.Bytes;
 import org.apache.kafka.streams.kstream.*;
-import org.apache.kafka.streams.state.KeyValueStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 final public class SagaStream {
     private static Logger logger = LoggerFactory.getLogger(SagaStream.class);
@@ -180,8 +177,8 @@ final public class SagaStream {
         KStream<SagaId, SagaStateTransition> stateUpdateNewActions = nextActionsListStream
                 .filter((k, actions) -> !actions.isEmpty())
                 .<SagaStateTransition>mapValues((sagaId, actions) -> {
-                    List<SagaStateTransition.SagaActionStatusChanged> transitions = actions.stream().map(action ->
-                            SagaStateTransition.SagaActionStatusChanged.of(sagaId, action.actionId, action.status, Collections.emptyList())
+                    List<SagaStateTransition.SagaActionStateChanged> transitions = actions.stream().map(action ->
+                            SagaStateTransition.SagaActionStateChanged.of(sagaId, action.actionId, action.status, Collections.emptyList(), Optional.empty())
                     ).collect(Collectors.toList());
                     return SagaStateTransition.TransitionList.of(transitions);
                 })
@@ -207,7 +204,7 @@ final public class SagaStream {
             Tuple2<ActionStatus, List<SagaError>> se = response.result.fold(
                     errors -> Tuple2.of(ActionStatus.Failed, errors.toList()), // TODO: FIX this
                     r -> Tuple2.of(ActionStatus.Completed, Collections.emptyList()));
-            return SagaStateTransition.SagaActionStatusChanged.of(sagaId, response.actionId, se.v1(), se.v2());
+            return SagaStateTransition.SagaActionStateChanged.of(sagaId, response.actionId, se.v1(), se.v2(), Optional.empty());
         }).peek(logValues("stateTransitionsActionResponse"));
     }
 }

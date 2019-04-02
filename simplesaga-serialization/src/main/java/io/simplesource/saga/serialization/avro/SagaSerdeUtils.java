@@ -8,6 +8,7 @@ import io.simplesource.saga.model.messages.UndoCommand;
 import io.simplesource.saga.model.saga.SagaError;
 import io.simplesource.saga.serialization.avro.generated.AvroActionCommand;
 import io.simplesource.saga.serialization.avro.generated.AvroActionUndoCommand;
+import io.simplesource.saga.serialization.avro.generated.AvroActionUndoCommandOption;
 import io.simplesource.saga.serialization.avro.generated.AvroSagaError;
 import org.apache.avro.generic.GenericArray;
 import org.apache.kafka.common.serialization.Serde;
@@ -15,6 +16,7 @@ import org.apache.kafka.common.serialization.Serde;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -103,6 +105,15 @@ public class SagaSerdeUtils {
                 .setCommand(serializedPayload)
                 .setActionType(ac.actionType)
                 .build();
+    }
+
+    static <A> Optional<UndoCommand<A>> optionalActionUndoCommandFromAvro(Serde<A> payloadSerde, String payloadTopic, AvroActionUndoCommandOption aucOption) {
+        AvroActionUndoCommand undoCommandOpt = aucOption.getUndoCommand();
+        return Optional.ofNullable(SagaSerdeUtils.actionUndoCommandFromAvro(payloadSerde, payloadTopic, undoCommandOpt));
+    }
+
+    static <A> AvroActionUndoCommandOption optionalActionUndoCommandFromAvro(Serde<A> payloadSerde, String payloadTopic, Optional<UndoCommand<A>> optUac) {
+        return new AvroActionUndoCommandOption(optUac.map(uc -> SagaSerdeUtils.actionUndoCommandToAvro(payloadSerde, payloadTopic, uc)).orElse(null));
     }
 
     static <A> ActionCommand<A> actionCommandFromAvro(Serde<A> payloadSerde, String payloadTopic, AvroActionCommand ac) {

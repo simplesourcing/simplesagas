@@ -65,11 +65,12 @@ protocol SagaSchemas {
     AvroSaga sagaState;
   }
 
-  record AvroSagaTransitionActionStatusChange {
+  record AvroSagaTransitionActionStateChange {
     string sagaId;
     string actionId;
     string actionStatus;
     union { array<AvroSagaError>, null } actionErrors;
+    union { AvroActionUndoCommand, null } undoCommand;
   }
 
   record AvroSagaTransitionSagaStatusChange {
@@ -79,13 +80,13 @@ protocol SagaSchemas {
   }
 
   record AvroSagaTransitionList {
-    array<AvroSagaTransitionActionStatusChange> actionChanges;
+    array<AvroSagaTransitionActionStateChange> actionChanges;
   }
 
   record AvroSagaTransition {
     union {
       AvroSagaTransitionInitial,
-      AvroSagaTransitionActionStatusChange,
+      AvroSagaTransitionActionStateChange,
       AvroSagaTransitionSagaStatusChange,
       AvroSagaTransitionList
     } transition;
