@@ -136,7 +136,7 @@ final class SagaUtils {
                     }
 
                     Optional<ActionCommand<A>> newUndoCommand = s.status == SagaStatus.InFailure ? Optional.empty() :
-                            actionStateChanged.undoCommand.map(uc -> ActionCommand.of(CommandId.random(), uc.command, uc.actionType));
+                            actionStateChanged.undoCommand.map(uc -> ActionCommand.of(uc.command, uc.actionType));
                     // This mess can replace by 'newUndoCommand.or(oa.undoCommand)' in Java 9+.
                     Optional<ActionCommand<A>> undoCmd = Optional.ofNullable(newUndoCommand.orElse(oa.undoCommand.orElse(null)));
 

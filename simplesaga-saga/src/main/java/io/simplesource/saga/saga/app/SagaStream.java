@@ -7,6 +7,7 @@ import io.simplesource.kafka.internal.util.Tuple2;
 import io.simplesource.saga.model.action.ActionStatus;
 import io.simplesource.saga.model.messages.*;
 import io.simplesource.saga.model.saga.*;
+import io.simplesource.saga.model.saga.SagaError.Reason;
 import io.simplesource.saga.model.serdes.SagaSerdes;
 import lombok.Value;
 import org.apache.kafka.streams.kstream.*;
@@ -81,7 +82,7 @@ final public class SagaStream {
         KStream<SagaId, Tuple2<SagaRequest<A>, List<SagaError>>> y = sagaRequestStream.mapValues((id, request) -> {
             List<SagaError> errors = request.initialState.actions.values().stream().map(action -> {
                 String at = action.command.actionType.toLowerCase();
-                return !actionTypes.contains(at) ? SagaError.of(SagaError.Reason.InvalidSaga, String.format("Unknown action type '%s'", at)) : null;
+                return !actionTypes.contains(at) ? SagaError.of(Reason.InvalidSaga, String.format("Unknown action type '%s'", at)) : null;
             }).filter(Objects::nonNull).collect(Collectors.toList());
             return Tuple2.of(request, errors);
         });
@@ -137,7 +138,7 @@ final public class SagaStream {
                                 .filter(action -> action.status == ActionStatus.Failed && !action.error.isEmpty())
                                 .flatMap(action -> action.error.stream())
                                 .collect(Collectors.toList());
-
+                        
                         return StatusWithError.of(state.sequence, errors);
                     }
                     return Optional.<StatusWithError>empty();

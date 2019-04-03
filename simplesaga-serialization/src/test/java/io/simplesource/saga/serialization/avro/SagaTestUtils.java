@@ -23,13 +23,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class SagaTestUtils {
 
     static Saga<SpecificRecord> getTestSaga() {
-        SagaDsl.SagaBuilder<SpecificRecord> builder = SagaDsl.SagaBuilder.create();
+        SagaDsl.SagaBuilder<SpecificRecord> builder = SagaDsl.createBuilder();
 
         Function<SpecificRecord, SagaDsl.SubSaga<SpecificRecord>> addAction = command ->
-                builder.addAction(
-                        ActionId.random(),
-                        "actionType",
-                        command);
+                builder.addAction("actionType", command);
 
         BiFunction<SpecificRecord, SpecificRecord, SagaDsl.SubSaga<SpecificRecord>> addActionWithUndo = (command, undo) ->
                 builder.addAction(

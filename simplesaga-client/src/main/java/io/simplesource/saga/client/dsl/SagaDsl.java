@@ -51,6 +51,10 @@ public final class SagaDsl {
         }
     }
 
+    public static <A> SagaBuilder<A> createBuilder() {
+        return SagaBuilder.create();
+    }
+
     public static <A> SubSaga<A> inParallel(SubSaga<A>... subSagas) {
 
         return inParallel(Lists.of(subSagas));
@@ -103,17 +107,28 @@ public final class SagaDsl {
             return new SubSaga<>(actionIdList, actionIdList, Optional.of(this));
         }
 
+        public SubSaga<A> addAction(String actionType,
+                                    A actionCommand) {
+            return addAction(ActionId.random(), ActionCommand.of(actionCommand, actionType), Optional.empty());
+        }
+
+        public SubSaga<A> addAction(String actionType,
+                                    A actionCommand,
+                                    A undoActionCommand) {
+            return addAction(ActionId.random(), ActionCommand.of(actionCommand, actionType), Optional.of(ActionCommand.of(undoActionCommand, actionType)));
+        }
+
         public SubSaga<A> addAction(ActionId actionId,
                                     String actionType,
                                     A actionCommand) {
-            return addAction(actionId, ActionCommand.of(CommandId.random(), actionCommand, actionType), Optional.empty());
+            return addAction(actionId, ActionCommand.of(actionCommand, actionType), Optional.empty());
         }
 
         public SubSaga<A> addAction(ActionId actionId,
                                     String actionType,
                                     A actionCommand,
                                     A undoActionCommand) {
-            return addAction(actionId, ActionCommand.of(CommandId.random(), actionCommand, actionType), Optional.of(ActionCommand.of(CommandId.random(), undoActionCommand, actionType)));
+            return addAction(actionId, ActionCommand.of(actionCommand, actionType), Optional.of(ActionCommand.of(undoActionCommand, actionType)));
         }
 
         public Result<SagaError, Saga<A>> build() {

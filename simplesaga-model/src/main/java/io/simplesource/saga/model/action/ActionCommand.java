@@ -8,5 +8,9 @@ public class ActionCommand<A> {
     public final CommandId commandId;
     public final A command;
     public final String actionType;
+
+    public static <A> ActionCommand<A> of(A command, String actionType) {
+        return new ActionCommand<>(CommandId.random(), command, actionType);
+    }
 }
 
