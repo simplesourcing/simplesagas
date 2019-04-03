@@ -1,11 +1,14 @@
 package io.simplesource.saga.saga.app;
 
 
+import io.simplesource.api.CommandId;
 import io.simplesource.data.Sequence;
+import io.simplesource.saga.model.action.ActionCommand;
 import io.simplesource.saga.model.action.ActionId;
 import io.simplesource.saga.model.action.ActionStatus;
 import io.simplesource.saga.model.action.SagaAction;
 import io.simplesource.saga.model.messages.SagaStateTransition;
+import io.simplesource.saga.model.messages.UndoCommand;
 import io.simplesource.saga.model.saga.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -114,42 +117,46 @@ final class SagaUtils {
         return Collections.emptyList();
     }
 
-    static <A> Saga<A> applyTransition(SagaStateTransition t, Saga<A> s) {
+    static <A> Saga<A> applyTransition(SagaStateTransition<A> t, Saga<A> s) {
         return t.cata(
                 setInitialState -> {
-                    Saga<A> i = ((SagaStateTransition.SetInitialState<A>) setInitialState).sagaState;
+                    Saga<A> i = setInitialState.sagaState;
                     return Saga.of(i.sagaId, i.actions, SagaStatus.InProgress, Sequence.first());
                 },
-
-                sagaActionStatusChanged -> {
-                    SagaAction<A> oa = s.actions.getOrDefault(sagaActionStatusChanged.actionId, null);
+                actionStateChanged -> {
+                    SagaAction<A> oa = s.actions.getOrDefault(actionStateChanged.actionId, null);
                     if (oa == null) {
-                        logger.error("SagaAction with ID {} could not be found", sagaActionStatusChanged.actionId);
+                        logger.error("SagaAction with ID {} could not be found", actionStateChanged.actionId);
                         return s;
                     }
-                    ActionStatus newStatus =  sagaActionStatusChanged.actionStatus;
+                    ActionStatus newStatus =  actionStateChanged.actionStatus;
                     if (oa.status == ActionStatus.InUndo) {
-                        if (sagaActionStatusChanged.actionStatus == ActionStatus.Completed) newStatus = ActionStatus.Undone;
-                        else if (sagaActionStatusChanged.actionStatus == ActionStatus.Failed) newStatus = ActionStatus.UndoFailed;
+                        if (actionStateChanged.actionStatus == ActionStatus.Completed) newStatus = ActionStatus.Undone;
+                        else if (actionStateChanged.actionStatus == ActionStatus.Failed) newStatus = ActionStatus.UndoFailed;
                     }
+
+                    Optional<ActionCommand<A>> newUndoCommand = s.status == SagaStatus.InFailure ? Optional.empty() :
+                            actionStateChanged.undoCommand.map(uc -> ActionCommand.of(uc.command, uc.actionType));
+                    // This mess can replace by 'newUndoCommand.or(oa.undoCommand)' in Java 9+.
+                    Optional<ActionCommand<A>> undoCmd = Optional.ofNullable(newUndoCommand.orElse(oa.undoCommand.orElse(null)));
+
                     SagaAction<A> action =
-                            SagaAction.of(oa.actionId, oa.command, oa.undoCommand, oa.dependencies, newStatus, sagaActionStatusChanged.actionErrors);
+                            SagaAction.of(oa.actionId, oa.command, undoCmd, oa.dependencies, newStatus, actionStateChanged.actionErrors);
 
                     // TODO: add a MapUtils updated
                     Map<ActionId, SagaAction<A>> actionMap = new HashMap<>();
-                    s.actions.forEach((k, v) -> actionMap.put(k, k.equals(sagaActionStatusChanged.actionId) ? action : v));
+                    s.actions.forEach((k, v) -> actionMap.put(k, k.equals(actionStateChanged.actionId) ? action : v));
                     return s.updated(actionMap, s.status, s.sagaError);
                 },
 
                 sagaStatusChanged -> {
                     // TODO: add saga errors as a separate error type
-                    return s.updated(sagaStatusChanged.sagaStatus,
-                            sagaStatusChanged.sagaErrors);
+                    return s.updated(sagaStatusChanged.sagaStatus, sagaStatusChanged.sagaErrors);
                 },
 
                 transitionList -> {
                     Saga<A> sNew = s;
-                    for (SagaStateTransition change: transitionList.actions) {
+                    for (SagaStateTransition<A> change: transitionList.actions) {
                         sNew = applyTransition(change, sNew);
                     }
                     return sNew;

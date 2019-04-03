@@ -82,16 +82,13 @@ public class AvroActionSerdes<A> implements ActionSerdes<A> {
                         .setActionId(r.actionId.toString())
                         .setCommandId(r.commandId.id.toString())
                         .setResult(r.result.fold(SagaSerdeUtils::sagaErrorListToAvro,
-                                optUac -> new AvroActionUndoCommandOption(optUac.map(uc -> SagaSerdeUtils.actionUndoCommandToAvro(payloadSerde, topic, uc)).orElse(null))))
+                                optUac -> SagaSerdeUtils.optionalActionUndoCommandFromAvro(payloadSerde, topic, optUac)))
                         .build(),
                 (topic, ar) -> ActionResponse.of(
                         SagaId.fromString(ar.getSagaId()),
                         ActionId.fromString(ar.getActionId()),
                         CommandId.of(UUID.fromString(ar.getCommandId())),
                         SagaSerdeUtils.<AvroActionUndoCommandOption, Optional<UndoCommand<A>>>sagaResultFromAvro(ar.getResult(),
-                                aucOption -> {
-                                    AvroActionUndoCommand undoCommandOpt = aucOption.getUndoCommand();
-                                    return Optional.ofNullable(SagaSerdeUtils.actionUndoCommandFromAvro(payloadSerde, topic, undoCommandOpt));
-                                })));
+                                aucOption -> SagaSerdeUtils.optionalActionUndoCommandFromAvro(payloadSerde, topic, aucOption))));
     }
 }

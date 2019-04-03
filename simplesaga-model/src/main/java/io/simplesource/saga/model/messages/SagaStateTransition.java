@@ -9,52 +9,54 @@ import io.simplesource.saga.model.saga.SagaStatus;
 import lombok.Value;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 
-public interface SagaStateTransition {
+public interface SagaStateTransition<A> {
 
     @Value(staticConstructor = "of")
-    final class SetInitialState<A> implements SagaStateTransition {
+    final class SetInitialState<A> implements SagaStateTransition<A> {
         public final Saga<A> sagaState;
 
         @Override
-        public <A> A cata(Function<SetInitialState<?>, A> f1, Function<SagaActionStatusChanged, A> f2, Function<SagaStatusChanged, A> f3, Function<TransitionList, A> f4) {
+        public <B> B cata(Function<SetInitialState<A>, B> f1, Function<SagaActionStateChanged<A>, B> f2, Function<SagaStatusChanged<A>, B> f3, Function<TransitionList<A>, B> f4) {
             return f1.apply(this);
         }
     }
 
     @Value(staticConstructor = "of")
-    final class SagaActionStatusChanged implements SagaStateTransition {
+    final class SagaActionStateChanged<A> implements SagaStateTransition<A> {
         public final SagaId sagaId;
         public final ActionId actionId;
         public final ActionStatus actionStatus;
         public final List<SagaError> actionErrors;
+        public final Optional<UndoCommand<A>> undoCommand;
 
         @Override
-        public <A> A cata(Function<SetInitialState<?>, A> f1, Function<SagaActionStatusChanged, A> f2, Function<SagaStatusChanged, A> f3, Function<TransitionList, A> f4) {
+        public <B> B cata(Function<SetInitialState<A>, B> f1, Function<SagaActionStateChanged<A>, B> f2, Function<SagaStatusChanged<A>, B> f3, Function<TransitionList<A>, B> f4) {
             return f2.apply(this);
         }
     }
 
     @Value(staticConstructor = "of")
-    final class SagaStatusChanged implements SagaStateTransition {
+    final class SagaStatusChanged<A> implements SagaStateTransition<A> {
         public final SagaId sagaId;
         public final SagaStatus sagaStatus;
         public final List<SagaError> sagaErrors;
 
 
         @Override
-        public <A> A cata(Function<SetInitialState<?>, A> f1, Function<SagaActionStatusChanged, A> f2, Function<SagaStatusChanged, A> f3, Function<TransitionList, A> f4) {
+        public <B> B cata(Function<SetInitialState<A>, B> f1, Function<SagaActionStateChanged<A>, B> f2, Function<SagaStatusChanged<A>, B> f3, Function<TransitionList<A>, B> f4) {
             return f3.apply(this);
         }
     }
 
     @Value(staticConstructor = "of")
-    final class TransitionList implements SagaStateTransition {
-        public final List<SagaActionStatusChanged> actions;
+    final class TransitionList<A> implements SagaStateTransition<A> {
+        public final List<SagaActionStateChanged<A>> actions;
 
         @Override
-        public <A> A cata(Function<SetInitialState<?>, A> f1, Function<SagaActionStatusChanged, A> f2, Function<SagaStatusChanged, A> f3, Function<TransitionList, A> f4) {
+        public <B> B cata(Function<SetInitialState<A>, B> f1, Function<SagaActionStateChanged<A>, B> f2, Function<SagaStatusChanged<A>, B> f3, Function<TransitionList<A>, B> f4) {
             return f4.apply(this);
         }
     }
@@ -63,9 +65,9 @@ public interface SagaStateTransition {
      * Catamorphism over SagaStateTransition
      */
     <B> B cata(
-            Function<SetInitialState<?>, B> f1,
-            Function<SagaActionStatusChanged, B> f2,
-            Function<SagaStatusChanged, B> f3,
-            Function<TransitionList, B> f4
+            Function<SetInitialState<A>, B> f1,
+            Function<SagaActionStateChanged<A>, B> f2,
+            Function<SagaStatusChanged<A>, B> f3,
+            Function<TransitionList<A>, B> f4
             );
 }

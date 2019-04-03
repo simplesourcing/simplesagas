@@ -23,6 +23,10 @@ public class Saga<A> {
         return new Saga<>(sagaId, actions, status, Collections.emptyList(), sequence);
     }
 
+    public static <A> Saga<A> of(Map<ActionId, SagaAction<A>> actions) {
+        return new Saga<>(SagaId.random(), actions, SagaStatus.NotStarted, Collections.emptyList(), Sequence.first());
+    }
+
     public Saga<A> updated(SagaStatus status) {
         return updated(status, this.sagaError);
     }

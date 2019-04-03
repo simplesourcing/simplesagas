@@ -214,7 +214,7 @@ class EventSourcingStreamTests {
         acc.actionRequestPublisher.publish(actionRequest.sagaId, actionRequest);
         acc.commandRequestVerifier.drainAll();
 
-        CommandResponse commandResponse = new CommandResponse<>(commandId, accountCommand.getId(), Sequence.position(201L), Result.success(Sequence.position(202L)));
+        CommandResponse<AccountId> commandResponse = new CommandResponse<>(commandId, accountCommand.getId(), Sequence.position(201L), Result.success(Sequence.position(202L)));
         acc.commandResponsePublisher.publish(new AccountId(createAccount.getId()), commandResponse);
 
         acc.actionResponseVerifier.verifySingle((sagaId, actionResponse) -> {
