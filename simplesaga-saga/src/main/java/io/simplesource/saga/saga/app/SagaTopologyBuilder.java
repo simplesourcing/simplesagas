@@ -21,7 +21,7 @@ public class SagaTopologyBuilder {
 
         KStream<SagaId, SagaRequest<A>> sagaRequest = SagaConsumer.sagaRequest(sagaSpec, sagaTopicNamer, builder);
         KStream<SagaId, Saga<A>> sagaState = SagaConsumer.state(sagaSpec, sagaTopicNamer, builder);
-        KStream<SagaId, SagaStateTransition> sagaStateTransition = SagaConsumer.stateTransition(sagaSpec, sagaTopicNamer, builder);
+        KStream<SagaId, SagaStateTransition<A>> sagaStateTransition = SagaConsumer.stateTransition(sagaSpec, sagaTopicNamer, builder);
 
         KStream<SagaId, ActionResponse<A>> actionResponse = SagaConsumer.actionResponse(
                 sagaContext.aSpec,

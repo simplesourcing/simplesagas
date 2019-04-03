@@ -8,5 +8,5 @@ import org.apache.kafka.common.serialization.Serde;
 public interface SagaSerdes<A> extends SagaClientSerdes<A> {
     Serde<SagaId> sagaId();
     Serde<Saga<A>> state();
-    Serde<SagaStateTransition> transition();
+    Serde<SagaStateTransition<A>> transition();
 }

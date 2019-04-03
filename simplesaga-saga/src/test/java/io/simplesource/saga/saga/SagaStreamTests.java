@@ -58,7 +58,7 @@ class SagaStreamTests {
         // verifiers
         final RecordVerifier<SagaId, ActionRequest<SpecificRecord>> accountActionRequestVerifier;
         final RecordVerifier<SagaId, ActionRequest<SpecificRecord>> userActionRequestVerifier;
-        final RecordVerifier<SagaId, SagaStateTransition> sagaStateTransitionVerifier;
+        final RecordVerifier<SagaId, SagaStateTransition<SpecificRecord>> sagaStateTransitionVerifier;
         final RecordVerifier<SagaId, Saga<SpecificRecord>> sagaStateVerifier;
         final RecordVerifier<SagaId, SagaResponse> sagaResponseVerifier;
 
@@ -313,7 +313,7 @@ class SagaStreamTests {
                 assertThat(s.actions).containsKeys(createAccountId, addFundsId1);
             } else if (i == 1) {
                 assertThat(stateTransition).isInstanceOf(SagaStateTransition.TransitionList.class);
-                SagaStateTransition.TransitionList transitionList = ((SagaStateTransition.TransitionList) stateTransition);
+                SagaStateTransition.TransitionList<SpecificRecord> transitionList = ((SagaStateTransition.TransitionList) stateTransition);
                 assertThat(transitionList.actions.size()).isEqualTo(1);
                 assertThat(transitionList.actions.get(0).actionStatus).isEqualTo(ActionStatus.InProgress);
             }
@@ -346,7 +346,7 @@ class SagaStreamTests {
                 assertThat(c.actionStatus).isEqualTo(ActionStatus.Completed);
             } else if (i == 1) {
                 assertThat(stateTransition).isInstanceOf(SagaStateTransition.TransitionList.class);
-                SagaStateTransition.TransitionList transitionList = ((SagaStateTransition.TransitionList) stateTransition);
+                SagaStateTransition.TransitionList<SpecificRecord> transitionList = ((SagaStateTransition.TransitionList) stateTransition);
                 assertThat(transitionList.actions.size()).isEqualTo(1);
                 assertThat(transitionList.actions.get(0).actionStatus).isEqualTo(ActionStatus.InProgress);
             }
@@ -505,7 +505,7 @@ class SagaStreamTests {
                 assertThat(c.sagaStatus).isEqualTo(SagaStatus.InFailure);
             } else if (i == 2) {
                 assertThat(stateTransition).isInstanceOf(SagaStateTransition.TransitionList.class);
-                SagaStateTransition.TransitionList transitionList = ((SagaStateTransition.TransitionList) stateTransition);
+                SagaStateTransition.TransitionList<SpecificRecord> transitionList = ((SagaStateTransition.TransitionList) stateTransition);
                 assertThat(transitionList.actions.size()).isEqualTo(1);
                 assertThat(transitionList.actions.get(0).actionStatus).isEqualTo(ActionStatus.UndoBypassed);
             } else if (i == 3) {
@@ -582,7 +582,7 @@ class SagaStreamTests {
                 assertThat(c.sagaStatus).isEqualTo(SagaStatus.InFailure);
             } else if (i == 2) {
                 assertThat(stateTransition).isInstanceOf(SagaStateTransition.TransitionList.class);
-                SagaStateTransition.TransitionList transitionList = ((SagaStateTransition.TransitionList) stateTransition);
+                SagaStateTransition.TransitionList<SpecificRecord> transitionList = ((SagaStateTransition.TransitionList) stateTransition);
                 assertThat(transitionList.actions.size()).isEqualTo(1);
                 assertThat(transitionList.actions.get(0).actionStatus).isEqualTo(ActionStatus.InUndo);
             }

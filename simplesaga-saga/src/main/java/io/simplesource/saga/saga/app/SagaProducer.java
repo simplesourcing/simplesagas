@@ -25,7 +25,7 @@ final class SagaProducer {
                 Produced.with(ctx.sSerdes.sagaId(), ctx.sSerdes.state()));
     }
 
-    static <A> void publishSagaStateTransitions(SagaContext<A> ctx, KStream<SagaId, SagaStateTransition> transitions) {
+    static <A> void publishSagaStateTransitions(SagaContext<A> ctx, KStream<SagaId, SagaStateTransition<A>> transitions) {
         transitions.to(ctx.sagaTopicNamer.apply(TopicTypes.SagaTopic.SAGA_STATE_TRANSITION),
                 Produced.with(ctx.sSerdes.sagaId(), ctx.sSerdes.transition()));
     }

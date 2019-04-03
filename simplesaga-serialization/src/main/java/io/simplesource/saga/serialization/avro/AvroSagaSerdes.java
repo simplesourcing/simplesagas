@@ -39,12 +39,12 @@ public class AvroSagaSerdes<A> extends AvroSagaClientSerdes<A> implements SagaSe
     }
 
     @Override
-    public Serde<SagaStateTransition> transition() {
+    public Serde<SagaStateTransition<A>> transition() {
         return SerdeUtils.iMap(avroSagaTransitionSerde, (topic, at) -> {
             Object transition = at.cata(
                     initial -> new AvroSagaTransitionInitial(sagaToAvro(topic, (Saga<A>)initial.sagaState)),
-                    ac -> actionStatusChangeToAvro((SagaStateTransition.SagaActionStateChanged<A>)ac, topic),
-                    sagaChange -> AvroSagaTransitionSagaStatusChange.newBuilder()
+                    ac -> actionStatusChangeToAvro(ac, topic),
+                    sagaChange -> AvroSagaTransitionSagaStatusChange.<A>newBuilder()
                             .setSagaId(sagaChange.sagaId.toString())
                             .setSagaStatus(sagaChange.sagaStatus.toString())
                             .setSagaErrors(SagaSerdeUtils.sagaErrorListToAvro(sagaChange.sagaErrors))
@@ -72,7 +72,7 @@ public class AvroSagaSerdes<A> extends AvroSagaClientSerdes<A> implements SagaSe
             }
             if (t instanceof AvroSagaTransitionList) {
                 AvroSagaTransitionList l = (AvroSagaTransitionList) t;
-                List<SagaStateTransition.SagaActionStateChanged> actions =
+                List<SagaStateTransition.SagaActionStateChanged<A>> actions =
                         l.getActionChanges().stream().map(ac -> actionStatusChangeFromAvro(ac, topic)).collect(Collectors.toList());
                 return SagaStateTransition.TransitionList.of(actions);
             }
@@ -93,7 +93,7 @@ public class AvroSagaSerdes<A> extends AvroSagaClientSerdes<A> implements SagaSe
                 .build();
     }
 
-    private SagaStateTransition.SagaActionStateChanged actionStatusChangeFromAvro(AvroSagaTransitionActionStateChange actionChange, String topic) {
+    private SagaStateTransition.SagaActionStateChanged<A> actionStatusChangeFromAvro(AvroSagaTransitionActionStateChange actionChange, String topic) {
         return SagaStateTransition.SagaActionStateChanged.of(
                 SagaId.fromString(actionChange.getSagaId()),
                 ActionId.fromString(actionChange.getActionId()),

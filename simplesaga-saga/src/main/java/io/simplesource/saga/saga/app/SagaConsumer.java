@@ -34,7 +34,7 @@ final class SagaConsumer {
                 Consumed.with(spec.serdes.sagaId(), spec.serdes.response()));
     }
 
-    static <A> KStream<SagaId, SagaStateTransition> stateTransition(SagaSpec<A> spec,
+    static <A> KStream<SagaId, SagaStateTransition<A>> stateTransition(SagaSpec<A> spec,
                                                                     TopicNamer sagaTopicNamer,
                                                                     StreamsBuilder builder) {
         return builder.stream(sagaTopicNamer.apply(TopicTypes.SagaTopic.SAGA_STATE_TRANSITION),

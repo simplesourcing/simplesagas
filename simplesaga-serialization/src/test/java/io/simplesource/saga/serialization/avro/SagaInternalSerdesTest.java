@@ -38,7 +38,7 @@ class SagaInternalSerdesTest {
         SagaTestUtils.validataSaga(deserialized, original);
     }
 
-    <A extends SagaStateTransition> A testTransition(SagaStateTransition transition) {
+    <B extends SagaStateTransition<SpecificRecord>> B testTransition(SagaStateTransition<SpecificRecord> transition) {
         SagaSerdes<SpecificRecord> serdes = AvroSerdes.Specific.sagaSerdes(SCHEMA_URL, true);
 
         byte[] serialized = serdes.transition().serializer().serialize(FAKE_TOPIC, transition);
@@ -47,7 +47,7 @@ class SagaInternalSerdesTest {
         String originalAsString = transition.toString();
         assertThat(deserialized.toString()).hasSameSizeAs(originalAsString);
 
-        A aDes = (A)deserialized;
+        B aDes = (B)deserialized;
         assertThat(aDes).isNotNull();
         return aDes;
     }
@@ -64,20 +64,20 @@ class SagaInternalSerdesTest {
 
     @Test
     void sagaTransitionActionStatusSuccessTest() {
-        SagaStateTransition.SagaActionStateChanged original = SagaStateTransition.SagaActionStateChanged.of(
+        SagaStateTransition.SagaActionStateChanged<SpecificRecord> original = SagaStateTransition.SagaActionStateChanged.of(
                 SagaId.random(),
                 ActionId.random(),
                 ActionStatus.Completed,
                 Collections.emptyList(),
                 Optional.empty());
 
-        SagaStateTransition.SagaActionStateChanged deserialized = testTransition(original);
+        SagaStateTransition.SagaActionStateChanged<SpecificRecord> deserialized = testTransition(original);
         assertThat(deserialized).isEqualToComparingFieldByField(original);
     }
 
     @Test
     void sagaTransitionActionStatusFailureTest() {
-        SagaStateTransition.SagaActionStateChanged original = SagaStateTransition.SagaActionStateChanged.of(
+        SagaStateTransition.SagaActionStateChanged<SpecificRecord> original = SagaStateTransition.SagaActionStateChanged.of(
                 SagaId.random(),
                 ActionId.random(),
                 ActionStatus.Failed,
@@ -94,20 +94,20 @@ class SagaInternalSerdesTest {
 
     @Test
     void sagaTransitionSagaStatusSuccessTest() {
-        SagaStateTransition.SagaStatusChanged original = SagaStateTransition.SagaStatusChanged.of(
+        SagaStateTransition.SagaStatusChanged<SpecificRecord> original = SagaStateTransition.SagaStatusChanged.of(
                 SagaId.random(),
                 SagaStatus.Completed,
                 Collections.emptyList());
 
         testTransition(original);
 
-        SagaStateTransition.SagaStatusChanged deserialized = testTransition(original);
+        SagaStateTransition.SagaStatusChanged<SpecificRecord> deserialized = testTransition(original);
         assertThat(deserialized).isEqualToComparingFieldByField(original);
     }
 
     @Test
     void sagaTransitionSagaStatusFailureTest() {
-        SagaStateTransition.SagaStatusChanged original = SagaStateTransition.SagaStatusChanged.of(
+        SagaStateTransition.SagaStatusChanged<SpecificRecord> original = SagaStateTransition.SagaStatusChanged.of(
                 SagaId.random(),
                 SagaStatus.Completed,
                 Lists.of(
@@ -116,13 +116,13 @@ class SagaInternalSerdesTest {
 
         testTransition(original);
 
-        SagaStateTransition.SagaStatusChanged deserialized = testTransition(original);
+        SagaStateTransition.SagaStatusChanged<SpecificRecord> deserialized = testTransition(original);
         assertThat(deserialized).isEqualToComparingFieldByField(original);
     }
 
     @Test
     void sagaTransitionTransitionListTest() {
-        SagaStateTransition.TransitionList original = SagaStateTransition.TransitionList.of(Lists.of(
+        SagaStateTransition.TransitionList<SpecificRecord> original = SagaStateTransition.TransitionList.of(Lists.of(
                 SagaStateTransition.SagaActionStateChanged.of(
                         SagaId.random(),
                         ActionId.random(),
@@ -143,7 +143,7 @@ class SagaInternalSerdesTest {
 
     @Test
     void sagaTransitionTransitionUndoActionTest() {
-        SagaStateTransition.TransitionList original = SagaStateTransition.TransitionList.of(Lists.of(
+        SagaStateTransition.TransitionList<SpecificRecord> original = SagaStateTransition.TransitionList.of(Lists.of(
                 SagaStateTransition.SagaActionStateChanged.of(
                         SagaId.random(),
                         ActionId.random(),

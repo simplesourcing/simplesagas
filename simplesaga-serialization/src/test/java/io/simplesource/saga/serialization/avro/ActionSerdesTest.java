@@ -93,18 +93,18 @@ class ActionSerdesTest {
         ActionSerdes<SpecificRecord> serdes = AvroSerdes.Specific.actionSerdes(SCHEMA_URL, true);
         ActionResponse<SpecificRecord> original = ActionResponse.of(SagaId.random(), ActionId.random(), CommandId.random(), Result.success(Optional.empty()));
         byte[] serialized = serdes.response().serializer().serialize(FAKE_TOPIC, original);
-        ActionResponse deserialized = serdes.response().deserializer().deserialize(FAKE_TOPIC, serialized);
+        ActionResponse<SpecificRecord> deserialized = serdes.response().deserializer().deserialize(FAKE_TOPIC, serialized);
         assertThat(deserialized).isEqualToIgnoringGivenFields(original, "result");
         assertThat(deserialized.result.isSuccess()).isTrue();
     }
 
     @Test
     void responseTestSuccessWithUndo() {
-        UndoCommand undoCommand = UndoCommand.of(new User("Albus", "Dumbledore", 1732), "action_type");
+        UndoCommand<SpecificRecord> undoCommand = UndoCommand.of(new User("Albus", "Dumbledore", 1732), "action_type");
         ActionSerdes<SpecificRecord> serdes = AvroSerdes.Specific.actionSerdes(SCHEMA_URL, true);
         ActionResponse<SpecificRecord> original = ActionResponse.of(SagaId.random(), ActionId.random(), CommandId.random(), Result.success(Optional.of(undoCommand)));
         byte[] serialized = serdes.response().serializer().serialize(FAKE_TOPIC, original);
-        ActionResponse deserialized = serdes.response().deserializer().deserialize(FAKE_TOPIC, serialized);
+        ActionResponse<SpecificRecord> deserialized = serdes.response().deserializer().deserialize(FAKE_TOPIC, serialized);
         assertThat(deserialized).isEqualToIgnoringGivenFields(original, "result");
         assertThat(deserialized.result.isSuccess()).isTrue();
         assertThat(deserialized.result.getOrElse(null)).isEqualTo(Optional.of(undoCommand));

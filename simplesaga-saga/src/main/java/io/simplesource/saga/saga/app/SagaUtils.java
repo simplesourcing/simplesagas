@@ -117,10 +117,10 @@ final class SagaUtils {
         return Collections.emptyList();
     }
 
-    static <A> Saga<A> applyTransition(SagaStateTransition t, Saga<A> s) {
+    static <A> Saga<A> applyTransition(SagaStateTransition<A> t, Saga<A> s) {
         return t.cata(
                 setInitialState -> {
-                    Saga<A> i = ((SagaStateTransition.SetInitialState<A>) setInitialState).sagaState;
+                    Saga<A> i = setInitialState.sagaState;
                     return Saga.of(i.sagaId, i.actions, SagaStatus.InProgress, Sequence.first());
                 },
                 actionStateChanged -> {
@@ -136,7 +136,7 @@ final class SagaUtils {
                     }
 
                     Optional<ActionCommand<A>> newUndoCommand = s.status == SagaStatus.InFailure ? Optional.empty() :
-                            actionStateChanged.undoCommand.map(uc -> ActionCommand.of(CommandId.random(), (A) uc.command, uc.actionType));
+                            actionStateChanged.undoCommand.map(uc -> ActionCommand.of(CommandId.random(), uc.command, uc.actionType));
                     // This mess can replace by 'newUndoCommand.or(oa.undoCommand)' in Java 9+.
                     Optional<ActionCommand<A>> undoCmd = Optional.ofNullable(newUndoCommand.orElse(oa.undoCommand.orElse(null)));
 
@@ -157,7 +157,7 @@ final class SagaUtils {
 
                 transitionList -> {
                     Saga<A> sNew = s;
-                    for (SagaStateTransition change: transitionList.actions) {
+                    for (SagaStateTransition<A> change: transitionList.actions) {
                         sNew = applyTransition(change, sNew);
                     }
                     return sNew;
