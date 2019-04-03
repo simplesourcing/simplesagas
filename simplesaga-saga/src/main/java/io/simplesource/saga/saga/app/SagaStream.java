@@ -204,7 +204,7 @@ final public class SagaStream {
             Tuple2<ActionStatus, List<SagaError>> se = response.result.fold(
                     errors -> Tuple2.of(ActionStatus.Failed, errors.toList()), // TODO: FIX this
                     r -> Tuple2.of(ActionStatus.Completed, Collections.emptyList()));
-            return SagaStateTransition.SagaActionStateChanged.of(sagaId, response.actionId, se.v1(), se.v2(), Optional.empty());
+            return SagaStateTransition.SagaActionStateChanged.of(sagaId, response.actionId, se.v1(), se.v2(), response.result.getOrElse(Optional.empty()));
         }).peek(logValues("stateTransitionsActionResponse"));
     }
 }

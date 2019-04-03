@@ -19,7 +19,7 @@ public interface SagaStateTransition {
         public final Saga<A> sagaState;
 
         @Override
-        public <A> A cata(Function<SetInitialState<?>, A> f1, Function<SagaActionStateChanged, A> f2, Function<SagaStatusChanged, A> f3, Function<TransitionList, A> f4) {
+        public <A> A cata(Function<SetInitialState<?>, A> f1, Function<SagaActionStateChanged<?>, A> f2, Function<SagaStatusChanged, A> f3, Function<TransitionList, A> f4) {
             return f1.apply(this);
         }
     }
@@ -33,7 +33,7 @@ public interface SagaStateTransition {
         public final Optional<UndoCommand<A>> undoCommand;
 
         @Override
-        public <A> A cata(Function<SetInitialState<?>, A> f1, Function<SagaActionStateChanged, A> f2, Function<SagaStatusChanged, A> f3, Function<TransitionList, A> f4) {
+        public <B> B cata(Function<SetInitialState<?>, B> f1, Function<SagaActionStateChanged<?>, B> f2, Function<SagaStatusChanged, B> f3, Function<TransitionList, B> f4) {
             return f2.apply(this);
         }
     }
@@ -46,7 +46,7 @@ public interface SagaStateTransition {
 
 
         @Override
-        public <A> A cata(Function<SetInitialState<?>, A> f1, Function<SagaActionStateChanged, A> f2, Function<SagaStatusChanged, A> f3, Function<TransitionList, A> f4) {
+        public <B> B cata(Function<SetInitialState<?>, B> f1, Function<SagaActionStateChanged<?>, B> f2, Function<SagaStatusChanged, B> f3, Function<TransitionList, B> f4) {
             return f3.apply(this);
         }
     }
@@ -56,7 +56,7 @@ public interface SagaStateTransition {
         public final List<SagaActionStateChanged> actions;
 
         @Override
-        public <A> A cata(Function<SetInitialState<?>, A> f1, Function<SagaActionStateChanged, A> f2, Function<SagaStatusChanged, A> f3, Function<TransitionList, A> f4) {
+        public <B> B cata(Function<SetInitialState<?>, B> f1, Function<SagaActionStateChanged<?>, B> f2, Function<SagaStatusChanged, B> f3, Function<TransitionList, B> f4) {
             return f4.apply(this);
         }
     }
@@ -66,7 +66,7 @@ public interface SagaStateTransition {
      */
     <B> B cata(
             Function<SetInitialState<?>, B> f1,
-            Function<SagaActionStateChanged, B> f2,
+            Function<SagaActionStateChanged<?>, B> f2,
             Function<SagaStatusChanged, B> f3,
             Function<TransitionList, B> f4
             );

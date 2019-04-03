@@ -43,7 +43,7 @@ public class AvroSagaSerdes<A> extends AvroSagaClientSerdes<A> implements SagaSe
         return SerdeUtils.iMap(avroSagaTransitionSerde, (topic, at) -> {
             Object transition = at.cata(
                     initial -> new AvroSagaTransitionInitial(sagaToAvro(topic, (Saga<A>)initial.sagaState)),
-                    ac -> actionStatusChangeToAvro(ac, topic),
+                    ac -> actionStatusChangeToAvro((SagaStateTransition.SagaActionStateChanged<A>)ac, topic),
                     sagaChange -> AvroSagaTransitionSagaStatusChange.newBuilder()
                             .setSagaId(sagaChange.sagaId.toString())
                             .setSagaStatus(sagaChange.sagaStatus.toString())
