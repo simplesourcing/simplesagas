@@ -8,5 +8,6 @@ public enum ActionStatus {
     InUndo,
     Undone,
     UndoBypassed,
-    UndoFailed
+    UndoFailed,
+    AwaitingRetry
 }

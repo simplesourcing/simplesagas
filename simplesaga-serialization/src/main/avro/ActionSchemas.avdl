@@ -46,6 +46,7 @@ protocol SagaSchemas {
     array<string> dependencies;
     string actionStatus;
     union { array<AvroSagaError>, null } actionErrors;
+    int retryCount;
   }
 
   record AvroSaga {

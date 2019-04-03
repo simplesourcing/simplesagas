@@ -16,4 +16,5 @@ public class SagaAction<A> {
     public final Set<ActionId> dependencies;
     public final ActionStatus status;
     public final List<SagaError> error;
+    public final int retryCount;
 }

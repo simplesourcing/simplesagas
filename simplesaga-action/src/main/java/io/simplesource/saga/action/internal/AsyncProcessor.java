@@ -4,10 +4,14 @@ import java.util.Properties;
 import java.util.function.Function;
 
 import io.simplesource.saga.action.async.AsyncContext;
+import io.simplesource.saga.model.messages.ActionRequest;
 import io.simplesource.saga.model.serdes.TopicSerdes;
 import io.simplesource.saga.action.async.AsyncSpec;
 import io.simplesource.saga.model.messages.ActionResponse;
 import io.simplesource.saga.model.saga.SagaId;
+import io.simplesource.saga.model.specs.ActionSpec;
+import io.simplesource.saga.shared.kafka.ConsumerRunner;
+import io.simplesource.saga.shared.topics.TopicTypes;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
@@ -15,7 +19,7 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serdes;
 
-final class AsyncTransform {
+final class AsyncProcessor {
     private static final boolean useTransactions = false;
 
     static <K, V> ProducerRecord<byte[], byte[]> toBytes(
@@ -28,9 +32,9 @@ final class AsyncTransform {
         return new ProducerRecord<>(topicName, kb, kv);
     }
 
-
-    static <A, D, K, O, R> AsyncPipe async(AsyncContext<A, D, K, O, R> asyncContext, Properties config) {
+    static <A, D, K, O, R> AsyncPipe apply(AsyncContext<A, D, K, O, R> asyncContext, Properties config) {
         AsyncSpec<A, D, K, O, R> asyncSpec = asyncContext.asyncSpec;
+        ActionSpec<A> actionSpec = asyncContext.actionSpec;
 
         Function<Properties, Properties> copyProperties = properties -> {
             Properties newProps = new Properties();
@@ -42,7 +46,7 @@ final class AsyncTransform {
         //consumerConfig.putAll(spec.properties)
         consumerConfig.setProperty(ConsumerConfig.GROUP_ID_CONFIG,
                 asyncSpec.groupId + "_async_consumer_" + asyncSpec.actionType);
-        // For now automatic - probably rather do this manually
+        // TODO: don't hard code this
         consumerConfig.setProperty(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "true");
         consumerConfig.setProperty(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG, "1000");
         consumerConfig.setProperty(ConsumerConfig.ISOLATION_LEVEL_CONFIG, "read_committed");
@@ -62,7 +66,13 @@ final class AsyncTransform {
         AsyncPublisher<SagaId, ActionResponse<A>> responsePublisher = new AsyncKafkaPublisher<>(producer, asyncContext.actionSpec.serdes.sagaId(), asyncContext.actionSpec.serdes.response());
         Function<TopicSerdes<K, R>, AsyncPublisher<K, R>> outputPublisher = serdes -> new AsyncKafkaPublisher<>(producer, serdes.key, serdes.value);
 
-        final AsyncConsumerRunner<A, D, K, O, R> runner = new AsyncConsumerRunner<>(asyncContext, consumerConfig, responsePublisher, outputPublisher, closed -> {
+        ConsumerRunner<SagaId, ActionRequest<A>> runner = new ConsumerRunner<>(
+                consumerConfig,
+                (sagaId, request) ->
+                        AsyncInvoker.processActionRequest(asyncContext, sagaId, request, responsePublisher, outputPublisher),
+                actionSpec.serdes.sagaId(),
+                actionSpec.serdes.request(),
+                asyncContext.actionTopicNamer.apply(TopicTypes.ActionTopic.ACTION_REQUEST_UNPROCESSED), closed -> {
             producer.flush();
             producer.close();
         });
@@ -70,5 +80,4 @@ final class AsyncTransform {
 
         return runner::close;
     }
-
 }

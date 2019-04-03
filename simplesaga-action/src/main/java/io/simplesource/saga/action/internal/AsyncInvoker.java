@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-final class AsyncActionProcessor {
+final class AsyncInvoker {
 
     @Value
     private static class ResultGeneration<A, K, R> {
@@ -36,7 +36,7 @@ final class AsyncActionProcessor {
         public final Optional<UndoCommand<A>> undoCommand;
     }
 
-    static <A, D, K, O, R> void processRecord(
+    static <A, D, K, O, R> void processActionRequest(
             AsyncContext<A, D, K, O, R> asyncContext,
             SagaId sagaId, ActionRequest<A> request,
             AsyncPublisher<SagaId, ActionResponse<A>> responsePublisher,

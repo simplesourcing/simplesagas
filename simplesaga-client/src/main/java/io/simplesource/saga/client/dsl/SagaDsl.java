@@ -97,7 +97,8 @@ public final class SagaDsl {
                     undoAction,
                     Collections.emptySet(),
                     ActionStatus.Pending,
-                    Collections.emptyList());
+                    Collections.emptyList(),
+                    0);
 
             if (actions.containsKey(actionId))
                 errors.add(String.format("Action Id already used %s", actionId));
@@ -140,7 +141,8 @@ public final class SagaDsl {
                             eAct.undoCommand,
                             dependencies.get(entry.getKey()),
                             eAct.status,
-                            Collections.emptyList());
+                            Collections.emptyList(),
+                            eAct.retryCount);
                 }).collect(Collectors.toMap(sa -> sa.actionId, sa -> sa));
                 return Result.success(Saga.of(newActions));
             } else {

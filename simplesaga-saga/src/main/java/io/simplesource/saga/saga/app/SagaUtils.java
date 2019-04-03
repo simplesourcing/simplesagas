@@ -141,7 +141,7 @@ final class SagaUtils {
                     Optional<ActionCommand<A>> undoCmd = Optional.ofNullable(newUndoCommand.orElse(oa.undoCommand.orElse(null)));
 
                     SagaAction<A> action =
-                            SagaAction.of(oa.actionId, oa.command, undoCmd, oa.dependencies, newStatus, actionStateChanged.actionErrors);
+                            SagaAction.of(oa.actionId, oa.command, undoCmd, oa.dependencies, newStatus, actionStateChanged.actionErrors, oa.retryCount);
 
                     // TODO: add a MapUtils updated
                     Map<ActionId, SagaAction<A>> actionMap = new HashMap<>();

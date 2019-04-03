@@ -17,7 +17,7 @@ final class AsyncKafkaPublisher<K, V> implements AsyncPublisher<K, V> {
 
     public void send(String topic, K key, V value) {
         ProducerRecord<K, V> outputRecord = new ProducerRecord<>(topic, key, value);
-        ProducerRecord<byte[], byte[]> byteRecord = AsyncTransform.toBytes(outputRecord, keySerdes, valueSerdes);
+        ProducerRecord<byte[], byte[]> byteRecord = AsyncProcessor.toBytes(outputRecord, keySerdes, valueSerdes);
         producer.send(byteRecord);
     }
 }

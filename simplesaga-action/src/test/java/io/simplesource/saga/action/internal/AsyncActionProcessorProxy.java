@@ -8,7 +8,7 @@ import io.simplesource.saga.model.saga.SagaId;
 
 import java.util.function.Function;
 
-// to avoid making AsyncActionProcessor public
+// to avoid making AsyncInvoker public
 public final class AsyncActionProcessorProxy {
 
     public static <A, D, K, O, R> void processRecord(
@@ -17,6 +17,6 @@ public final class AsyncActionProcessorProxy {
             ActionRequest<A> request,
             AsyncPublisher<SagaId, ActionResponse<A>> responsePublisher,
             Function<TopicSerdes<K, R>, AsyncPublisher<K, R>> outputPublisher) {
-        AsyncActionProcessor.processRecord(asyncContext, sagaId, request, responsePublisher, outputPublisher);
+        AsyncInvoker.processActionRequest(asyncContext, sagaId, request, responsePublisher, outputPublisher);
     }
 }

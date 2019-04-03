@@ -90,7 +90,7 @@ public class AvroSagaClientSerdes<A> implements SagaClientSerdes<A> {
                     Optional.ofNullable(SagaSerdeUtils.actionCommandFromAvro(payloadSerde, topic, aa.getUndoCommand())),
                     aa.getDependencies().stream().map(ActionId::fromString).collect(Collectors.toSet()),
                     ActionStatus.valueOf(aa.getActionStatus()),
-                    SagaSerdeUtils.sagaErrorListFromAvro(aa.getActionErrors()));
+                    SagaSerdeUtils.sagaErrorListFromAvro(aa.getActionErrors()), aa.getRetryCount());
             actions.put(actionId, action);
         });
 
@@ -121,6 +121,7 @@ public class AvroSagaClientSerdes<A> implements SagaClientSerdes<A> {
                             .stream()
                             .map(ActionId::toString)
                             .collect(Collectors.toList()))
+                    .setRetryCount(act.retryCount)
                     .build();
             avroActions.put(actionIdStr, avroSagaAction);
         });

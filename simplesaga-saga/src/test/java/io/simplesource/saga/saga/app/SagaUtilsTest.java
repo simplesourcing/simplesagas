@@ -478,7 +478,8 @@ class SagaUtilsTest {
                 Optional.empty(),
                 Collections.emptySet(),
                 status,
-                Collections.emptyList());
+                Collections.emptyList(),
+                0);
     }
 
     class SagaBuilder<A> {
@@ -541,7 +542,7 @@ class SagaUtilsTest {
         }
 
         public SagaAction<A> build() {
-            return SagaAction.of(actionId, command, undoCommand, dependencies, status, errors);
+            return SagaAction.of(actionId, command, undoCommand, dependencies, status, errors, 0);
         }
     }
 }
