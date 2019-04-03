@@ -88,7 +88,7 @@ class SagaInternalSerdesTest {
 
         testTransition(original);
 
-        SagaStateTransition.SagaActionStateChanged deserialized = testTransition(original);
+        SagaStateTransition.SagaActionStateChanged<SpecificRecord> deserialized = testTransition(original);
         assertThat(deserialized).isEqualToComparingFieldByField(original);
     }
 

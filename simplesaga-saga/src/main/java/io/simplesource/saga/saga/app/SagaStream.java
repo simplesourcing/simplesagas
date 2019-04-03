@@ -66,7 +66,7 @@ final public class SagaStream {
         SagaSerdes<A> sSerdes = ctx.sSerdes;
         return stateTransitionStream
                 .groupByKey(Grouped.with(sSerdes.sagaId(), sSerdes.transition()))
-                .aggregate(() -> Saga.of(SagaId.random(), new HashMap<>(), SagaStatus.NotStarted, Sequence.first()),
+                .aggregate(() -> Saga.of(new HashMap<>()),
                         (k, t, s) -> SagaUtils.applyTransition(t, s),
                         Materialized.with(sSerdes.sagaId(), sSerdes.state()))
                 .toStream();
@@ -138,7 +138,7 @@ final public class SagaStream {
                                 .filter(action -> action.status == ActionStatus.Failed && !action.error.isEmpty())
                                 .flatMap(action -> action.error.stream())
                                 .collect(Collectors.toList());
-                        
+
                         return StatusWithError.of(state.sequence, errors);
                     }
                     return Optional.<StatusWithError>empty();

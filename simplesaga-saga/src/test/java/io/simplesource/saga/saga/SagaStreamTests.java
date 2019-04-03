@@ -346,7 +346,7 @@ class SagaStreamTests {
         scc.sagaStateTransitionVerifier.verifyMultiple(2, (i, id, stateTransition) -> {
             if (i == 0) {
                 assertThat(stateTransition).isInstanceOf(SagaStateTransition.SagaActionStateChanged.class);
-                SagaStateTransition.SagaActionStateChanged c = ((SagaStateTransition.SagaActionStateChanged) stateTransition);
+                SagaStateTransition.SagaActionStateChanged<?> c = ((SagaStateTransition.SagaActionStateChanged) stateTransition);
                 assertThat(c.actionId).isEqualTo(createAccountId);
                 assertThat(c.actionStatus).isEqualTo(ActionStatus.Completed);
             } else if (i == 1) {
@@ -400,7 +400,7 @@ class SagaStreamTests {
                 assertThat(c.undoCommand).isEqualTo(Optional.of(dynamicUndo));
             } else if (i == 1) {
                 assertThat(stateTransition).isInstanceOf(SagaStateTransition.SagaStatusChanged.class);
-                SagaStateTransition.SagaStatusChanged c = ((SagaStateTransition.SagaStatusChanged) stateTransition);
+                SagaStateTransition.SagaStatusChanged<?> c = ((SagaStateTransition.SagaStatusChanged) stateTransition);
                 assertThat(c.sagaId).isEqualTo(saga.sagaId);
                 assertThat(c.sagaStatus).isEqualTo(SagaStatus.Completed);
             }
@@ -452,12 +452,12 @@ class SagaStreamTests {
         scc.sagaStateTransitionVerifier.verifyMultiple(2, (i, id, stateTransition) -> {
             if (i == 0) {
                 assertThat(stateTransition).isInstanceOf(SagaStateTransition.SagaActionStateChanged.class);
-                SagaStateTransition.SagaActionStateChanged c = ((SagaStateTransition.SagaActionStateChanged) stateTransition);
+                SagaStateTransition.SagaActionStateChanged<?> c = ((SagaStateTransition.SagaActionStateChanged) stateTransition);
                 assertThat(c.actionId).isEqualTo(createAccountId);
                 assertThat(c.actionStatus).isEqualTo(ActionStatus.Failed);
             } else if (i == 1) {
                 assertThat(stateTransition).isInstanceOf(SagaStateTransition.SagaStatusChanged.class);
-                SagaStateTransition.SagaStatusChanged c = ((SagaStateTransition.SagaStatusChanged) stateTransition);
+                SagaStateTransition.SagaStatusChanged<?> c = ((SagaStateTransition.SagaStatusChanged) stateTransition);
                 assertThat(c.sagaStatus).isEqualTo(SagaStatus.Failed);
             }
         });
@@ -510,12 +510,12 @@ class SagaStreamTests {
         scc.sagaStateTransitionVerifier.verifyMultiple(4, (i, id, stateTransition) -> {
             if (i == 0) {
                 assertThat(stateTransition).isInstanceOf(SagaStateTransition.SagaActionStateChanged.class);
-                SagaStateTransition.SagaActionStateChanged c = ((SagaStateTransition.SagaActionStateChanged) stateTransition);
+                SagaStateTransition.SagaActionStateChanged<?> c = ((SagaStateTransition.SagaActionStateChanged) stateTransition);
                 assertThat(c.actionId).isEqualTo(addFundsId1);
                 assertThat(c.actionStatus).isEqualTo(ActionStatus.Failed);
             } else if (i == 1) {
                 assertThat(stateTransition).isInstanceOf(SagaStateTransition.SagaStatusChanged.class);
-                SagaStateTransition.SagaStatusChanged c = ((SagaStateTransition.SagaStatusChanged) stateTransition);
+                SagaStateTransition.SagaStatusChanged<?> c = ((SagaStateTransition.SagaStatusChanged) stateTransition);
                 assertThat(c.sagaStatus).isEqualTo(SagaStatus.InFailure);
             } else if (i == 2) {
                 assertThat(stateTransition).isInstanceOf(SagaStateTransition.TransitionList.class);
@@ -524,7 +524,7 @@ class SagaStreamTests {
                 assertThat(transitionList.actions.get(0).actionStatus).isEqualTo(ActionStatus.UndoBypassed);
             } else if (i == 3) {
                 assertThat(stateTransition).isInstanceOf(SagaStateTransition.SagaStatusChanged.class);
-                SagaStateTransition.SagaStatusChanged c = ((SagaStateTransition.SagaStatusChanged) stateTransition);
+                SagaStateTransition.SagaStatusChanged<?> c = ((SagaStateTransition.SagaStatusChanged) stateTransition);
                 assertThat(c.sagaStatus).isEqualTo(SagaStatus.Failed);
             }
         });
@@ -587,12 +587,12 @@ class SagaStreamTests {
         scc.sagaStateTransitionVerifier.verifyMultiple(3, (i, id, stateTransition) -> {
             if (i == 0) {
                 assertThat(stateTransition).isInstanceOf(SagaStateTransition.SagaActionStateChanged.class);
-                SagaStateTransition.SagaActionStateChanged c = ((SagaStateTransition.SagaActionStateChanged) stateTransition);
+                SagaStateTransition.SagaActionStateChanged<?> c = ((SagaStateTransition.SagaActionStateChanged) stateTransition);
                 assertThat(c.actionId).isEqualTo(transferFundsId);
                 assertThat(c.actionStatus).isEqualTo(ActionStatus.Failed);
             } else if (i == 1) {
                 assertThat(stateTransition).isInstanceOf(SagaStateTransition.SagaStatusChanged.class);
-                SagaStateTransition.SagaStatusChanged c = ((SagaStateTransition.SagaStatusChanged) stateTransition);
+                SagaStateTransition.SagaStatusChanged<?> c = ((SagaStateTransition.SagaStatusChanged) stateTransition);
                 assertThat(c.sagaStatus).isEqualTo(SagaStatus.InFailure);
             } else if (i == 2) {
                 assertThat(stateTransition).isInstanceOf(SagaStateTransition.TransitionList.class);
@@ -638,12 +638,12 @@ class SagaStreamTests {
         scc.sagaStateTransitionVerifier.verifyMultiple(2, (i, id, stateTransition) -> {
             if (i == 0) {
                 assertThat(stateTransition).isInstanceOf(SagaStateTransition.SagaActionStateChanged.class);
-                SagaStateTransition.SagaActionStateChanged c = ((SagaStateTransition.SagaActionStateChanged) stateTransition);
+                SagaStateTransition.SagaActionStateChanged<?> c = ((SagaStateTransition.SagaActionStateChanged) stateTransition);
                 assertThat(c.actionId).isEqualTo(addFundsId1);
                 assertThat(c.actionStatus).isEqualTo(ActionStatus.Completed);
             } else if (i == 1) {
                 assertThat(stateTransition).isInstanceOf(SagaStateTransition.SagaStatusChanged.class);
-                SagaStateTransition.SagaStatusChanged c = ((SagaStateTransition.SagaStatusChanged) stateTransition);
+                SagaStateTransition.SagaStatusChanged<?> c = ((SagaStateTransition.SagaStatusChanged) stateTransition);
                 assertThat(c.sagaStatus).isEqualTo(SagaStatus.Failed);
             }
         });

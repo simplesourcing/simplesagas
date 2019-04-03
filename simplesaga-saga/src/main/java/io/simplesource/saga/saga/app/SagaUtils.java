@@ -151,8 +151,7 @@ final class SagaUtils {
 
                 sagaStatusChanged -> {
                     // TODO: add saga errors as a separate error type
-                    return s.updated(sagaStatusChanged.sagaStatus,
-                            sagaStatusChanged.sagaErrors);
+                    return s.updated(sagaStatusChanged.sagaStatus, sagaStatusChanged.sagaErrors);
                 },
 
                 transitionList -> {

@@ -142,7 +142,7 @@ public final class SagaDsl {
                             eAct.status,
                             Collections.emptyList());
                 }).collect(Collectors.toMap(sa -> sa.actionId, sa -> sa));
-                return Result.success(Saga.of(SagaId.random(), newActions, SagaStatus.NotStarted, Sequence.first()));
+                return Result.success(Saga.of(newActions));
             } else {
                 NonEmptyList<SagaError> nelError = NonEmptyList.fromList(
                         errors.stream()
