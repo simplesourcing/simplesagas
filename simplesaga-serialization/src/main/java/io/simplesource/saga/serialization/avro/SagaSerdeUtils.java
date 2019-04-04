@@ -83,7 +83,7 @@ public class SagaSerdeUtils {
     }
 
     static <A> AvroActionCommand actionCommandToAvro(Serde<A> payloadSerde, String payloadTopic, ActionCommand<A> ac) {
-        ByteBuffer serializedPayload = serializeCommand(payloadSerde, payloadTopic, ac.command);
+        ByteBuffer serializedPayload = serializeCommand(payloadSerde, payloadTopic, ac.command, ac.actionType);
         return AvroActionCommand
                 .newBuilder()
                 .setCommandId(ac.commandId.id().toString())
@@ -94,12 +94,12 @@ public class SagaSerdeUtils {
 
     static <A> UndoCommand<A> actionUndoCommandFromAvro(Serde<A> payloadSerde, String payloadTopic, AvroActionUndoCommand auc) {
         if (auc == null) return null;
-        A command = deserializeCommand(payloadSerde, payloadTopic, auc.getCommand());
+        A command = deserializeCommand(payloadSerde, payloadTopic, auc.getCommand(), "");
         return UndoCommand.of(command, auc.getActionType());
     }
 
     static <A> AvroActionUndoCommand actionUndoCommandToAvro(Serde<A> payloadSerde, String payloadTopic, UndoCommand<A> ac) {
-        ByteBuffer serializedPayload = serializeCommand(payloadSerde, payloadTopic, ac.command);
+        ByteBuffer serializedPayload = serializeCommand(payloadSerde, payloadTopic, ac.command, "");
         return AvroActionUndoCommand
                 .newBuilder()
                 .setCommand(serializedPayload)
@@ -118,19 +118,19 @@ public class SagaSerdeUtils {
 
     static <A> ActionCommand<A> actionCommandFromAvro(Serde<A> payloadSerde, String payloadTopic, AvroActionCommand ac) {
         if (ac == null) return null;
-        A command = deserializeCommand(payloadSerde, payloadTopic, ac.getCommand());
+        A command = deserializeCommand(payloadSerde, payloadTopic, ac.getCommand(), ac.getActionType());
         return ActionCommand.of(CommandId.of(UUID.fromString(ac.getCommandId())), command, ac.getActionType());
     }
 
-    public static <A> ByteBuffer serializeCommand(Serde<A> payloadSerde, String payloadTopic, A command) {
-        return ByteBuffer.wrap(payloadSerde.serializer().serialize(getSubjectName(payloadTopic), command));
+    public static <A> ByteBuffer serializeCommand(Serde<A> payloadSerde, String payloadTopic, A command, String actionType) {
+        return ByteBuffer.wrap(payloadSerde.serializer().serialize(getSubjectName(payloadTopic, actionType), command));
     }
 
-    public static <A> A deserializeCommand(Serde<A> payloadSerde, String payloadTopic, ByteBuffer commandBytes) {
-        return payloadSerde.deserializer().deserialize(getSubjectName(payloadTopic), commandBytes.array());
+    public static <A> A deserializeCommand(Serde<A> payloadSerde, String payloadTopic, ByteBuffer commandBytes, String actionType) {
+        return payloadSerde.deserializer().deserialize(getSubjectName(payloadTopic, actionType), commandBytes.array());
     }
 
-    static String getSubjectName(String topic) {
+    static String getSubjectName(String topic, String actionType) {
         return topic + "-" + PAYLOAD_TOPIC_SUFFIX;
     }
 }
