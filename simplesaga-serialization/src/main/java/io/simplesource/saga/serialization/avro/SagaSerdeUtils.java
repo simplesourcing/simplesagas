@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class SagaSerdeUtils {
-    public static String PAYLOAD_TOPIC_SUFFIX = "-payload";
+    public static String PAYLOAD_TOPIC_SUFFIX = "payload";
 
     static <R, T> Result<SagaError, T> sagaResultFromAvro(Object aRes, Function<R, T> successTransformer) {
         // TODO: remove the casting
@@ -131,6 +131,7 @@ public class SagaSerdeUtils {
     }
 
     static String getSubjectName(String topic, String actionType) {
-        return topic + "-" + PAYLOAD_TOPIC_SUFFIX;
+        String normalisedActionType = actionType.toLowerCase().replace(" ", "_");
+        return String.format("%s-%s-%s", topic, normalisedActionType, PAYLOAD_TOPIC_SUFFIX);
     }
 }
