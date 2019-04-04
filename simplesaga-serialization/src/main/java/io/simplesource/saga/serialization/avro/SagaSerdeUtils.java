@@ -94,12 +94,12 @@ public class SagaSerdeUtils {
 
     static <A> UndoCommand<A> actionUndoCommandFromAvro(Serde<A> payloadSerde, String payloadTopic, AvroActionUndoCommand auc) {
         if (auc == null) return null;
-        A command = deserializeCommand(payloadSerde, payloadTopic, auc.getCommand(), "");
+        A command = deserializeCommand(payloadSerde, payloadTopic, auc.getCommand(), auc.getActionType());
         return UndoCommand.of(command, auc.getActionType());
     }
 
     static <A> AvroActionUndoCommand actionUndoCommandToAvro(Serde<A> payloadSerde, String payloadTopic, UndoCommand<A> ac) {
-        ByteBuffer serializedPayload = serializeCommand(payloadSerde, payloadTopic, ac.command, "");
+        ByteBuffer serializedPayload = serializeCommand(payloadSerde, payloadTopic, ac.command, ac.actionType);
         return AvroActionUndoCommand
                 .newBuilder()
                 .setCommand(serializedPayload)
