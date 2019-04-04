@@ -36,6 +36,12 @@ public class AvroSerdes {
     }
 
     public interface Specific {
+
+        static <A extends SpecificRecord> ActionSerdes<A> actionSerdes(
+                final String schemaRegistryUrl) {
+            return actionSerdes(schemaRegistryUrl, false);
+        }
+
         static <A extends SpecificRecord> ActionSerdes<A> actionSerdes(
                 final String schemaRegistryUrl,
                 final boolean useMockSchemaRegistry) {
