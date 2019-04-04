@@ -66,19 +66,23 @@ public class StreamApp<I> {
      * @param appConfig app configuration.
      */
     public void run(StreamAppConfig appConfig) {
-        Properties config = StreamAppConfig.getConfig(appConfig);
+        Properties properties = StreamAppConfig.getConfig(appConfig);
 
-        StreamBuildResult streamBuildResult = build(config);
+        run(properties);
+
+    }
+
+    public void run(Properties properties) {
+        StreamBuildResult streamBuildResult = build(properties);
 
         // List topic names
         streamBuildResult.topicCreations.stream().map(x -> x.topicName).forEach(logger::info);
 
         // create missing topics
-        StreamAppUtils.createMissingTopics(config, streamBuildResult.topicCreations);
-        StreamAppUtils.runStreamApp(config, streamBuildResult.topologySupplier.get());
+        StreamAppUtils.createMissingTopics(properties, streamBuildResult.topicCreations);
+        StreamAppUtils.runStreamApp(properties, streamBuildResult.topologySupplier.get());
 
         // streamBuildResult.shutdownHandlers.forEach(StreamAppUtils.ShutdownHandler::shutDown);
         streamBuildResult.shutdownHandlers.forEach(StreamAppUtils::addShutdownHook);
-
     }
 }

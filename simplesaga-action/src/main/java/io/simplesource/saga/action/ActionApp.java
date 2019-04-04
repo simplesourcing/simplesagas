@@ -34,4 +34,8 @@ public class ActionApp<A> {
     public void run(StreamAppConfig appConfig) {
         streamApp.run(appConfig);
     }
+
+    public void run(Properties properties) {
+        streamApp.run(properties);
+    }
 }
