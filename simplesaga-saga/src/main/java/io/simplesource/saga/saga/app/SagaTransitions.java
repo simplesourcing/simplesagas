@@ -1,14 +1,12 @@
 package io.simplesource.saga.saga.app;
 
 
-import io.simplesource.api.CommandId;
 import io.simplesource.data.Sequence;
 import io.simplesource.saga.model.action.ActionCommand;
 import io.simplesource.saga.model.action.ActionId;
 import io.simplesource.saga.model.action.ActionStatus;
 import io.simplesource.saga.model.action.SagaAction;
 import io.simplesource.saga.model.messages.SagaStateTransition;
-import io.simplesource.saga.model.messages.UndoCommand;
 import io.simplesource.saga.model.saga.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,8 +14,8 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.stream.Collectors;
 
-final class SagaUtils {
-    private static Logger logger = LoggerFactory.getLogger(SagaUtils.class);
+final class SagaTransitions {
+    private static Logger logger = LoggerFactory.getLogger(SagaTransitions.class);
 
     private static <A> boolean sagaUndoesPending(Saga<A> sagaState) {
         return sagaState.actions.values()

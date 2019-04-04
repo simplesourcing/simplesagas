@@ -9,10 +9,7 @@ import io.simplesource.saga.model.action.ActionId;
 import io.simplesource.saga.model.action.ActionStatus;
 import io.simplesource.saga.model.action.SagaAction;
 import io.simplesource.saga.model.messages.*;
-import io.simplesource.saga.model.saga.Saga;
-import io.simplesource.saga.model.saga.SagaError;
-import io.simplesource.saga.model.saga.SagaId;
-import io.simplesource.saga.model.saga.SagaStatus;
+import io.simplesource.saga.model.saga.*;
 import io.simplesource.saga.model.serdes.ActionSerdes;
 import io.simplesource.saga.model.serdes.SagaSerdes;
 import io.simplesource.saga.model.specs.ActionSpec;
@@ -31,10 +28,8 @@ import org.apache.avro.specific.SpecificRecord;
 import org.apache.kafka.streams.Topology;
 import org.junit.jupiter.api.Test;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.time.Duration;
+import java.util.*;
 
 import static io.simplesource.saga.client.dsl.SagaDsl.inParallel;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -61,6 +56,7 @@ class SagaStreamTests {
         final RecordVerifier<SagaId, SagaStateTransition<SpecificRecord>> sagaStateTransitionVerifier;
         final RecordVerifier<SagaId, Saga<SpecificRecord>> sagaStateVerifier;
         final RecordVerifier<SagaId, SagaResponse> sagaResponseVerifier;
+        final List<String> topicsToCreate = new ArrayList<>();
 
         SagaCoordinatorContext() {
             TopicNamer sagaTopicNamer = TopicNamer.forPrefix(Constants.SAGA_TOPIC_PREFIX, TopicTypes.SagaTopic.SAGA_BASE_NAME);
@@ -70,17 +66,16 @@ class SagaStreamTests {
             SagaApp<SpecificRecord> sagaApp = SagaApp.of(
                     new SagaSpec<>(sagaSerdes, new WindowSpec(60)),
                     ActionSpec.of(actionSerdes),
-                    topicBuilder -> topicBuilder.withTopicPrefix(Constants.SAGA_TOPIC_PREFIX));
+                    topicBuilder -> topicBuilder.withTopicPrefix(Constants.SAGA_TOPIC_PREFIX))
+                    .withAction(
+                            Constants.ACCOUNT_ACTION_TYPE,
+                            topicBuilder -> topicBuilder.withTopicPrefix(Constants.ACTION_TOPIC_PREFIX))
+                    .withAction(
+                            Constants.USER_ACTION_TYPE,
+                            topicBuilder -> topicBuilder.withTopicPrefix(Constants.ACTION_TOPIC_PREFIX))
+                    .withRetryStrategy(Constants.ACCOUNT_ACTION_TYPE, RetryStrategy.repeat(3, Duration.ofMillis(200)));
 
-            sagaApp.withAction(
-                    Constants.ACCOUNT_ACTION_TYPE,
-                    topicBuilder -> topicBuilder.withTopicPrefix(Constants.ACTION_TOPIC_PREFIX));
-
-            sagaApp.withAction(
-                    Constants.USER_ACTION_TYPE,
-                    topicBuilder -> topicBuilder.withTopicPrefix(Constants.ACTION_TOPIC_PREFIX));
-
-            Topology topology = sagaApp.buildTopology();
+            Topology topology = sagaApp.buildTopology(topics -> topics.forEach(t -> topicsToCreate.add(t.topicName)));
             testContext = TestContextBuilder.of(topology).build();
 
             sagaRequestPublisher = testContext.publisher(
@@ -284,6 +279,23 @@ class SagaStreamTests {
         assertThat(sagaBuildResult.isSuccess()).isEqualTo(true);
 
         return sagaBuildResult.getOrElse(null);
+    }
+
+    @Test
+    void testTopicCreation() {
+        SagaCoordinatorContext scc = new SagaCoordinatorContext();
+
+        assertThat(scc.topicsToCreate).containsExactlyInAnyOrder(
+                "saga_coordinator-saga_coordinator-saga_state",
+                "saga_coordinator-saga_coordinator-saga_response_topic_map",
+                "saga_coordinator-saga_coordinator-saga_request",
+                "saga_coordinator-saga_coordinator-saga_response",
+                "saga_coordinator-saga_coordinator-saga_state_transition",
+                "saga_action_processor-saga_action-sourcing_action_account-action_response",
+                "saga_action_processor-saga_action-sourcing_action_account-action_retry",
+                "saga_action_processor-saga_action-sourcing_action_account-action_request",
+                "saga_action_processor-saga_action-sourcing_action_user-action_response",
+                "saga_action_processor-saga_action-sourcing_action_user-action_request");
     }
 
     @Test

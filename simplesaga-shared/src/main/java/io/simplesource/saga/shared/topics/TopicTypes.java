@@ -18,6 +18,7 @@ public class TopicTypes {
         public static final String ACTION_RESPONSE = "action_response";
         public static final List<String> all = Lists.of(ACTION_REQUEST, ACTION_RESPONSE);
         public static final String ACTION_REQUEST_UNPROCESSED = "action_request_unprocessed";
+        public static final String ACTION_RETRY = "action_retry";
         public static final String ACTION_OUTPUT = "action_output";
     }
 
