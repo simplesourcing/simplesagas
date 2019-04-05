@@ -1,11 +1,14 @@
 package io.simplesource.saga.saga.app;
 
 
+import io.simplesource.saga.model.messages.SagaStateTransition;
 import io.simplesource.saga.model.saga.RetryStrategy;
+import io.simplesource.saga.model.saga.SagaId;
 import io.simplesource.saga.model.serdes.ActionSerdes;
 import io.simplesource.saga.model.serdes.SagaSerdes;
 import io.simplesource.saga.model.specs.ActionSpec;
 import io.simplesource.saga.model.specs.SagaSpec;
+import io.simplesource.saga.shared.kafka.AsyncPublisher;
 import io.simplesource.saga.shared.topics.TopicNamer;
 import lombok.Value;
 
@@ -20,18 +23,21 @@ public final class SagaContext<A> {
     public final TopicNamer sagaTopicNamer;
     public final Map<String, TopicNamer> actionTopicNamers;
     public final Map<String, RetryStrategy> retryStrategies;
+    public final AsyncPublisher<SagaId, SagaStateTransition<A>> retryPublisher;
 
     public SagaContext(SagaSpec<A> sSpec,
             ActionSpec<A> aSpec,
             TopicNamer sagaTopicNamer,
             Map<String, TopicNamer> actionTopicNamers,
-            Map<String, RetryStrategy> retryStrategies) {
+            Map<String, RetryStrategy> retryStrategies,
+            AsyncPublisher<SagaId, SagaStateTransition<A>> retryPublisher) {
 
         this.sSpec = sSpec;
         this.aSpec = aSpec;
         this.sagaTopicNamer = sagaTopicNamer;
         this.actionTopicNamers = actionTopicNamers;
         this.retryStrategies = retryStrategies;
+        this.retryPublisher = retryPublisher;
         sSerdes = sSpec.serdes;
         aSerdes = aSpec.serdes;
     }

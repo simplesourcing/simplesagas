@@ -1,10 +1,13 @@
 package io.simplesource.saga.saga.app;
 
+import io.simplesource.api.CommandId;
 import io.simplesource.data.NonEmptyList;
 import io.simplesource.data.Result;
 import io.simplesource.data.Sequence;
 import io.simplesource.kafka.internal.util.Tuple2;
+import io.simplesource.saga.model.action.ActionCommand;
 import io.simplesource.saga.model.action.ActionStatus;
+import io.simplesource.saga.model.action.SagaAction;
 import io.simplesource.saga.model.messages.*;
 import io.simplesource.saga.model.saga.*;
 import io.simplesource.saga.model.saga.SagaError.Reason;
@@ -14,6 +17,7 @@ import org.apache.kafka.streams.kstream.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -40,7 +44,7 @@ final public class SagaStream {
         // add stream transformations
         KStream<SagaId, SagaStateTransition<A>> inputStateTransitions = addInitialState(ctx, vrIr.v1(), stateTable);
         Tuple2<KStream<SagaId, SagaStateTransition<A>>, KStream<SagaId, ActionRequest<A>>> rtAr = addNextActions(stateStream);
-        KStream<SagaId, SagaStateTransition<A>> responseTransitions = handleActionResponses(actionResponseStream);
+        KStream<SagaId, SagaStateTransition<A>> responseTransitions = handleActionResponses(ctx, actionResponseStream, stateTable);
         Tuple2<KStream<SagaId, SagaStateTransition<A>>, KStream<SagaId, SagaResponse>> stSr = addSagaResponse(stateStream);
         KStream<SagaId, Saga<A>> sagaState = applyStateTransitions(ctx, stateTransitionStream);
 
@@ -67,7 +71,12 @@ final public class SagaStream {
         return stateTransitionStream
                 .groupByKey(Grouped.with(sSerdes.sagaId(), sSerdes.transition()))
                 .aggregate(() -> Saga.of(new HashMap<>()),
-                        (k, t, s) -> SagaTransitions.applyTransition(t, s),
+                        (k, t, s) -> {
+                            SagaTransitions.SagaWithRetry<A> sagaWithRetries = SagaTransitions.applyTransition(t, s);
+
+                            // TODO: emit effect
+                            return sagaWithRetries.saga;
+                        },
                         Materialized.with(sSerdes.sagaId(), sSerdes.state()))
                 .toStream();
     }
@@ -95,8 +104,8 @@ final public class SagaStream {
     }
 
     private static <A> KStream<SagaId, SagaStateTransition<A>> addInitialState(SagaContext<A> ctx,
-                                                                            KStream<SagaId, SagaRequest<A>> sagaRequestStream,
-                                                                            KTable<SagaId, Saga<A>> stateTable) {
+                                                                               KStream<SagaId, SagaRequest<A>> sagaRequestStream,
+                                                                               KTable<SagaId, Saga<A>> stateTable) {
         SagaSerdes<A> sSerdes = ctx.sSerdes;
         KStream<SagaId, Tuple2<SagaRequest<A>, Boolean>> newRequestStream = sagaRequestStream.leftJoin(
                 stateTable,
@@ -122,7 +131,7 @@ final public class SagaStream {
         }
     }
 
-    static <A> Tuple2<KStream<SagaId, SagaStateTransition<A>>, KStream<SagaId, SagaResponse>> addSagaResponse(KStream<SagaId, Saga<A>> sagaState) {
+    private static <A> Tuple2<KStream<SagaId, SagaStateTransition<A>>, KStream<SagaId, SagaResponse>> addSagaResponse(KStream<SagaId, Saga<A>> sagaState) {
         KStream<SagaId, StatusWithError> statusWithError = sagaState
                 .mapValues((k, state) -> {
                     if (state.status == SagaStatus.InProgress && SagaTransitions.sagaCompleted(state))
@@ -197,14 +206,48 @@ final public class SagaStream {
         return Tuple2.of(stateUpdateNewActions, actionRequests);
     }
 
-    static private <A> KStream<SagaId, SagaStateTransition<A>> handleActionResponses(KStream<SagaId, ActionResponse<A>> actionResponses) {
+    static private <A> KStream<SagaId, SagaStateTransition<A>> handleActionResponses(
+            SagaContext<A> ctx,
+            KStream<SagaId, ActionResponse<A>> actionResponses,
+            KTable<SagaId, Saga<A>> sagaState) {
+        KStream<SagaId, ActionResponse<A>>[] successFailure = actionResponses.branch((sId, resp) -> resp.result.isSuccess(), (sId, resp) -> resp.result.isFailure());
 
-        // TODO: simplify the error handling
-        return actionResponses.<SagaStateTransition<A>>mapValues((sagaId, response) -> {
-            Tuple2<ActionStatus, List<SagaError>> se = response.result.fold(
-                    errors -> Tuple2.of(ActionStatus.Failed, errors.toList()), // TODO: FIX this
-                    r -> Tuple2.of(ActionStatus.Completed, Collections.emptyList()));
-            return SagaStateTransition.SagaActionStateChanged.of(sagaId, response.actionId, se.v1(), se.v2(), response.result.getOrElse(Optional.empty()));
-        }).peek(logValues("stateTransitionsActionResponse"));
+        KStream<SagaId, ActionResponse<A>> success = successFailure[0];
+        KStream<SagaId, ActionResponse<A>> failure = successFailure[1];
+
+        KStream<SagaId, SagaStateTransition<A>> successTransitions = success.mapValues((sagaId, response) ->
+                SagaStateTransition.SagaActionStateChanged.of(
+                        sagaId,
+                        response.actionId,
+                        ActionStatus.Completed,
+                        Collections.emptyList(),
+                        response.result.getOrElse(Optional.empty())));
+
+        KStream<SagaId, Tuple2<Optional<Duration>, ActionResponse<A>>> failureWithRetries = failure.join(sagaState, (e, s) -> {
+            SagaAction<A> action = s.actions.get(e.actionId);
+            CommandId eCid = e.commandId;
+            ActionCommand<A> retryAction = eCid.equals(action.command.commandId) ?
+                    action.command :
+                    action.undoCommand
+                            .map(u -> u.commandId == eCid ? u : null)
+                            .orElse(null);
+
+            Optional<Duration> nextRetry = Optional.ofNullable(retryAction).flatMap(ra ->
+                    ctx.retryStrategies.get(ra.actionType).nextRetry(action.retryCount));
+
+            return Tuple2.of(nextRetry, e);
+        });
+
+        KStream<SagaId, SagaStateTransition<A>> failureTransitions = failureWithRetries.mapValues(tuple ->  {
+            ActionResponse<A> response = tuple.v2();
+            return SagaStateTransition.SagaActionStateChanged.of(
+                    response.sagaId,
+                    response.actionId,
+                    tuple.v1().isPresent() ? ActionStatus.AwaitingRetry :ActionStatus.Failed,
+                    response.result.failureReasons().get(),
+                    Optional.empty());
+        });
+
+        return successTransitions.merge(failureTransitions).peek(logValues("stateTransitionsActionResponse"));
     }
 }

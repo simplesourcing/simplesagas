@@ -1,13 +1,21 @@
 package io.simplesource.saga.saga;
 
+import io.simplesource.saga.model.messages.SagaStateTransition;
 import io.simplesource.saga.model.saga.RetryStrategy;
+import io.simplesource.saga.model.saga.SagaId;
 import io.simplesource.saga.model.specs.ActionSpec;
 import io.simplesource.saga.model.specs.SagaSpec;
 import io.simplesource.saga.saga.app.SagaContext;
 import io.simplesource.saga.saga.app.SagaTopologyBuilder;
+import io.simplesource.saga.shared.kafka.AsyncKafkaPublisher;
+import io.simplesource.saga.shared.kafka.AsyncPublisher;
+import io.simplesource.saga.shared.kafka.KafkaUtils;
 import io.simplesource.saga.shared.topics.*;
 import io.simplesource.saga.shared.streams.StreamAppConfig;
 import io.simplesource.saga.shared.streams.StreamAppUtils;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.Topology;
 import org.slf4j.Logger;
@@ -21,14 +29,14 @@ import java.util.function.Consumer;
  * It then executes these actions in the order specified by the dependency graph.
  * An action is executed once its dependencies have successfully executed.
  * Actions that are not dependent on one another can be executed in parallel.
- *
+ * <p>
  * Action execution involves submitting to the action request Kafka topic and waiting for it to finish
  * by listening to the action response topic.
- *
+ * <p>
  * The result of action execution leads to a saga state transition. When this happens the next action(s)
  * can be submitted, or if all actions have completed, finishing the saga and publishing to the saga
  * response topic.
- *
+ * <p>
  * If any of the actions fail, the actions that are already completed are undone, if an undo action is defined.
  *
  * @param <A> action type.
@@ -98,16 +106,36 @@ final public class SagaApp<A> {
 
     /**
      * Run the SagaApp with the given app configuration.
+     *
      * @param appConfig app configuration.
      */
     public void run(StreamAppConfig appConfig) {
         Properties config = StreamAppConfig.getConfig(appConfig);
-        Topology topology = buildTopology(topics ->  StreamAppUtils.createMissingTopics(config, topics));
+        Topology topology = buildTopology(topics -> StreamAppUtils.createMissingTopics(config, topics), config);
         logger.info("Topology description {}", topology.describe());
         StreamAppUtils.runStreamApp(config, topology);
     }
 
+    Topology buildTopology(Consumer<List<TopicCreation>> topicCreator, Properties config) {
+        Properties producerProps = KafkaUtils.copyProperties(config);
+        producerProps.setProperty(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, "true");
+        KafkaProducer<byte[], byte[]> producer =
+                new KafkaProducer<>(producerProps,
+                        Serdes.ByteArray().serializer(),
+                        Serdes.ByteArray().serializer());
+
+        AsyncPublisher<SagaId, SagaStateTransition<A>> retryPublisher = new AsyncKafkaPublisher<>(
+                producer,
+                sagaSpec.serdes.sagaId(),
+                sagaSpec.serdes.transition());
+        return buildTopology(topicCreator, retryPublisher);
+    }
+
     Topology buildTopology(Consumer<List<TopicCreation>> topicCreator) {
+        return buildTopology(topicCreator, new Properties());
+    }
+
+    Topology buildTopology(Consumer<List<TopicCreation>> topicCreator, AsyncPublisher<SagaId, SagaStateTransition<A>> retryPublisher) {
         final List<TopicCreation> topics = new ArrayList<>();
         TopicConfig sagaTopicConfig = TopicConfigBuilder.build(
                 TopicTypes.SagaTopic.all,
@@ -125,13 +153,8 @@ final public class SagaApp<A> {
 
         Map<String, TopicNamer> topicNamers = new HashMap<>();
         buildFuncMap.forEach((atlc, buildFn) -> {
-            List<String> topicsBases = new ArrayList<>(TopicTypes.ActionTopic.all);
-
-            // check if we need to add a retry topic
-            if (retryStrategyMap.get(atlc).nextRetry(0).isPresent()) topicsBases.add(TopicTypes.ActionTopic.ACTION_RETRY);
-
             TopicConfig actionTopicConfig = TopicConfigBuilder.build(
-                    topicsBases,
+                    TopicTypes.ActionTopic.all,
                     buildFn.withInitialStep(builder -> builder.withTopicBaseName(TopicUtils.actionTopicBaseName(atlc))));
 
             topics.addAll(TopicCreation.allTopics(actionTopicConfig));
@@ -140,7 +163,14 @@ final public class SagaApp<A> {
 
         topicCreator.accept(topics);
 
-        SagaContext<A> sagaContext = new SagaContext<>(sagaSpec, actionSpec, sagaTopicConfig.namer, topicNamers, retryStrategyMap);
+        SagaContext<A> sagaContext = new SagaContext<>(
+                sagaSpec,
+                actionSpec,
+                sagaTopicConfig.namer,
+                topicNamers,
+                retryStrategyMap,
+                retryPublisher);
+
         StreamsBuilder builder = new StreamsBuilder();
         SagaTopologyBuilder.addSubTopology(sagaContext, builder);
         return builder.build();

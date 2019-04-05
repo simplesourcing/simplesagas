@@ -2,19 +2,31 @@ package io.simplesource.saga.saga.app;
 
 
 import io.simplesource.data.Sequence;
+import io.simplesource.kafka.internal.util.Tuple2;
 import io.simplesource.saga.model.action.ActionCommand;
 import io.simplesource.saga.model.action.ActionId;
 import io.simplesource.saga.model.action.ActionStatus;
 import io.simplesource.saga.model.action.SagaAction;
 import io.simplesource.saga.model.messages.SagaStateTransition;
 import io.simplesource.saga.model.saga.*;
+import lombok.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.swing.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
 final class SagaTransitions {
+
+    @Value(staticConstructor = "of")
+    static class SagaWithRetry<A> {
+        public final Saga<A> saga;
+        public final List<ActionId> retryActions;
+
+        static <A> SagaWithRetry<A> of(Saga<A> saga) { return new SagaWithRetry<>(saga, Collections.emptyList()); }
+    }
+
     private static Logger logger = LoggerFactory.getLogger(SagaTransitions.class);
 
     private static <A> boolean sagaUndoesPending(Saga<A> sagaState) {
@@ -115,17 +127,17 @@ final class SagaTransitions {
         return Collections.emptyList();
     }
 
-    static <A> Saga<A> applyTransition(SagaStateTransition<A> t, Saga<A> s) {
+    static <A> SagaWithRetry<A> applyTransition(SagaStateTransition<A> t, Saga<A> s) {
         return t.cata(
                 setInitialState -> {
                     Saga<A> i = setInitialState.sagaState;
-                    return Saga.of(i.sagaId, i.actions, SagaStatus.InProgress, Sequence.first());
+                    return SagaWithRetry.of(Saga.of(i.sagaId, i.actions, SagaStatus.InProgress, Sequence.first()));
                 },
                 actionStateChanged -> {
                     SagaAction<A> oa = s.actions.getOrDefault(actionStateChanged.actionId, null);
                     if (oa == null) {
                         logger.error("SagaAction with ID {} could not be found", actionStateChanged.actionId);
-                        return s;
+                        return SagaWithRetry.of(s);
                     }
                     ActionStatus newStatus =  actionStateChanged.actionStatus;
                     if (oa.status == ActionStatus.InUndo) {
@@ -133,8 +145,11 @@ final class SagaTransitions {
                         else if (actionStateChanged.actionStatus == ActionStatus.Failed) newStatus = ActionStatus.UndoFailed;
                     }
 
-                    Optional<ActionCommand<A>> newUndoCommand = s.status == SagaStatus.InFailure ? Optional.empty() :
+                    // Can't set an undo command from an undo command
+                    Optional<ActionCommand<A>> newUndoCommand = s.status == SagaStatus.InFailure ?
+                            Optional.empty() :
                             actionStateChanged.undoCommand.map(uc -> ActionCommand.of(uc.command, uc.actionType));
+
                     // This mess can replace by 'newUndoCommand.or(oa.undoCommand)' in Java 9+.
                     Optional<ActionCommand<A>> undoCmd = Optional.ofNullable(newUndoCommand.orElse(oa.undoCommand.orElse(null)));
 
@@ -144,20 +159,23 @@ final class SagaTransitions {
                     // TODO: add a MapUtils updated
                     Map<ActionId, SagaAction<A>> actionMap = new HashMap<>();
                     s.actions.forEach((k, v) -> actionMap.put(k, k.equals(actionStateChanged.actionId) ? action : v));
-                    return s.updated(actionMap, s.status, s.sagaError);
+                    return SagaWithRetry.of(s.updated(actionMap, s.status, s.sagaError));
                 },
 
                 sagaStatusChanged -> {
                     // TODO: add saga errors as a separate error type
-                    return s.updated(sagaStatusChanged.sagaStatus, sagaStatusChanged.sagaErrors);
+                    return SagaWithRetry.of(s.updated(sagaStatusChanged.sagaStatus, sagaStatusChanged.sagaErrors));
                 },
 
                 transitionList -> {
                     Saga<A> sNew = s;
+                    List<ActionId> retryActionIds = new ArrayList<>();
                     for (SagaStateTransition<A> change: transitionList.actions) {
-                        sNew = applyTransition(change, sNew);
+                        SagaWithRetry<A> transResult = applyTransition(change, sNew);
+                        sNew = transResult.saga;
+                        retryActionIds.addAll(transResult.retryActions);
                     }
-                    return sNew;
+                    return SagaWithRetry.of(sNew, retryActionIds);
                 }
         );
 

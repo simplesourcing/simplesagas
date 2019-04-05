@@ -10,6 +10,7 @@ import io.simplesource.saga.model.messages.ActionRequest;
 import io.simplesource.saga.model.messages.ActionResponse;
 import io.simplesource.saga.model.saga.SagaError;
 import io.simplesource.saga.model.saga.SagaId;
+import io.simplesource.saga.shared.kafka.AsyncPublisher;
 import io.simplesource.saga.shared.topics.TopicTypes;
 import lombok.Value;
 

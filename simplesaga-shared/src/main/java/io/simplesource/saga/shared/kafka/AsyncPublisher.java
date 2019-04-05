@@ -1,4 +1,4 @@
-package io.simplesource.saga.action.internal;
+package io.simplesource.saga.shared.kafka;
 
 @FunctionalInterface
 public interface AsyncPublisher<K, V> {

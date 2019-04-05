@@ -8,7 +8,7 @@ import io.simplesource.saga.action.app.ActionProcessor;
 import io.simplesource.saga.model.messages.UndoCommand;
 import io.simplesource.saga.model.serdes.TopicSerdes;
 import io.simplesource.saga.action.internal.AsyncActionProcessorProxy;
-import io.simplesource.saga.action.internal.AsyncPublisher;
+import io.simplesource.saga.shared.kafka.AsyncPublisher;
 import io.simplesource.saga.avro.avro.generated.test.AsyncTestCommand;
 import io.simplesource.saga.avro.avro.generated.test.AsyncTestId;
 import io.simplesource.saga.avro.avro.generated.test.AsyncTestOutput;
