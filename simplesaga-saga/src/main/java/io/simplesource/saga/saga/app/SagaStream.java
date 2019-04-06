@@ -88,7 +88,7 @@ final public class SagaStream {
                     SagaStateTransition.SagaActionStateChanged.of(
                             s.sagaId,
                             r.actionId,
-                            s.status == SagaStatus.InFailure ? ActionStatus.Failed : ActionStatus.Pending,
+                            s.status == SagaStatus.InFailure ? ActionStatus.Completed : ActionStatus.Pending,
                             existing.error,
                             Optional.empty());
 
@@ -244,7 +244,7 @@ final public class SagaStream {
             ActionCommand<A> retryAction = eCid.equals(action.command.commandId) ?
                     action.command :
                     action.undoCommand
-                            .map(u -> u.commandId == eCid ? u : null)
+                            .map(u -> u.commandId.equals(eCid) ? u : null)
                             .orElse(null);
 
             Optional<Duration> nextRetry = Optional.ofNullable(retryAction).flatMap(ra ->

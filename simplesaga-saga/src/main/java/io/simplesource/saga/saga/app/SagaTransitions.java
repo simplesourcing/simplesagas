@@ -43,6 +43,12 @@ final class SagaTransitions {
                 .anyMatch(s -> s == ActionStatus.Completed || s == ActionStatus.InUndo);
     }
 
+    private static <A> boolean sagaAwaitingRetries(Saga<A> sagaState) {
+        return sagaState.actions.values()
+                .stream()
+                .anyMatch(a -> a.status.equals(ActionStatus.AwaitingRetry));
+    }
+
     static <A> boolean failedAction(Saga<A> sagaState) {
         return sagaState.actions.values()
                 .stream()
@@ -64,7 +70,7 @@ final class SagaTransitions {
     }
 
     static <A> boolean sagaFailed(Saga<A> sagaState) {
-        return failedAction(sagaState) && !actionInProgress(sagaState) && !sagaUndoesPending(sagaState);
+        return failedAction(sagaState) && !actionInProgress(sagaState) && !sagaUndoesPending(sagaState) && !sagaAwaitingRetries(sagaState);
     }
 
     static <A> boolean sagaCompleted(Saga<A> sagaState) {

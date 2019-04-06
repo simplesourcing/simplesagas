@@ -61,7 +61,7 @@ public class RecordVerifier<K, V> {
         return eventList;
     }
 
-    public void drainAll() {
-        verifyMultiple(-1, (i, k, v) -> {});
+    public List<V> drainAll() {
+        return verifyMultiple(-1, (i, k, v) -> {});
     }
 }
