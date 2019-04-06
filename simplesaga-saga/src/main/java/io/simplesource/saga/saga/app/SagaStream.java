@@ -6,6 +6,7 @@ import io.simplesource.data.Result;
 import io.simplesource.data.Sequence;
 import io.simplesource.kafka.internal.util.Tuple2;
 import io.simplesource.saga.model.action.ActionCommand;
+import io.simplesource.saga.model.action.ActionId;
 import io.simplesource.saga.model.action.ActionStatus;
 import io.simplesource.saga.model.action.SagaAction;
 import io.simplesource.saga.model.messages.*;
@@ -73,12 +74,26 @@ final public class SagaStream {
                 .aggregate(() -> Saga.of(new HashMap<>()),
                         (k, t, s) -> {
                             SagaTransitions.SagaWithRetry<A> sagaWithRetries = SagaTransitions.applyTransition(t, s);
-
-                            // TODO: emit effect
+                            sendRetries(ctx, s, sagaWithRetries.retryActions);
                             return sagaWithRetries.saga;
                         },
                         Materialized.with(sSerdes.sagaId(), sSerdes.state()))
                 .toStream();
+    }
+
+    private static <A> void sendRetries(SagaContext<A> ctx, Saga<A> s, List<SagaTransitions.SagaWithRetry.Retry> retries) {
+        retries.forEach(r -> {
+            SagaAction<A> existing = s.actions.get(r.actionId);
+            SagaStateTransition<A> transition =
+                    SagaStateTransition.SagaActionStateChanged.of(
+                            s.sagaId,
+                            r.actionId,
+                            s.status == SagaStatus.InFailure ? ActionStatus.Failed : ActionStatus.Pending,
+                            existing.error,
+                            Optional.empty());
+
+            ctx.retryPublisher.send(r.actionType, s.sagaId, transition);
+        });
     }
 
     private static <A> Tuple2<KStream<SagaId, SagaRequest<A>>, KStream<SagaId, SagaResponse>> validateSagaRequests(
