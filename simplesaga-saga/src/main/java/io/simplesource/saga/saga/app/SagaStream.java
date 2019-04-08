@@ -83,33 +83,18 @@ final public class SagaStream {
 
     private static <A> void sendRetries(SagaContext<A> ctx, Saga<A> s, List<SagaTransitions.SagaWithRetry.Retry> retries) {
 
-        Function<SagaStatus, ActionStatus> retryActionStatus = ss -> {
-            switch (ss) {
-                case InFailure:
-                    return ActionStatus.Completed;
-                case FailurePending:
-                    return ActionStatus.Failed;
-                default:
-                    return ActionStatus.Pending;
-            }
-        };
-
         retries.forEach(r -> {
             SagaAction<A> existing = s.actions.get(r.actionId);
-
-            ActionStatus retryResetStatus = retryActionStatus.apply(s.status);
-            boolean sendRetry = retryResetStatus != ActionStatus.Failed;
-
             SagaStateTransition<A> transition =
                     SagaStateTransition.SagaActionStateChanged.of(
                             s.sagaId,
                             r.actionId,
-                            retryResetStatus,
+                            ActionStatus.RetryCompleted,
                             existing.error,
                             Optional.empty());
 
-            if (sendRetry)
-                ctx.retryPublisher.send(r.actionType, s.sagaId, transition);
+            ctx.retryPublisher.send(r.actionType, s.sagaId, transition);
+
         });
     }
 
@@ -280,7 +265,7 @@ final public class SagaStream {
             ActionResponse<A> response = tuple.v2();
             boolean retry = tuple.v1().isPresent();
             ActionStatus newStatus = retry ?
-                    ActionStatus.AwaitingRetry :
+                    ActionStatus.RetryAwaiting :
                     (response.isUndo ? ActionStatus.UndoFailed : ActionStatus.Failed);
             return SagaStateTransition.SagaActionStateChanged.of(
                     response.sagaId,

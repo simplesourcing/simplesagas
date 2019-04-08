@@ -119,7 +119,7 @@ final class SagaTransitions {
                     s.actions.forEach((k, existing) -> actionMap.put(k, k.equals(actionStateChanged.actionId) ? actionUpdate.action : existing));
 
                     List<SagaWithRetry.Retry> retries =
-                            actionStateChanged.actionStatus == ActionStatus.AwaitingRetry ?
+                            actionStateChanged.actionStatus == ActionStatus.RetryAwaiting ?
                                     actionUpdate.executedCommand.map(command ->
                                             Collections.singletonList(
                                                     SagaWithRetry.Retry.of(actionUpdate.action.actionId, command.actionType)))
@@ -153,21 +153,38 @@ final class SagaTransitions {
 
     static <A> ActionUpdate<A> getUpdatedAction(Saga<A> s, SagaStateTransition.SagaActionStateChanged<A> transition, SagaAction<A> oa) {
         ActionStatus newStatus = transition.actionStatus;
+        List<SagaError> actionErrors = oa.error;
 
         boolean inUndo = (s.status == SagaStatus.InFailure || s.status == SagaStatus.Failed);
 
         ActionCommand<A> aCmd = oa.command;
         Optional<ActionCommand<A>> uCmd = oa.undoCommand;
 
-        if (newStatus == ActionStatus.AwaitingRetry) {
-            if (!inUndo)
-                aCmd = freshCommand(oa.command);
+        if (newStatus == ActionStatus.RetryCompleted) {
+            if (s.status == SagaStatus.FailurePending)
+                newStatus = ActionStatus.Failed;
+            else if (inUndo) {
+                newStatus = ActionStatus.Completed;
+            }
             else
+                newStatus = ActionStatus.Pending;
+        }
+
+        if (newStatus == ActionStatus.RetryAwaiting) {
+            if (!inUndo) {
+                aCmd = freshCommand(oa.command);
+                actionErrors = transition.actionErrors;
+            }
+            else {
                 uCmd = uCmd.map(SagaTransitions::freshCommand);
+            }
         } else {
             if (!inUndo) {
                 Optional<ActionCommand<A>> newUndoCommand = transition.undoCommand.map(uc -> ActionCommand.of(uc.command, uc.actionType));
                 uCmd = Optional.ofNullable(newUndoCommand.orElse(oa.undoCommand.orElse(null)));
+                if (transition.actionStatus == ActionStatus.Failed) {
+                    actionErrors = transition.actionErrors;
+                }
             }
         }
         Optional<ActionCommand<A>> eCommand = inUndo ? uCmd : Optional.of(aCmd);
@@ -179,7 +196,7 @@ final class SagaTransitions {
                         uCmd,
                         oa.dependencies,
                         newStatus,
-                        transition.actionErrors,
+                        actionErrors,
                         updatedRetryCount(oa, newStatus));
 
         return ActionUpdate.of(newAction, eCommand);
@@ -189,7 +206,7 @@ final class SagaTransitions {
         switch (newStatus) {
             case Completed:
                 return 0;
-            case AwaitingRetry:
+            case RetryAwaiting:
                 return oa.retryCount + 1;
             default:
                 return oa.retryCount;

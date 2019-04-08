@@ -32,7 +32,7 @@ class SagaStates {
 
     boolean failurePending() {
         return has(ActionStatus.Failed) &&
-                (has(ActionStatus.InProgress) || has(ActionStatus.AwaitingRetry));
+                (has(ActionStatus.InProgress) || has(ActionStatus.RetryAwaiting));
     }
 
     boolean inFailure() {
@@ -46,7 +46,7 @@ class SagaStates {
                 missing(ActionStatus.InProgress) &&
                 missing(ActionStatus.InUndo) &&
                 missing(ActionStatus.Completed) &&
-                missing(ActionStatus.AwaitingRetry);
+                missing(ActionStatus.RetryAwaiting);
     }
 
     boolean completed() {

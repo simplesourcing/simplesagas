@@ -53,7 +53,7 @@ class SagaTransitionsTest {
     @Test
     void testSagaFailurePending() {
         assertThat(SagaStates.of(getTestSaga(ActionStatus.Failed, ActionStatus.InProgress)).failurePending()).isTrue();
-        assertThat(SagaStates.of(getTestSaga(ActionStatus.Failed, ActionStatus.AwaitingRetry)).failurePending()).isTrue();
+        assertThat(SagaStates.of(getTestSaga(ActionStatus.Failed, ActionStatus.RetryAwaiting)).failurePending()).isTrue();
         assertThat(SagaStates.of(getTestSaga(ActionStatus.InProgress)).failurePending()).isFalse();
         assertThat(SagaStates.of(getTestSaga(ActionStatus.Failed, ActionStatus.Completed)).failurePending()).isFalse();
     }
