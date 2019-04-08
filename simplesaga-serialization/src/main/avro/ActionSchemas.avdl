@@ -31,6 +31,7 @@ protocol SagaSchemas {
     string sagaId;
     string actionId;
     string commandId;
+    boolean isUndo;
     union { array<AvroSagaError>, AvroActionUndoCommandOption } result;
   }
 

@@ -47,6 +47,10 @@ public class RecordVerifier<K, V> {
         return result;
     }
 
+    public List<V> verifyMultiple(int count) {
+        return verifyMultiple(count, (i, k, v) -> {});
+    }
+
     public List<V> verifyMultiple(int count, TriConsumer<Integer, K, V> verifier) {
         List<V> eventList = new ArrayList<>();
         int[] index = new int[1];

@@ -157,6 +157,7 @@ final class AsyncInvoker {
         ActionResponse<A> actionResponse = ActionResponse.of(request.sagaId,
                 request.actionId,
                 request.actionCommand.commandId,
+                request.isUndo,
                 resultWithUndo);
 
         responsePublisher.send(asyncContext.actionTopicNamer.apply(TopicTypes.ActionTopic.ACTION_RESPONSE),

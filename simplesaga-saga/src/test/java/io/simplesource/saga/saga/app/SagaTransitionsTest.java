@@ -29,47 +29,53 @@ class SagaTransitionsTest {
 
     @Test
     void testFailedAction() {
-        assertThat(SagaTransitions.failedAction(getTestSaga(ActionStatus.Failed))).isTrue();
-        assertThat(SagaTransitions.failedAction(getTestSaga(ActionStatus.Completed, ActionStatus.Failed))).isTrue();
-        assertThat(SagaTransitions.failedAction(getTestSaga(ActionStatus.Completed, ActionStatus.InProgress))).isFalse();
+        assertThat(SagaStates.of(getTestSaga(ActionStatus.Failed)).has(ActionStatus.Failed)).isTrue();
+        assertThat(SagaStates.of(getTestSaga(ActionStatus.Completed, ActionStatus.Failed)).has(ActionStatus.Failed)).isTrue();
+        assertThat(SagaStates.of(getTestSaga(ActionStatus.Completed, ActionStatus.InProgress)).has(ActionStatus.Failed)).isFalse();
     }
 
     @Test
     void testActionInProgress() {
-        assertThat(SagaTransitions.actionInProgress(getTestSaga(ActionStatus.InProgress))).isTrue();
-        assertThat(SagaTransitions.actionInProgress(getTestSaga(ActionStatus.Completed, ActionStatus.InProgress))).isTrue();
-        assertThat(SagaTransitions.actionInProgress(getTestSaga(ActionStatus.Failed))).isFalse();
-        assertThat(SagaTransitions.actionInProgress(getTestSaga(ActionStatus.Completed, ActionStatus.Failed))).isFalse();
+        assertThat(SagaStates.of(getTestSaga(ActionStatus.InProgress)).has(ActionStatus.InProgress)).isTrue();
+        assertThat(SagaStates.of(getTestSaga(ActionStatus.Completed, ActionStatus.InProgress)).has(ActionStatus.InProgress)).isTrue();
+        assertThat(SagaStates.of(getTestSaga(ActionStatus.Failed)).has(ActionStatus.InProgress)).isFalse();
+        assertThat(SagaStates.of(getTestSaga(ActionStatus.Completed, ActionStatus.Failed)).has(ActionStatus.InProgress)).isFalse();
     }
 
     @Test
     void testSagaCompleted() {
-        assertThat(SagaTransitions.sagaCompleted(getTestSaga(ActionStatus.Completed))).isTrue();
-        assertThat(SagaTransitions.sagaCompleted(getTestSaga(ActionStatus.InProgress))).isFalse();
-        assertThat(SagaTransitions.sagaCompleted(getTestSaga(ActionStatus.Completed, ActionStatus.Failed))).isFalse();
+        assertThat(SagaStates.of(getTestSaga(ActionStatus.Completed)).has(ActionStatus.Completed)).isTrue();
+        assertThat(SagaStates.of(getTestSaga(ActionStatus.InProgress)).has(ActionStatus.Completed)).isFalse();
+        assertThat(SagaStates.of(getTestSaga(ActionStatus.InProgress)).missing(ActionStatus.Completed)).isTrue();
+        assertThat(SagaStates.of(getTestSaga(ActionStatus.Completed, ActionStatus.Failed)).has(ActionStatus.Completed)).isTrue();
     }
 
     @Test
     void testSagaFailurePending() {
-        assertThat(SagaTransitions.sagaFailurePending(getTestSaga(ActionStatus.Failed, ActionStatus.InProgress))).isTrue();
-        assertThat(SagaTransitions.sagaFailurePending(getTestSaga(ActionStatus.InProgress))).isFalse();
-        assertThat(SagaTransitions.sagaFailurePending(getTestSaga(ActionStatus.Failed, ActionStatus.Completed))).isFalse();
+        assertThat(SagaStates.of(getTestSaga(ActionStatus.Failed, ActionStatus.InProgress)).failurePending()).isTrue();
+        assertThat(SagaStates.of(getTestSaga(ActionStatus.Failed, ActionStatus.AwaitingRetry)).failurePending()).isTrue();
+        assertThat(SagaStates.of(getTestSaga(ActionStatus.InProgress)).failurePending()).isFalse();
+        assertThat(SagaStates.of(getTestSaga(ActionStatus.Failed, ActionStatus.Completed)).failurePending()).isFalse();
     }
 
     @Test
     void testSagaInFailure() {
-        assertThat(SagaTransitions.sagaInFailure(getTestSaga(ActionStatus.Failed, ActionStatus.InUndo))).isTrue();
-        assertThat(SagaTransitions.sagaInFailure(getTestSaga(ActionStatus.Failed, ActionStatus.Completed))).isTrue();
-        assertThat(SagaTransitions.sagaInFailure(getTestSaga(ActionStatus.Failed, ActionStatus.InProgress))).isFalse();
-        assertThat(SagaTransitions.sagaInFailure(getTestSaga(ActionStatus.InProgress))).isFalse();
+        assertThat(SagaStates.of(getTestSaga(ActionStatus.Failed, ActionStatus.InUndo)).inFailure()).isTrue();
+        assertThat(SagaStates.of(getTestSaga(ActionStatus.Failed, ActionStatus.Completed)).inFailure()).isTrue();
+        assertThat(SagaStates.of(getTestSaga(ActionStatus.Failed, ActionStatus.InProgress)).inFailure()).isFalse();
+        assertThat(SagaStates.of(getTestSaga(ActionStatus.InProgress)).inFailure()).isFalse();
     }
 
     @Test
     void testSagaFailed() {
-        assertThat(SagaTransitions.sagaFailed(getTestSaga(ActionStatus.Failed))).isTrue();
-        assertThat(SagaTransitions.sagaFailed(getTestSaga(ActionStatus.Failed, ActionStatus.Completed))).isFalse();
-        assertThat(SagaTransitions.sagaFailed(getTestSaga(ActionStatus.Failed, ActionStatus.InProgress))).isFalse();
-        assertThat(SagaTransitions.sagaFailed(getTestSaga(ActionStatus.InProgress))).isFalse();
+        assertThat(SagaStates.of(getTestSaga(ActionStatus.Failed)).failed()).isTrue();
+        assertThat(SagaStates.of(getTestSaga(ActionStatus.Failed, ActionStatus.Completed)).failed()).isFalse();
+        assertThat(SagaStates.of(getTestSaga(ActionStatus.Failed, ActionStatus.InProgress)).failed()).isFalse();
+        assertThat(SagaStates.of(getTestSaga(ActionStatus.Failed, ActionStatus.InUndo)).failed()).isFalse();
+        assertThat(SagaStates.of(getTestSaga(ActionStatus.Failed, ActionStatus.UndoBypassed)).failed()).isTrue();
+        assertThat(SagaStates.of(getTestSaga(ActionStatus.Failed, ActionStatus.Undone)).failed()).isTrue();
+        assertThat(SagaStates.of(getTestSaga(ActionStatus.Failed, ActionStatus.UndoFailed)).failed()).isTrue();
+        assertThat(SagaStates.of(getTestSaga(ActionStatus.InProgress)).failed()).isFalse();
     }
 
     @Test
@@ -343,7 +349,7 @@ class SagaTransitionsTest {
         SagaStateTransition<SpecificRecord> transition = SagaStateTransition.SagaActionStateChanged.of(
                 sagaId,
                 action1,
-                ActionStatus.Completed,
+                ActionStatus.Undone,
                 Collections.emptyList(),
                 Optional.of(newUndoCommand));
         SagaAction<SpecificRecord> oldAction1 = saga.actions.get(action1);
@@ -385,7 +391,12 @@ class SagaTransitionsTest {
                         .undoCommand(ActionCommand.of(new AddFunds("id3", -10.0), "action_type"))
                         .build())
                 .build();
-        SagaStateTransition<SpecificRecord> transition = SagaStateTransition.SagaActionStateChanged.of(sagaId, action1, ActionStatus.Failed, Collections.emptyList(), Optional.empty());
+        SagaStateTransition<SpecificRecord> transition = SagaStateTransition.SagaActionStateChanged.of(
+                sagaId,
+                action1,
+                ActionStatus.UndoFailed,
+                Collections.emptyList(),
+                Optional.empty());
         Saga<SpecificRecord> result = SagaTransitions.applyTransition(transition, saga).saga;
         assertThat(result.status).isEqualTo(SagaStatus.InFailure);
         assertThat(result.actions.get(action1).status).isEqualTo(ActionStatus.UndoFailed);

@@ -91,7 +91,7 @@ class ActionSerdesTest {
     @Test
     void responseTestSuccessEmpty() {
         ActionSerdes<SpecificRecord> serdes = AvroSerdes.Specific.actionSerdes(SCHEMA_URL, true);
-        ActionResponse<SpecificRecord> original = ActionResponse.of(SagaId.random(), ActionId.random(), CommandId.random(), Result.success(Optional.empty()));
+        ActionResponse<SpecificRecord> original = ActionResponse.of(SagaId.random(), ActionId.random(), CommandId.random(), false, Result.success(Optional.empty()));
         byte[] serialized = serdes.response().serializer().serialize(FAKE_TOPIC, original);
         ActionResponse<SpecificRecord> deserialized = serdes.response().deserializer().deserialize(FAKE_TOPIC, serialized);
         assertThat(deserialized).isEqualToIgnoringGivenFields(original, "result");
@@ -102,7 +102,7 @@ class ActionSerdesTest {
     void responseTestSuccessWithUndo() {
         UndoCommand<SpecificRecord> undoCommand = UndoCommand.of(new User("Albus", "Dumbledore", 1732), "action_type");
         ActionSerdes<SpecificRecord> serdes = AvroSerdes.Specific.actionSerdes(SCHEMA_URL, true);
-        ActionResponse<SpecificRecord> original = ActionResponse.of(SagaId.random(), ActionId.random(), CommandId.random(), Result.success(Optional.of(undoCommand)));
+        ActionResponse<SpecificRecord> original = ActionResponse.of(SagaId.random(), ActionId.random(), CommandId.random(), false, Result.success(Optional.of(undoCommand)));
         byte[] serialized = serdes.response().serializer().serialize(FAKE_TOPIC, original);
         ActionResponse<SpecificRecord> deserialized = serdes.response().deserializer().deserialize(FAKE_TOPIC, serialized);
         assertThat(deserialized).isEqualToIgnoringGivenFields(original, "result");
@@ -116,6 +116,7 @@ class ActionSerdesTest {
         SagaError sagaError1 = SagaError.of(SagaError.Reason.InternalError, "There was an error");
         SagaError sagaError2 = SagaError.of(SagaError.Reason.CommandError, "Invalid command");
         ActionResponse<SpecificRecord> original = ActionResponse.of(SagaId.random(), ActionId.random(), CommandId.random(),
+                false,
                 Result.failure(sagaError1, sagaError2));
         byte[] serialized = serdes.response().serializer().serialize(FAKE_TOPIC, original);
         ActionResponse<SpecificRecord> deserialized = serdes.response().deserializer().deserialize(FAKE_TOPIC, serialized);

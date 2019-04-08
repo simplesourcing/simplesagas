@@ -101,7 +101,11 @@ public final class EventSourcingStream {
         KStream<SagaId, ActionResponse<A>> errorActionResponses = branchSuccessFailure[1].mapValues((k, v) -> {
             ActionRequest<A> request = v.v1();
             NonEmptyList<Throwable> reasons = v.v2().failureReasons().get();
-            return ActionResponse.of(request.sagaId, request.actionId, request.actionCommand.commandId, Result.failure(
+            return ActionResponse.of(request.sagaId,
+                    request.actionId,
+                    request.actionCommand.commandId,
+                    request.isUndo,
+                    Result.failure(
                     SagaError.of(SagaError.Reason.InternalError, reasons.head())));
         });
 
@@ -227,6 +231,7 @@ public final class EventSourcingStream {
                             return ActionResponse.of(aReq.sagaId,
                                     aReq.actionId,
                                     aReq.actionCommand.commandId,
+                                    aReq.isUndo,
                                     result);
                         }
                 )

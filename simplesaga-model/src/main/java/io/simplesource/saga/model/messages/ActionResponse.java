@@ -15,5 +15,6 @@ public class ActionResponse<A> {
     public final SagaId sagaId;
     public final ActionId actionId;
     public final CommandId commandId;
+    public final Boolean isUndo;
     public final Result<SagaError, Optional<UndoCommand<A>>> result;
 }

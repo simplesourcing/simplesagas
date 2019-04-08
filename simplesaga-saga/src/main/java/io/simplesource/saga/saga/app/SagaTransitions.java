@@ -2,7 +2,6 @@ package io.simplesource.saga.saga.app;
 
 
 import io.simplesource.data.Sequence;
-import io.simplesource.kafka.internal.util.Tuple2;
 import io.simplesource.saga.model.action.ActionCommand;
 import io.simplesource.saga.model.action.ActionId;
 import io.simplesource.saga.model.action.ActionStatus;
@@ -34,52 +33,13 @@ final class SagaTransitions {
         }
     }
 
+    @Value(staticConstructor = "of")
+    static class ActionUpdate<A> {
+        public final SagaAction<A>action;
+        public final Optional<ActionCommand<A>> executedCommand;
+    }
+
     private static Logger logger = LoggerFactory.getLogger(SagaTransitions.class);
-
-    private static <A> boolean sagaUndoesPending(Saga<A> sagaState) {
-        return sagaState.actions.values()
-                .stream()
-                .map(a -> a.status)
-                .anyMatch(s -> s == ActionStatus.Completed || s == ActionStatus.InUndo);
-    }
-
-    private static <A> boolean sagaAwaitingRetries(Saga<A> sagaState) {
-        return sagaState.actions.values()
-                .stream()
-                .anyMatch(a -> a.status.equals(ActionStatus.AwaitingRetry));
-    }
-
-    static <A> boolean failedAction(Saga<A> sagaState) {
-        return sagaState.actions.values()
-                .stream()
-                .anyMatch(a -> a.status.equals(ActionStatus.Failed));
-    }
-
-    static <A> boolean actionInProgress(Saga<A> sagaState) {
-        return sagaState.actions.values()
-                .stream()
-                .anyMatch(a -> a.status.equals(ActionStatus.InProgress));
-    }
-
-    static <A> boolean sagaFailurePending(Saga<A> sagaState) {
-        return failedAction(sagaState) && actionInProgress(sagaState);
-    }
-
-    static <A> boolean sagaInFailure(Saga<A> sagaState) {
-        return failedAction(sagaState) && !actionInProgress(sagaState) && sagaUndoesPending(sagaState);
-    }
-
-    static <A> boolean sagaFailed(Saga<A> sagaState) {
-        return failedAction(sagaState) && !actionInProgress(sagaState) && !sagaUndoesPending(sagaState) && !sagaAwaitingRetries(sagaState);
-    }
-
-    static <A> boolean sagaCompleted(Saga<A> sagaState) {
-        for (SagaAction<A> a : sagaState.actions.values()) {
-            if (a.status != ActionStatus.Completed)
-                return false;
-        }
-        return true;
-    }
 
     static <A> List<SagaActionExecution<A>> getNextActions(Saga<A> sagaState) {
         if (sagaState.status == SagaStatus.InProgress) {
@@ -140,12 +100,6 @@ final class SagaTransitions {
         return Collections.emptyList();
     }
 
-    @Value(staticConstructor = "of")
-    static class ActionUpdate<A> {
-        public final SagaAction<A>action;
-        public final Optional<ActionCommand<A>> executedCommand;
-    }
-
     static <A> SagaWithRetry<A> applyTransition(SagaStateTransition<A> t, Saga<A> s) {
         return t.cata(
                 setInitialState -> {
@@ -200,12 +154,7 @@ final class SagaTransitions {
     static <A> ActionUpdate<A> getUpdatedAction(Saga<A> s, SagaStateTransition.SagaActionStateChanged<A> transition, SagaAction<A> oa) {
         ActionStatus newStatus = transition.actionStatus;
 
-        boolean inUndo = (s.status == SagaStatus.InFailure);
-
-        if (inUndo) {
-            if (newStatus == ActionStatus.Completed) newStatus = ActionStatus.Undone;
-            else if (newStatus == ActionStatus.Failed) newStatus = ActionStatus.UndoFailed;
-        }
+        boolean inUndo = (s.status == SagaStatus.InFailure || s.status == SagaStatus.Failed);
 
         ActionCommand<A> aCmd = oa.command;
         Optional<ActionCommand<A>> uCmd = oa.undoCommand;
