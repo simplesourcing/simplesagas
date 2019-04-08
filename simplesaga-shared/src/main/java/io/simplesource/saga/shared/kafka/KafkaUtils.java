@@ -7,7 +7,7 @@ import java.util.Properties;
 import java.util.function.Function;
 
 public class KafkaUtils {
-    static <K, V> ProducerRecord<byte[], byte[]> toBytes(
+    public static <K, V> ProducerRecord<byte[], byte[]> toBytes(
             ProducerRecord<K, V> record,
             Serde<K> kSerde,
             Serde<V> vSerde) {

@@ -23,14 +23,14 @@ public final class SagaContext<A> {
     public final TopicNamer sagaTopicNamer;
     public final Map<String, TopicNamer> actionTopicNamers;
     public final Map<String, RetryStrategy> retryStrategies;
-    public final AsyncPublisher<SagaId, SagaStateTransition<A>> retryPublisher;
+    public final RetryPublisher<A> retryPublisher;
 
     public SagaContext(SagaSpec<A> sSpec,
             ActionSpec<A> aSpec,
             TopicNamer sagaTopicNamer,
             Map<String, TopicNamer> actionTopicNamers,
             Map<String, RetryStrategy> retryStrategies,
-            AsyncPublisher<SagaId, SagaStateTransition<A>> retryPublisher) {
+            RetryPublisher<A> retryPublisher) {
 
         this.sSpec = sSpec;
         this.aSpec = aSpec;

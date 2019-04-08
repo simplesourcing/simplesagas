@@ -41,6 +41,10 @@ public class RecordVerifier<K, V> {
 
     }
 
+    public V verifySingle() {
+        return verifySingle((k, v) -> {});
+    }
+
     public V verifySingle(BiConsumer<K, V> verifier) {
         V result = verifyAndReturn(verifier::accept);
         assertThat(result).isNotNull();

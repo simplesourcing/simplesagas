@@ -5,10 +5,10 @@ import io.simplesource.saga.model.saga.RetryStrategy;
 import io.simplesource.saga.model.saga.SagaId;
 import io.simplesource.saga.model.specs.ActionSpec;
 import io.simplesource.saga.model.specs.SagaSpec;
+import io.simplesource.saga.saga.app.KafkaRetryPublisher;
+import io.simplesource.saga.saga.app.RetryPublisher;
 import io.simplesource.saga.saga.app.SagaContext;
 import io.simplesource.saga.saga.app.SagaTopologyBuilder;
-import io.simplesource.saga.shared.kafka.AsyncKafkaPublisher;
-import io.simplesource.saga.shared.kafka.AsyncPublisher;
 import io.simplesource.saga.shared.kafka.KafkaUtils;
 import io.simplesource.saga.shared.topics.*;
 import io.simplesource.saga.shared.streams.StreamAppConfig;
@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.Consumer;
+
 
 /**
  * SagaApp (the "Saga Coordinator") accepts a dependency graph of saga actions.
@@ -124,7 +125,7 @@ final public class SagaApp<A> {
                         Serdes.ByteArray().serializer(),
                         Serdes.ByteArray().serializer());
 
-        AsyncPublisher<SagaId, SagaStateTransition<A>> retryPublisher = new AsyncKafkaPublisher<>(
+        RetryPublisher<A> retryPublisher = new KafkaRetryPublisher<>(
                 producer,
                 sagaSpec.serdes.sagaId(),
                 sagaSpec.serdes.transition());
@@ -135,7 +136,7 @@ final public class SagaApp<A> {
         return buildTopology(topicCreator, new Properties());
     }
 
-    Topology buildTopology(Consumer<List<TopicCreation>> topicCreator, AsyncPublisher<SagaId, SagaStateTransition<A>> retryPublisher) {
+    Topology buildTopology(Consumer<List<TopicCreation>> topicCreator, RetryPublisher<A> retryPublisher) {
         final List<TopicCreation> topics = new ArrayList<>();
         TopicConfig sagaTopicConfig = TopicConfigBuilder.build(
                 TopicTypes.SagaTopic.all,
