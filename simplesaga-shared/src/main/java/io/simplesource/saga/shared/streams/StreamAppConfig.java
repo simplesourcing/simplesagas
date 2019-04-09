@@ -7,7 +7,7 @@ import org.apache.kafka.streams.errors.LogAndContinueExceptionHandler;
 
 import java.util.Properties;
 
-@Value
+@Value(staticConstructor = "of")
 public class StreamAppConfig {
     public final String appId;
     public final String bootstrapServers;

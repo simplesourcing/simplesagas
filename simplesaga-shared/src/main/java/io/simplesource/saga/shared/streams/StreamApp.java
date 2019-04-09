@@ -1,5 +1,6 @@
 package io.simplesource.saga.shared.streams;
 
+import io.simplesource.saga.shared.kafka.PropertiesBuilder;
 import io.simplesource.saga.shared.topics.TopicCreation;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.streams.StreamsBuilder;
@@ -35,7 +36,7 @@ public class StreamApp<I> {
         return this;
     }
 
-    public StreamBuildResult build(Properties properties) {
+    public StreamBuildResult build(PropertiesBuilder.BuildSteps properties) {
 
         StreamsBuilder builder = new StreamsBuilder();
 
@@ -66,21 +67,19 @@ public class StreamApp<I> {
      * @param appConfig app configuration.
      */
     public void run(StreamAppConfig appConfig) {
-        Properties properties = StreamAppConfig.getConfig(appConfig);
-
-        run(properties);
-
+        run(properties -> properties.withStreamAppConfig(appConfig));
     }
 
-    public void run(Properties properties) {
+    public void run(PropertiesBuilder.BuildSteps properties) {
         StreamBuildResult streamBuildResult = build(properties);
 
         // List topic names
         streamBuildResult.topicCreations.stream().map(x -> x.topicName).forEach(logger::info);
 
         // create missing topics
-        StreamAppUtils.createMissingTopics(properties, streamBuildResult.topicCreations);
-        StreamAppUtils.runStreamApp(properties, streamBuildResult.topologySupplier.get());
+        Properties props = properties.build();
+        StreamAppUtils.createMissingTopics(props, streamBuildResult.topicCreations);
+        StreamAppUtils.runStreamApp(props, streamBuildResult.topologySupplier.get());
 
         // streamBuildResult.shutdownHandlers.forEach(StreamAppUtils.ShutdownHandler::shutDown);
         streamBuildResult.shutdownHandlers.forEach(StreamAppUtils::addShutdownHook);

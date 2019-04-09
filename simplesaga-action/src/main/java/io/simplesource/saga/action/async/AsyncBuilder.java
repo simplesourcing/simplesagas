@@ -35,7 +35,11 @@ public final class AsyncBuilder {
 
             return new StreamBuildSpec(topics, builder -> {
 
-                ActionTopologyContext<A> topologyContext = ActionTopologyContext.of(actionSpec, actionTopicConfig.namer, streamBuildContext.properties, builder);
+                ActionTopologyContext<A> topologyContext = ActionTopologyContext.of(
+                        actionSpec,
+                        actionTopicConfig.namer,
+                        streamBuildContext.properties,
+                        builder);
 
                 ScheduledExecutorService usedExecutor = executor != null ? executor : Executors.newScheduledThreadPool(1);
                 AsyncContext<A, D, K, O, R> asyncContext = new AsyncContext<>(actionSpec, actionTopicConfig.namer, spec, usedExecutor);

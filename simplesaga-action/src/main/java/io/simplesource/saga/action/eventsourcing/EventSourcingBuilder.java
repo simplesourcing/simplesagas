@@ -33,7 +33,11 @@ public final class EventSourcingBuilder {
 
             return new StreamBuildSpec(topics, builder -> {
                 EventSourcingContext<A, D, K, C> eventSourcingContext = EventSourcingContext.of(actionSpec, esSpec, actionTopicConfig.namer, commandTopicConfig.namer);
-                ActionTopologyContext<A> topologyContext = ActionTopologyContext.of(actionSpec, actionTopicConfig.namer, streamBuildContext.properties, builder);
+                ActionTopologyContext<A> topologyContext = ActionTopologyContext.of(
+                        actionSpec,
+                        actionTopicConfig.namer,
+                        streamBuildContext.properties,
+                        builder);
                 EventSourcingStream.addSubTopology(topologyContext, eventSourcingContext);
 
                 return Optional.empty();

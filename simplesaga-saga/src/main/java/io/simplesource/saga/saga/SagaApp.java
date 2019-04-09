@@ -10,6 +10,7 @@ import io.simplesource.saga.saga.app.SagaContext;
 import io.simplesource.saga.saga.app.SagaTopologyBuilder;
 import io.simplesource.saga.shared.kafka.AsyncKafkaPublisher;
 import io.simplesource.saga.shared.kafka.KafkaUtils;
+import io.simplesource.saga.shared.kafka.PropertiesBuilder;
 import io.simplesource.saga.shared.topics.*;
 import io.simplesource.saga.shared.streams.StreamAppConfig;
 import io.simplesource.saga.shared.streams.StreamAppUtils;
@@ -54,20 +55,26 @@ final public class SagaApp<A> {
     private RetryStrategy defaultRetryStrategy = RetryStrategy.failFast();
     private final Map<String, TopicConfigBuilder.BuildSteps> buildFuncMap = new HashMap<>();
     private final TopicConfigBuilder.BuildSteps sagaTopicBuildSteps;
+    private final PropertiesBuilder.BuildSteps propertiesBuildSteps;
     private ScheduledExecutorService executor;
 
-    private SagaApp(SagaSpec<A> sagaSpec, ActionSpec<A> actionSpec, TopicConfigBuilder.BuildSteps sagaTopicBuildSteps) {
+    private SagaApp(SagaSpec<A> sagaSpec, ActionSpec<A> actionSpec, TopicConfigBuilder.BuildSteps sagaTopicBuildSteps, PropertiesBuilder.BuildSteps propertiesBuildSteps) {
         this.sagaSpec = sagaSpec;
         this.actionSpec = actionSpec;
         this.sagaTopicBuildSteps = sagaTopicBuildSteps;
+        this.propertiesBuildSteps = propertiesBuildSteps;
+    }
+
+    public static <A> SagaApp<A> of(SagaSpec<A> sagaSpec, ActionSpec<A> actionSpec, TopicConfigBuilder.BuildSteps topicBuildFn, PropertiesBuilder.BuildSteps propertiesBuildFn) {
+        return new SagaApp<>(sagaSpec, actionSpec, topicBuildFn, propertiesBuildFn);
     }
 
     public static <A> SagaApp<A> of(SagaSpec<A> sagaSpec, ActionSpec<A> actionSpec, TopicConfigBuilder.BuildSteps topicBuildFn) {
-        return new SagaApp<>(sagaSpec, actionSpec, topicBuildFn);
+        return new SagaApp<>(sagaSpec, actionSpec, topicBuildFn, p -> p);
     }
 
     public static <A> SagaApp<A> of(SagaSpec<A> sagaSpec, ActionSpec<A> actionSpec) {
-        return of(sagaSpec, actionSpec, b -> b);
+        return of(sagaSpec, actionSpec, b -> b, p -> p);
     }
 
     public SagaApp<A> withAction(String actionType, TopicConfigBuilder.BuildSteps buildFn) {
@@ -119,15 +126,18 @@ final public class SagaApp<A> {
      * @param appConfig app configuration.
      */
     public void run(StreamAppConfig appConfig) {
-        Properties config = StreamAppConfig.getConfig(appConfig);
-        Topology topology = buildTopology(topics -> StreamAppUtils.createMissingTopics(config, topics), config);
+        PropertiesBuilder.BuildSteps buildSteps = propertiesBuildSteps.withNextStep(p -> p.withStreamAppConfig(appConfig));
+        Properties config = buildSteps.build();
+        Topology topology = buildTopology(topics -> StreamAppUtils.createMissingTopics(config, topics), buildSteps);
         logger.info("Topology description {}", topology.describe());
         StreamAppUtils.runStreamApp(config, topology);
     }
 
-    Topology buildTopology(Consumer<List<TopicCreation>> topicCreator, Properties config) {
-        Properties producerProps = KafkaUtils.copyProperties(config);
-        producerProps.setProperty(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, "true");
+    Topology buildTopology(Consumer<List<TopicCreation>> topicCreator, PropertiesBuilder.BuildSteps propertyBuildSteps) {
+        Properties producerProps = propertyBuildSteps
+                .withInitialStep(pb -> pb.withProperty(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, "true"))
+                .build();
+
         KafkaProducer<byte[], byte[]> producer =
                 new KafkaProducer<>(producerProps,
                         Serdes.ByteArray().serializer(),
@@ -142,7 +152,7 @@ final public class SagaApp<A> {
     }
 
     Topology buildTopology(Consumer<List<TopicCreation>> topicCreator) {
-        return buildTopology(topicCreator, new Properties());
+        return buildTopology(topicCreator, p -> p);
     }
 
     Topology buildTopology(Consumer<List<TopicCreation>> topicCreator, RetryPublisher<A> retryPublisher) {

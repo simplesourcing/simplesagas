@@ -81,9 +81,9 @@ class EventSourcingStreamTests {
                     topicBuilder -> topicBuilder.withTopicPrefix(Constants.ACTION_TOPIC_PREFIX),
                     topicBuilder -> topicBuilder.withTopicPrefix((Constants.COMMAND_TOPIC_PREFIX))));
 
-            Properties config = StreamAppConfig.getConfig(new StreamAppConfig("app-id", "http://localhost:9092"));
+            StreamBuildResult sb = streamApp.build(pb ->
+                    pb.withStreamAppConfig(StreamAppConfig.of("app-id", "http://localhost:9092")));
 
-            StreamBuildResult sb = streamApp.build(config);
             Topology topology = sb.topologySupplier.get();
             expectedTopics = sb.topicCreations.stream().map(x -> x.topicName).collect(Collectors.toSet());
 

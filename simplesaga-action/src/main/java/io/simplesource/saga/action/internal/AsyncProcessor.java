@@ -10,10 +10,7 @@ import io.simplesource.saga.action.async.AsyncSpec;
 import io.simplesource.saga.model.messages.ActionResponse;
 import io.simplesource.saga.model.saga.SagaId;
 import io.simplesource.saga.model.specs.ActionSpec;
-import io.simplesource.saga.shared.kafka.AsyncKafkaPublisher;
-import io.simplesource.saga.shared.kafka.AsyncPublisher;
-import io.simplesource.saga.shared.kafka.ConsumerRunner;
-import io.simplesource.saga.shared.kafka.KafkaUtils;
+import io.simplesource.saga.shared.kafka.*;
 import io.simplesource.saga.shared.topics.TopicTypes;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -23,26 +20,23 @@ import org.apache.kafka.common.serialization.Serdes;
 final class AsyncProcessor {
     private static final boolean useTransactions = false;
 
-    static <A, D, K, O, R> AsyncPipe apply(AsyncContext<A, D, K, O, R> asyncContext, Properties config) {
+    static <A, D, K, O, R> AsyncPipe apply(AsyncContext<A, D, K, O, R> asyncContext, PropertiesBuilder.BuildSteps config) {
         AsyncSpec<A, D, K, O, R> asyncSpec = asyncContext.asyncSpec;
         ActionSpec<A> actionSpec = asyncContext.actionSpec;
 
-        Properties consumerConfig = KafkaUtils.copyProperties(config);
-        //consumerConfig.putAll(spec.properties)
-        consumerConfig.setProperty(ConsumerConfig.GROUP_ID_CONFIG,
-                asyncSpec.groupId + "_async_consumer_" + asyncSpec.actionType);
-        // TODO: don't hard code this
-        consumerConfig.setProperty(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "true");
-        consumerConfig.setProperty(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG, "1000");
-        consumerConfig.setProperty(ConsumerConfig.ISOLATION_LEVEL_CONFIG, "read_committed");
+        PropertiesBuilder.BuildSteps consumerProps = config
+                .withInitialStep(pb -> pb
+                        .withProperty(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "true")
+                        .withProperty(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG, "1000")
+                        .withProperty(ConsumerConfig.ISOLATION_LEVEL_CONFIG, "read_committed"))
+                .withNextStep(pb -> pb
+                        .withProperty(ConsumerConfig.GROUP_ID_CONFIG, asyncSpec.groupId + "_async_consumer_" + asyncSpec.actionType));
 
-        Properties producerProps = KafkaUtils.copyProperties(config);
-        if (useTransactions)
-            producerProps.setProperty(ProducerConfig.TRANSACTIONAL_ID_CONFIG, asyncSpec.groupId + "_async_producer");
-        producerProps.setProperty(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, "true");
+        PropertiesBuilder.BuildSteps producerProps = config.withInitialStep(pb -> pb
+                .withProperty(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, "true"));
 
         KafkaProducer<byte[], byte[]> producer =
-                new KafkaProducer<>(producerProps,
+                new KafkaProducer<>(producerProps.build(),
                         Serdes.ByteArray().serializer(),
                         Serdes.ByteArray().serializer());
         if (useTransactions)
@@ -52,7 +46,7 @@ final class AsyncProcessor {
         Function<TopicSerdes<K, R>, AsyncPublisher<K, R>> outputPublisher = serdes -> new AsyncKafkaPublisher<>(producer, serdes.key, serdes.value);
 
         ConsumerRunner<SagaId, ActionRequest<A>> runner = new ConsumerRunner<>(
-                consumerConfig,
+                consumerProps.build(),
                 (sagaId, request) ->
                         AsyncInvoker.processActionRequest(asyncContext, sagaId, request, responsePublisher, outputPublisher),
                 actionSpec.serdes.sagaId(),
