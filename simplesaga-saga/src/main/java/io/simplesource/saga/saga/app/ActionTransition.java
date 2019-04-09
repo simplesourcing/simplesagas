@@ -69,8 +69,8 @@ class ActionTransition {
         ActionStatus newStatus = transition.actionStatus;
         List<SagaError> actionErrors = oa.error;
 
-        // boolean inUndo = (s.status == SagaStatus.InFailure || s.status == SagaStatus.Failed);
-        boolean inUndo = transition.isUndo;
+        // boolean isUndo = (s.status == SagaStatus.InFailure || s.status == SagaStatus.Failed);
+        boolean isUndo = transition.isUndo;
 
         ActionCommand<A> aCmd = oa.command;
         Optional<ActionCommand<A>> uCmd = oa.undoCommand;
@@ -78,7 +78,7 @@ class ActionTransition {
         if (newStatus == ActionStatus.RetryCompleted) {
             if (s.status == SagaStatus.FailurePending)
                 newStatus = ActionStatus.Failed;
-            else if (inUndo) {
+            else if (isUndo) {
                 if (oa.status == ActionStatus.UndoFailed)
                     return Optional.empty();
                 newStatus = ActionStatus.Completed;
@@ -89,14 +89,14 @@ class ActionTransition {
                 newStatus = ActionStatus.Pending;
             }
         } else if (newStatus == ActionStatus.RetryAwaiting) {
-            if (inUndo) {
+            if (isUndo) {
                 uCmd = uCmd.map(ActionTransition::freshCommand);
             } else {
                 aCmd = freshCommand(oa.command);
                 actionErrors = transition.actionErrors;
             }
         } else {
-            if (!inUndo) {
+            if (!isUndo) {
                 Optional<ActionCommand<A>> newUndoCommand = transition.undoCommand.map(uc -> ActionCommand.of(uc.command, uc.actionType));
                 uCmd = Optional.ofNullable(newUndoCommand.orElse(oa.undoCommand.orElse(null)));
                 if (transition.actionStatus == ActionStatus.Failed) {
@@ -104,7 +104,7 @@ class ActionTransition {
                 }
             }
         }
-        Optional<ActionCommand<A>> eCommand = inUndo ? uCmd : Optional.of(aCmd);
+        Optional<ActionCommand<A>> eCommand = isUndo ? uCmd : Optional.of(aCmd);
 
         SagaAction<A> newAction =
                 SagaAction.of(

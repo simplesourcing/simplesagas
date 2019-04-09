@@ -45,7 +45,7 @@ class ActionResolver {
             Set<ActionId> undoneKeys = sagaState.actions.entrySet().stream()
                     .filter(entry -> {
                         ActionStatus status = entry.getValue().status;
-                        return status != ActionStatus.InUndo && status != ActionStatus.Completed;
+                        return status != ActionStatus.UndoInProgress && status != ActionStatus.Completed;
                     })
                     .map(Map.Entry::getKey)
                     .collect(Collectors.toSet());
@@ -63,7 +63,7 @@ class ActionResolver {
             List<SagaActionExecution<A>> pendingExecutions = pendingUndoes.values()
                     .stream()
                     .map(a -> {
-                        ActionStatus status = a.undoCommand.map(c -> ActionStatus.InUndo).orElse(ActionStatus.UndoBypassed);
+                        ActionStatus status = a.undoCommand.map(c -> ActionStatus.UndoInProgress).orElse(ActionStatus.UndoBypassed);
                         return SagaActionExecution.of(a.actionId, a.undoCommand, status, true);
 
                     })

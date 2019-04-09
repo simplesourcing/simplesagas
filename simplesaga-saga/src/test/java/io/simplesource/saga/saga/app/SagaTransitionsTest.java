@@ -60,7 +60,7 @@ class SagaTransitionsTest {
 
     @Test
     void testSagaInFailure() {
-        assertThat(ActionStatuses.of(getTestSaga(ActionStatus.Failed, ActionStatus.InUndo)).inFailure()).isTrue();
+        assertThat(ActionStatuses.of(getTestSaga(ActionStatus.Failed, ActionStatus.UndoInProgress)).inFailure()).isTrue();
         assertThat(ActionStatuses.of(getTestSaga(ActionStatus.Failed, ActionStatus.Completed)).inFailure()).isTrue();
         assertThat(ActionStatuses.of(getTestSaga(ActionStatus.Failed, ActionStatus.InProgress)).inFailure()).isFalse();
         assertThat(ActionStatuses.of(getTestSaga(ActionStatus.InProgress)).inFailure()).isFalse();
@@ -71,7 +71,7 @@ class SagaTransitionsTest {
         assertThat(ActionStatuses.of(getTestSaga(ActionStatus.Failed)).failed()).isTrue();
         assertThat(ActionStatuses.of(getTestSaga(ActionStatus.Failed, ActionStatus.Completed)).failed()).isFalse();
         assertThat(ActionStatuses.of(getTestSaga(ActionStatus.Failed, ActionStatus.InProgress)).failed()).isFalse();
-        assertThat(ActionStatuses.of(getTestSaga(ActionStatus.Failed, ActionStatus.InUndo)).failed()).isFalse();
+        assertThat(ActionStatuses.of(getTestSaga(ActionStatus.Failed, ActionStatus.UndoInProgress)).failed()).isFalse();
         assertThat(ActionStatuses.of(getTestSaga(ActionStatus.Failed, ActionStatus.UndoBypassed)).failed()).isTrue();
         assertThat(ActionStatuses.of(getTestSaga(ActionStatus.Failed, ActionStatus.Undone)).failed()).isTrue();
         assertThat(ActionStatuses.of(getTestSaga(ActionStatus.Failed, ActionStatus.UndoFailed)).failed()).isTrue();
@@ -207,7 +207,7 @@ class SagaTransitionsTest {
                         .build())
                 .build();
         assertThat(ActionResolver.getNextActions(saga).stream().map(a -> a.actionId)).containsExactlyInAnyOrder(action1, action3);
-        assertThat(ActionResolver.getNextActions(saga).stream().map(a -> a.status)).containsOnly(ActionStatus.InUndo);
+        assertThat(ActionResolver.getNextActions(saga).stream().map(a -> a.status)).containsOnly(ActionStatus.UndoInProgress);
         assertThat(ActionResolver.getNextActions(saga).stream().map(a -> a.command.get().commandId)).containsExactlyInAnyOrder(undoCommand1, undoCommand3);
     }
 
@@ -243,7 +243,7 @@ class SagaTransitionsTest {
                         .build())
                 .build();
         assertThat(ActionResolver.getNextActions(saga).stream().map(a -> a.actionId)).containsOnly(action1);
-        assertThat(ActionResolver.getNextActions(saga).stream().map(a -> a.status)).containsOnly(ActionStatus.InUndo);
+        assertThat(ActionResolver.getNextActions(saga).stream().map(a -> a.status)).containsOnly(ActionStatus.UndoInProgress);
         assertThat(ActionResolver.getNextActions(saga).stream().map(a -> a.command.get().commandId)).containsOnly(undoCommand1);
     }
 
@@ -328,7 +328,7 @@ class SagaTransitionsTest {
                 .status(SagaStatus.InFailure)
                 .action(builder -> builder
                         .id(action1)
-                        .status(ActionStatus.InUndo)
+                        .status(ActionStatus.UndoInProgress)
                         .command(ActionCommand.of(new AddFunds("id1", 10.0), "action_type"))
                         .undoCommand(ActionCommand.of(new AddFunds("id1", -10.0), "action_type"))
                         .dependency(action3)
@@ -341,7 +341,7 @@ class SagaTransitionsTest {
                         .build())
                 .action(builder -> builder
                         .id(action3)
-                        .status(ActionStatus.InUndo)
+                        .status(ActionStatus.UndoInProgress)
                         .command(ActionCommand.of(new AddFunds("id3", 10.0), "action_type"))
                         .undoCommand(ActionCommand.of(new AddFunds("id3", -10.0), "action_type"))
                         .build())
@@ -375,7 +375,7 @@ class SagaTransitionsTest {
                 .status(SagaStatus.InFailure)
                 .action(builder -> builder
                         .id(action1)
-                        .status(ActionStatus.InUndo)
+                        .status(ActionStatus.UndoInProgress)
                         .command(ActionCommand.of(new AddFunds("id1", 10.0), "action_type"))
                         .undoCommand(ActionCommand.of(new AddFunds("id1", -10.0), "action_type"))
                         .dependency(action3)
@@ -388,7 +388,7 @@ class SagaTransitionsTest {
                         .build())
                 .action(builder -> builder
                         .id(action3)
-                        .status(ActionStatus.InUndo)
+                        .status(ActionStatus.UndoInProgress)
                         .command(ActionCommand.of(new AddFunds("id3", 10.0), "action_type"))
                         .undoCommand(ActionCommand.of(new AddFunds("id3", -10.0), "action_type"))
                         .build())

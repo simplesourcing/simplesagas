@@ -73,7 +73,7 @@ protocol SagaSchemas {
     string actionStatus;
     union { array<AvroSagaError>, null } actionErrors;
     union { AvroActionUndoCommand, null } undoCommand;
-    boolean inUndo;
+    boolean isUndo;
   }
 
   record AvroSagaTransitionSagaStatusChange {

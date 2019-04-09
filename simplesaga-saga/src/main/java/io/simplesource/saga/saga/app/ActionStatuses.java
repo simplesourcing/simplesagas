@@ -38,13 +38,13 @@ class ActionStatuses {
     boolean inFailure() {
         return has(ActionStatus.Failed) &&
                 missing(ActionStatus.InProgress) &&
-                (has(ActionStatus.InUndo) || has(ActionStatus.Completed));
+                (has(ActionStatus.UndoInProgress) || has(ActionStatus.Completed));
     }
 
     boolean failed() {
         return has(ActionStatus.Failed) &&
                 missing(ActionStatus.InProgress) &&
-                missing(ActionStatus.InUndo) &&
+                missing(ActionStatus.UndoInProgress) &&
                 missing(ActionStatus.Completed) &&
                 missing(ActionStatus.RetryAwaiting);
     }

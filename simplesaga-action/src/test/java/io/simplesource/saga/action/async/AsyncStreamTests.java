@@ -415,7 +415,7 @@ class AsyncStreamTests {
     }
 
     @Test
-    void returnsNoUndoCommandIfInUndo() {
+    void returnsNoUndoCommandIfIsUndo() {
         returnsAnUndoCommand(true);
     }
 

@@ -763,7 +763,7 @@ class SagaStreamTests {
                 assertThat(stateTransition).isInstanceOf(SagaStateTransition.TransitionList.class);
                 SagaStateTransition.TransitionList<SpecificRecord> transitionList = (SagaStateTransition.TransitionList<SpecificRecord>) stateTransition;
                 assertThat(transitionList.actions.size()).isEqualTo(1);
-                assertThat(transitionList.actions.get(0).actionStatus).isEqualTo(ActionStatus.InUndo);
+                assertThat(transitionList.actions.get(0).actionStatus).isEqualTo(ActionStatus.UndoInProgress);
             }
         });
 
@@ -781,7 +781,7 @@ class SagaStreamTests {
             } else if (i == 2) {
                 assertThat(state.sequence.getSeq()).isEqualTo(6);
                 assertThat(state.status).isEqualTo(SagaStatus.InFailure);
-                assertThat(state.actions.get(addFundsId1).status).isEqualTo(ActionStatus.InUndo);
+                assertThat(state.actions.get(addFundsId1).status).isEqualTo(ActionStatus.UndoInProgress);
                 assertThat(state.actions.get(transferFundsId).status).isEqualTo(ActionStatus.Failed);
             }
         });
@@ -934,7 +934,7 @@ class SagaStreamTests {
             if (i == 1) {
                 assertThat(state.sequence.getSeq()).isEqualTo(12);
                 assertThat(state.status).isEqualTo(SagaStatus.InFailure);
-                assertThat(state.actions.get(addFundsId1).status).isEqualTo(ActionStatus.InUndo);
+                assertThat(state.actions.get(addFundsId1).status).isEqualTo(ActionStatus.UndoInProgress);
                 assertThat(state.actions.get(transferFundsId).status).isEqualTo(ActionStatus.Failed);
             }
         });
@@ -943,7 +943,7 @@ class SagaStreamTests {
             assertThat(stateTransition).isInstanceOf(SagaStateTransition.TransitionList.class);
             SagaStateTransition.SagaActionStateChanged<?> c = ((SagaStateTransition.TransitionList<SpecificRecord>) stateTransition).actions.get(0);
             assertThat(c.actionId).isEqualTo(addFundsId1);
-            assertThat(c.actionStatus).isEqualTo(ActionStatus.InUndo);
+            assertThat(c.actionStatus).isEqualTo(ActionStatus.UndoInProgress);
         });
 
         // undo add funds successful
@@ -1135,9 +1135,9 @@ class SagaStreamTests {
                 assertThat(state.actions.get(transferFundsId).status).isEqualTo(ActionStatus.Completed);
             } else if (i == 2) {
                 assertThat(state.status).isEqualTo(SagaStatus.InFailure);
-                assertThat(state.actions.get(addFundsId1).status).isEqualTo(ActionStatus.InUndo);
+                assertThat(state.actions.get(addFundsId1).status).isEqualTo(ActionStatus.UndoInProgress);
                 assertThat(state.actions.get(addFundsId2).status).isEqualTo(ActionStatus.Failed);
-                assertThat(state.actions.get(transferFundsId).status).isEqualTo(ActionStatus.InUndo);
+                assertThat(state.actions.get(transferFundsId).status).isEqualTo(ActionStatus.UndoInProgress);
             }
         });
 
@@ -1323,7 +1323,7 @@ class SagaStreamTests {
                 assertThat(state.status).isEqualTo(SagaStatus.InFailure);
                 assertThat(state.actions.get(addFundsId1).status).isEqualTo(ActionStatus.Failed);
                 assertThat(state.actions.get(addFundsId2).status).isEqualTo(ActionStatus.Failed);
-                assertThat(state.actions.get(transferFundsId).status).isEqualTo(ActionStatus.InUndo);
+                assertThat(state.actions.get(transferFundsId).status).isEqualTo(ActionStatus.UndoInProgress);
             }
         });
 

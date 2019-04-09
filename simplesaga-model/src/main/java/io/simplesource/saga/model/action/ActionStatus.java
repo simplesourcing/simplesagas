@@ -5,7 +5,7 @@ public enum ActionStatus {
     InProgress,
     Completed,
     Failed,
-    InUndo,
+    UndoInProgress,
     Undone,
     UndoBypassed,
     UndoFailed,
