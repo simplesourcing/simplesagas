@@ -9,17 +9,17 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Value
-class SagaStates {
+class ActionStatuses {
     Set<ActionStatus> actionStates;
     public final SagaStatus sagaStatus;
 
-    private SagaStates(Saga<?> s) {
+    private ActionStatuses(Saga<?> s) {
         actionStates = s.actions.values().stream().map(a -> a.status).collect(Collectors.toSet());
         sagaStatus = s.status;
     }
 
-    static public SagaStates of(Saga<?> s) {
-        return new SagaStates(s);
+    static public ActionStatuses of(Saga<?> s) {
+        return new ActionStatuses(s);
     }
 
     boolean has(ActionStatus status) {

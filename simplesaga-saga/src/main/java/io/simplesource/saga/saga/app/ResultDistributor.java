@@ -12,15 +12,15 @@ import java.util.UUID;
 
 
 //// TODO: really should find a way to share the code in SimpleSourcing
-public class ResultDistributor {
+class ResultDistributor {
 
-  public static <K, V> KStream<K, String> resultTopicMapStream(DistributorContext<K, V> ctx, StreamsBuilder builder) {
+  static <K, V> KStream<K, String> resultTopicMapStream(DistributorContext<K, V> ctx, StreamsBuilder builder) {
       return builder.stream(ctx.topicNameMapTopic, Consumed.with(ctx.serdes.key, Serdes.String()));
   }
 
-  public static <K, V> void distribute(DistributorContext<K, V> ctx,
-                       KStream<K, V> resultStream,
-                       KStream<K, String> topicNameStream) {
+  static <K, V> void distribute(DistributorContext<K, V> ctx,
+                                KStream<K, V> resultStream,
+                                KStream<K, String> topicNameStream) {
       DistributorSerdes<K, V> serdes          = ctx.serdes;
     Duration retention = Duration.ofSeconds(ctx.responseWindowSpec.retentionInSeconds());
 

@@ -47,7 +47,7 @@ class SagaInternalSerdesTest {
         String originalAsString = transition.toString();
         assertThat(deserialized.toString()).hasSameSizeAs(originalAsString);
 
-        B aDes = (B)deserialized;
+        B aDes = (B) deserialized;
         assertThat(aDes).isNotNull();
         return aDes;
     }
@@ -69,7 +69,8 @@ class SagaInternalSerdesTest {
                 ActionId.random(),
                 ActionStatus.Completed,
                 Collections.emptyList(),
-                Optional.empty());
+                Optional.empty(),
+                false);
 
         SagaStateTransition.SagaActionStateChanged<SpecificRecord> deserialized = testTransition(original);
         assertThat(deserialized).isEqualToComparingFieldByField(original);
@@ -84,7 +85,8 @@ class SagaInternalSerdesTest {
                 Lists.of(
                         SagaError.of(SagaError.Reason.InternalError, "internal error"),
                         SagaError.of(SagaError.Reason.Timeout, "timeout")),
-                Optional.empty());
+                Optional.empty(),
+                false);
 
         testTransition(original);
 
@@ -130,13 +132,15 @@ class SagaInternalSerdesTest {
                         Lists.of(
                                 SagaError.of(SagaError.Reason.InternalError, "internal error"),
                                 SagaError.of(SagaError.Reason.Timeout, "timeout")),
-                        Optional.empty()),
+                        Optional.empty(),
+                        false),
                 SagaStateTransition.SagaActionStateChanged.of(
                         SagaId.random(),
                         ActionId.random(),
                         ActionStatus.Completed,
                         Collections.emptyList(),
-                        Optional.empty())));
+                        Optional.empty(),
+                        false)));
 
         testTransition(original);
     }
@@ -151,13 +155,15 @@ class SagaInternalSerdesTest {
                         Lists.of(
                                 SagaError.of(SagaError.Reason.InternalError, "internal error"),
                                 SagaError.of(SagaError.Reason.Timeout, "timeout")),
-                        Optional.of(UndoCommand.of(new TransferFunds("id1", "id2", 50.0), "action_undo_type"))),
+                        Optional.of(UndoCommand.of(new TransferFunds("id1", "id2", 50.0), "action_undo_type")),
+                        false),
                 SagaStateTransition.SagaActionStateChanged.of(
                         SagaId.random(),
                         ActionId.random(),
                         ActionStatus.Completed,
                         Collections.emptyList(),
-                        Optional.of(UndoCommand.of(new TransferFunds("id1", "id2", 50.0), "action_undo_type")))));
+                        Optional.of(UndoCommand.of(new TransferFunds("id1", "id2", 50.0), "action_undo_type")),
+                        false)));
 
         testTransition(original);
     }

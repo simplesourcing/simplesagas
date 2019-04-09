@@ -17,4 +17,8 @@ public class SagaAction<A> {
     public final ActionStatus status;
     public final List<SagaError> error;
     public final int retryCount;
+
+    public SagaAction<A> updated(ActionStatus newStatus) {
+        return new SagaAction<>(actionId, command, undoCommand, dependencies, newStatus, error, retryCount);
+    }
 }

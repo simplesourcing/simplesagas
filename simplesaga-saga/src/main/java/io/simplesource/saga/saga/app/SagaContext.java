@@ -1,14 +1,11 @@
 package io.simplesource.saga.saga.app;
 
 
-import io.simplesource.saga.model.messages.SagaStateTransition;
 import io.simplesource.saga.model.saga.RetryStrategy;
-import io.simplesource.saga.model.saga.SagaId;
 import io.simplesource.saga.model.serdes.ActionSerdes;
 import io.simplesource.saga.model.serdes.SagaSerdes;
 import io.simplesource.saga.model.specs.ActionSpec;
 import io.simplesource.saga.model.specs.SagaSpec;
-import io.simplesource.saga.shared.kafka.AsyncPublisher;
 import io.simplesource.saga.shared.topics.TopicNamer;
 import lombok.Value;
 
@@ -28,12 +25,12 @@ public final class SagaContext<A> {
     public final ScheduledExecutorService executor;
 
     public SagaContext(SagaSpec<A> sSpec,
-            ActionSpec<A> aSpec,
-            TopicNamer sagaTopicNamer,
-            Map<String, TopicNamer> actionTopicNamers,
-            Map<String, RetryStrategy> retryStrategies,
-            RetryPublisher<A> retryPublisher,
-            ScheduledExecutorService executor) {
+                       ActionSpec<A> aSpec,
+                       TopicNamer sagaTopicNamer,
+                       Map<String, TopicNamer> actionTopicNamers,
+                       Map<String, RetryStrategy> retryStrategies,
+                       RetryPublisher<A> retryPublisher,
+                       ScheduledExecutorService executor) {
 
         this.sSpec = sSpec;
         this.aSpec = aSpec;

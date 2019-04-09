@@ -31,6 +31,7 @@ public interface SagaStateTransition<A> {
         public final ActionStatus actionStatus;
         public final List<SagaError> actionErrors;
         public final Optional<UndoCommand<A>> undoCommand;
+        public final boolean isUndo;
 
         @Override
         public <B> B cata(Function<SetInitialState<A>, B> f1, Function<SagaActionStateChanged<A>, B> f2, Function<SagaStatusChanged<A>, B> f3, Function<TransitionList<A>, B> f4) {

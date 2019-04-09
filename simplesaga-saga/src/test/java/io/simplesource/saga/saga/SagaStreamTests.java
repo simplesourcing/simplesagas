@@ -591,7 +591,8 @@ class SagaStreamTests {
                 saga.sagaId,
                 createAccountId,
                 ActionStatus.RetryCompleted,
-                Collections.emptyList(), Optional.empty()));
+                Collections.emptyList(), Optional.empty(),
+                false));
 
         scc.accountActionRequestVerifier.verifyNoRecords();
         scc.sagaResponseVerifier.verifyNoRecords();
@@ -917,7 +918,8 @@ class SagaStreamTests {
                 addFundsId1,
                 ActionStatus.RetryCompleted,
                 Collections.emptyList(),
-                Optional.empty()));
+                Optional.empty(),
+                true));
 
 
         scc.sagaStateTransitionPublisher.publish(saga.sagaId, retryUndoTransition);
@@ -1238,14 +1240,16 @@ class SagaStreamTests {
                 saga.sagaId,
                 addFundsId1,
                 ActionStatus.RetryCompleted,
-                Collections.emptyList(), Optional.empty()));
+                Collections.emptyList(), Optional.empty(),
+                false));
 
         SagaStateTransition.SagaActionStateChanged<?> retryStateChange2 = ((SagaStateTransition.SagaActionStateChanged) retryTransition2);
         assertThat(retryStateChange2).isEqualTo(SagaStateTransition.SagaActionStateChanged.of(
                 saga.sagaId,
                 addFundsId2,
                 ActionStatus.RetryCompleted,
-                Collections.emptyList(), Optional.empty()));
+                Collections.emptyList(), Optional.empty(),
+                false));
 
         // complete the async setting of action back to pending, so that it can be rerun
         scc.sagaStateTransitionPublisher.publish(saga.sagaId, retryTransition1);
@@ -1285,7 +1289,7 @@ class SagaStreamTests {
             } else if (i == 1) {
                 assertThat(state.status).isEqualTo(SagaStatus.FailurePending);
                 assertThat(state.actions.get(addFundsId1).status).isEqualTo(ActionStatus.Failed);
-                assertThat(state.actions.get(addFundsId2).status).isEqualTo(ActionStatus.RetryAwaiting);
+                assertThat(state.actions.get(addFundsId2).status).isEqualTo(ActionStatus.Failed);
                 assertThat(state.actions.get(transferFundsId).status).isEqualTo(ActionStatus.InProgress);
             }
         });
