@@ -23,6 +23,7 @@ final class SagaTransitions {
         static class Retry {
             public final ActionId actionId;
             public final String actionType;
+            public final int retryCount;
         }
 
         public final Saga<A> saga;
@@ -122,7 +123,7 @@ final class SagaTransitions {
                             actionStateChanged.actionStatus == ActionStatus.RetryAwaiting ?
                                     actionUpdate.executedCommand.map(command ->
                                             Collections.singletonList(
-                                                    SagaWithRetry.Retry.of(actionUpdate.action.actionId, command.actionType)))
+                                                    SagaWithRetry.Retry.of(actionUpdate.action.actionId, command.actionType, oa.retryCount)))
                                             .orElse(Collections.emptyList()) :
                                     Collections.emptyList();
 

@@ -13,6 +13,7 @@ import io.simplesource.saga.shared.topics.TopicNamer;
 import lombok.Value;
 
 import java.util.Map;
+import java.util.concurrent.ScheduledExecutorService;
 
 @Value
 public final class SagaContext<A> {
@@ -24,13 +25,15 @@ public final class SagaContext<A> {
     public final Map<String, TopicNamer> actionTopicNamers;
     public final Map<String, RetryStrategy> retryStrategies;
     public final RetryPublisher<A> retryPublisher;
+    public final ScheduledExecutorService executor;
 
     public SagaContext(SagaSpec<A> sSpec,
             ActionSpec<A> aSpec,
             TopicNamer sagaTopicNamer,
             Map<String, TopicNamer> actionTopicNamers,
             Map<String, RetryStrategy> retryStrategies,
-            RetryPublisher<A> retryPublisher) {
+            RetryPublisher<A> retryPublisher,
+            ScheduledExecutorService executor) {
 
         this.sSpec = sSpec;
         this.aSpec = aSpec;
@@ -38,6 +41,7 @@ public final class SagaContext<A> {
         this.actionTopicNamers = actionTopicNamers;
         this.retryStrategies = retryStrategies;
         this.retryPublisher = retryPublisher;
+        this.executor = executor;
         sSerdes = sSpec.serdes;
         aSerdes = aSpec.serdes;
     }

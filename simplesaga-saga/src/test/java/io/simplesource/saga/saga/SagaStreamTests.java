@@ -44,6 +44,12 @@ class SagaStreamTests {
     @Value
     private static class TestRetryPublisher implements RetryPublisher<SpecificRecord> {
         Map<String, Map<SagaId, SagaStateTransition<SpecificRecord>>> retryMap = new HashMap<>();
+        private final TopicNamer topicNamer;
+
+        TestRetryPublisher(TopicNamer topicNamer) {
+
+            this.topicNamer = topicNamer;
+        }
 
         @Override
         public void send(String topic, SagaId key, SagaStateTransition<SpecificRecord> value) {
@@ -52,6 +58,19 @@ class SagaStreamTests {
                 map.put(key, value);
                 return map;
             });
+        }
+
+        public SagaStateTransition<SpecificRecord> getTransition(String actionType, SagaId sagaId) {
+            Map<SagaId, SagaStateTransition<SpecificRecord>>  map = retryMap.get(topicNamer.apply(TopicTypes.SagaTopic.SAGA_STATE_TRANSITION));
+             return map == null ? null : map.get(sagaId);
+        }
+
+    }
+
+    private static void delayMillis(int millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException e) {
         }
     }
 
@@ -75,7 +94,7 @@ class SagaStreamTests {
         final RecordVerifier<SagaId, Saga<SpecificRecord>> sagaStateVerifier;
         final RecordVerifier<SagaId, SagaResponse> sagaResponseVerifier;
         final List<String> topicsToCreate = new ArrayList<>();
-        final TestRetryPublisher testRetryPublisher = new TestRetryPublisher();
+        final TestRetryPublisher testRetryPublisher;
 
         SagaCoordinatorContext() {
             this(0);
@@ -97,6 +116,8 @@ class SagaStreamTests {
                             Constants.USER_ACTION_TYPE,
                             topicBuilder -> topicBuilder.withTopicPrefix(Constants.ACTION_TOPIC_PREFIX))
                     .withRetryStrategy(Constants.ACCOUNT_ACTION_TYPE, RetryStrategy.repeat(numberOfRetries, Duration.ofMillis(200)));
+
+            testRetryPublisher = new TestRetryPublisher(sagaTopicNamer);
 
             Topology topology = sagaApp.buildTopology(topics -> topics.forEach(t -> topicsToCreate.add(t.topicName)), testRetryPublisher);
             testContext = TestContextBuilder.of(topology).build();
@@ -547,23 +568,22 @@ class SagaStreamTests {
                 false,
                 Result.failure(sagaError)));
 
-        scc.sagaStateTransitionVerifier.verifyMultiple(1, (i, id, stateTransition) -> {
+        scc.sagaStateTransitionVerifier.verifySingle((id, stateTransition) -> {
             assertThat(stateTransition).isInstanceOf(SagaStateTransition.SagaActionStateChanged.class);
             SagaStateTransition.SagaActionStateChanged<?> c = ((SagaStateTransition.SagaActionStateChanged) stateTransition);
             assertThat(c.actionId).isEqualTo(createAccountId);
             assertThat(c.actionStatus).isEqualTo(ActionStatus.RetryAwaiting);
         });
 
-        scc.sagaStateVerifier.verifyMultiple(1, (i, id, state) -> {
+        scc.sagaStateVerifier.verifySingle((id, state) -> {
             assertThat(state.sequence.getSeq()).isEqualTo(2);
             assertThat(state.status).isEqualTo(SagaStatus.InProgress);
             assertThat(state.actions.get(createAccountId).status).isEqualTo(ActionStatus.RetryAwaiting);
             assertThat(state.actions.get(addFundsId1).status).isEqualTo(ActionStatus.Pending);
         });
 
-        assertThat(scc.testRetryPublisher.retryMap).containsKey(Constants.ACCOUNT_ACTION_TYPE);
-        assertThat(scc.testRetryPublisher.retryMap.get(Constants.ACCOUNT_ACTION_TYPE)).containsKey(saga.sagaId);
-        SagaStateTransition<SpecificRecord> retryTransition = scc.testRetryPublisher.retryMap.get(Constants.ACCOUNT_ACTION_TYPE).get(saga.sagaId);
+        delayMillis(300);
+        SagaStateTransition<SpecificRecord> retryTransition = scc.testRetryPublisher.getTransition(Constants.ACCOUNT_ACTION_TYPE, saga.sagaId);
         assertThat(retryTransition).isInstanceOf(SagaStateTransition.SagaActionStateChanged.class);
         SagaStateTransition.SagaActionStateChanged<?> retryStateChange = ((SagaStateTransition.SagaActionStateChanged) retryTransition);
         // TODO: complete
@@ -845,8 +865,9 @@ class SagaStreamTests {
                 false,
                 Result.failure(sagaError1)));
 
+        delayMillis(300);
         // complete the async setting of action back to pending, so that it can be rerun
-        SagaStateTransition<SpecificRecord> retryTransition = scc.testRetryPublisher.retryMap.get(Constants.ACCOUNT_ACTION_TYPE).get(saga.sagaId);
+        SagaStateTransition<SpecificRecord> retryTransition =scc.testRetryPublisher.getTransition(Constants.ACCOUNT_ACTION_TYPE, saga.sagaId);
         scc.sagaStateTransitionPublisher.publish(saga.sagaId, retryTransition);
 
         // failed again
@@ -872,22 +893,23 @@ class SagaStreamTests {
                 true,
                 Result.failure(sagaUndoError)));
 
-        scc.sagaStateTransitionVerifier.verifyMultiple(1, (i, id, stateTransition) -> {
+        scc.sagaStateTransitionVerifier.verifySingle((id, stateTransition) -> {
             assertThat(stateTransition).isInstanceOf(SagaStateTransition.SagaActionStateChanged.class);
             SagaStateTransition.SagaActionStateChanged<?> c = ((SagaStateTransition.SagaActionStateChanged) stateTransition);
             assertThat(c.actionId).isEqualTo(addFundsId1);
             assertThat(c.actionStatus).isEqualTo(ActionStatus.RetryAwaiting);
         });
 
-        scc.sagaStateVerifier.verifyMultiple(1, (i, id, state) -> {
+        scc.sagaStateVerifier.verifySingle((id, state) -> {
                 assertThat(state.sequence.getSeq()).isEqualTo(10);
                 assertThat(state.status).isEqualTo(SagaStatus.InFailure);
                 assertThat(state.actions.get(addFundsId1).status).isEqualTo(ActionStatus.RetryAwaiting);
                 assertThat(state.actions.get(transferFundsId).status).isEqualTo(ActionStatus.Failed);
         });
 
+        delayMillis(300);
         // complete the async setting of action back to pending, so that it can be rerun
-        SagaStateTransition<SpecificRecord> retryUndoTransition = scc.testRetryPublisher.retryMap.get(Constants.ACCOUNT_ACTION_TYPE).get(saga.sagaId);
+        SagaStateTransition<SpecificRecord> retryUndoTransition = scc.testRetryPublisher.getTransition(Constants.ACCOUNT_ACTION_TYPE, saga.sagaId);
         assertThat(retryUndoTransition).isInstanceOf(SagaStateTransition.SagaActionStateChanged.class);
         SagaStateTransition.SagaActionStateChanged<?> retryStateChange = ((SagaStateTransition.SagaActionStateChanged) retryUndoTransition);
         assertThat(retryStateChange).isEqualTo(SagaStateTransition.SagaActionStateChanged.of(
@@ -915,13 +937,11 @@ class SagaStreamTests {
             }
         });
 
-        scc.sagaStateTransitionVerifier.verifyMultiple(1, (i, id, stateTransition) -> {
-            if (i == 0) {
-                assertThat(stateTransition).isInstanceOf(SagaStateTransition.TransitionList.class);
-                SagaStateTransition.SagaActionStateChanged<?> c = ((SagaStateTransition.TransitionList<SpecificRecord>) stateTransition).actions.get(0);
-                assertThat(c.actionId).isEqualTo(addFundsId1);
-                assertThat(c.actionStatus).isEqualTo(ActionStatus.InUndo);
-            }
+        scc.sagaStateTransitionVerifier.verifySingle((id, stateTransition) -> {
+            assertThat(stateTransition).isInstanceOf(SagaStateTransition.TransitionList.class);
+            SagaStateTransition.SagaActionStateChanged<?> c = ((SagaStateTransition.TransitionList<SpecificRecord>) stateTransition).actions.get(0);
+            assertThat(c.actionId).isEqualTo(addFundsId1);
+            assertThat(c.actionStatus).isEqualTo(ActionStatus.InUndo);
         });
 
         // undo add funds successful
@@ -1182,7 +1202,8 @@ class SagaStreamTests {
                 false,
                 Result.failure(sagaError1)));
 
-        SagaStateTransition<SpecificRecord> retryTransition1 = scc.testRetryPublisher.retryMap.get(Constants.ACCOUNT_ACTION_TYPE).get(saga.sagaId);
+        delayMillis(300);
+        SagaStateTransition<SpecificRecord> retryTransition1 = scc.testRetryPublisher.getTransition(Constants.ACCOUNT_ACTION_TYPE, saga.sagaId);
         assertThat(retryTransition1).isInstanceOf(SagaStateTransition.SagaActionStateChanged.class);
 
         SagaError sagaError2 = SagaError.of(SagaError.Reason.CommandError, "Oh noes 2");
@@ -1193,7 +1214,8 @@ class SagaStreamTests {
                 false,
                 Result.failure(sagaError2)));
 
-        SagaStateTransition<SpecificRecord> retryTransition2 = scc.testRetryPublisher.retryMap.get(Constants.ACCOUNT_ACTION_TYPE).get(saga.sagaId);
+        delayMillis(300);
+        SagaStateTransition<SpecificRecord> retryTransition2 = scc.testRetryPublisher.getTransition(Constants.ACCOUNT_ACTION_TYPE, saga.sagaId);
         assertThat(retryTransition1).isInstanceOf(SagaStateTransition.SagaActionStateChanged.class);
 
         scc.sagaStateVerifier.verifyMultiple(2, (i, id, state) -> {

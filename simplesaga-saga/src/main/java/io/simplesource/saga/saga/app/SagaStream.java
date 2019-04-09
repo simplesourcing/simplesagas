@@ -30,6 +30,7 @@ final public class SagaStream {
     }
 
     static <A> void addSubTopology(SagaContext<A> ctx,
+                                   SagaTopologyBuilder.DelayedRetryPublisher<A> retryPublisher,
                                    KStream<SagaId, SagaRequest<A>> sagaRequestStream,
                                    KStream<SagaId, SagaStateTransition<A>> stateTransitionStream,
                                    KStream<SagaId, Saga<A>> stateStream,
@@ -47,7 +48,7 @@ final public class SagaStream {
         Tuple2<KStream<SagaId, SagaStateTransition<A>>, KStream<SagaId, ActionRequest<A>>> rtAr = addNextActions(stateStream);
         KStream<SagaId, SagaStateTransition<A>> responseTransitions = handleActionResponses(ctx, actionResponseStream, stateTable);
         Tuple2<KStream<SagaId, SagaStateTransition<A>>, KStream<SagaId, SagaResponse>> stSr = addSagaResponse(stateStream);
-        KStream<SagaId, Saga<A>> sagaState = applyStateTransitions(ctx, stateTransitionStream);
+        KStream<SagaId, Saga<A>> sagaState = applyStateTransitions(ctx, retryPublisher, stateTransitionStream);
 
         // publish to all the value topics
         SagaProducer.publishActionRequests(ctx, rtAr.v2());
@@ -67,6 +68,7 @@ final public class SagaStream {
     }
 
     private static <A> KStream<SagaId, Saga<A>> applyStateTransitions(SagaContext<A> ctx,
+                                                                      SagaTopologyBuilder.DelayedRetryPublisher<A> publisher,
                                                                       KStream<SagaId, SagaStateTransition<A>> stateTransitionStream) {
         SagaSerdes<A> sSerdes = ctx.sSerdes;
         return stateTransitionStream
@@ -74,14 +76,14 @@ final public class SagaStream {
                 .aggregate(() -> Saga.of(new HashMap<>()),
                         (k, t, s) -> {
                             SagaTransitions.SagaWithRetry<A> sagaWithRetries = SagaTransitions.applyTransition(t, s);
-                            sendRetries(ctx, s, sagaWithRetries.retryActions);
+                            sendRetries(publisher, s, sagaWithRetries.retryActions);
                             return sagaWithRetries.saga;
                         },
                         Materialized.with(sSerdes.sagaId(), sSerdes.state()))
                 .toStream();
     }
 
-    private static <A> void sendRetries(SagaContext<A> ctx, Saga<A> s, List<SagaTransitions.SagaWithRetry.Retry> retries) {
+    private static <A> void sendRetries(SagaTopologyBuilder.DelayedRetryPublisher<A> publisher, Saga<A> s, List<SagaTransitions.SagaWithRetry.Retry> retries) {
 
         retries.forEach(r -> {
             SagaAction<A> existing = s.actions.get(r.actionId);
@@ -93,7 +95,7 @@ final public class SagaStream {
                             existing.error,
                             Optional.empty());
 
-            ctx.retryPublisher.send(r.actionType, s.sagaId, transition);
+            publisher.send(r.actionType, r.retryCount, s.sagaId, transition);
 
         });
     }

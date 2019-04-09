@@ -5,10 +5,10 @@ import io.simplesource.saga.model.saga.RetryStrategy;
 import io.simplesource.saga.model.saga.SagaId;
 import io.simplesource.saga.model.specs.ActionSpec;
 import io.simplesource.saga.model.specs.SagaSpec;
-import io.simplesource.saga.saga.app.KafkaRetryPublisher;
 import io.simplesource.saga.saga.app.RetryPublisher;
 import io.simplesource.saga.saga.app.SagaContext;
 import io.simplesource.saga.saga.app.SagaTopologyBuilder;
+import io.simplesource.saga.shared.kafka.AsyncKafkaPublisher;
 import io.simplesource.saga.shared.kafka.KafkaUtils;
 import io.simplesource.saga.shared.topics.*;
 import io.simplesource.saga.shared.streams.StreamAppConfig;
@@ -22,6 +22,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Consumer;
 
 
@@ -52,6 +54,7 @@ final public class SagaApp<A> {
     private RetryStrategy defaultRetryStrategy = RetryStrategy.failFast();
     private final Map<String, TopicConfigBuilder.BuildSteps> buildFuncMap = new HashMap<>();
     private final TopicConfigBuilder.BuildSteps sagaTopicBuildSteps;
+    private ScheduledExecutorService executor;
 
     private SagaApp(SagaSpec<A> sagaSpec, ActionSpec<A> actionSpec, TopicConfigBuilder.BuildSteps sagaTopicBuildSteps) {
         this.sagaSpec = sagaSpec;
@@ -79,6 +82,11 @@ final public class SagaApp<A> {
 
     public SagaApp<A> withActions(String... actionTypes) {
         return withActions(Arrays.asList(actionTypes), b -> b);
+    }
+
+    public SagaApp<A> withExecutor(ScheduledExecutorService executor) {
+        this.executor = executor;
+        return this;
     }
 
     public SagaApp<A> withRetryStrategy(RetryStrategy strategy) {
@@ -125,11 +133,12 @@ final public class SagaApp<A> {
                         Serdes.ByteArray().serializer(),
                         Serdes.ByteArray().serializer());
 
-        RetryPublisher<A> retryPublisher = new KafkaRetryPublisher<>(
+        AsyncKafkaPublisher<SagaId, SagaStateTransition<A>> kafkaPublisher = new AsyncKafkaPublisher<>(
                 producer,
                 sagaSpec.serdes.sagaId(),
                 sagaSpec.serdes.transition());
-        return buildTopology(topicCreator, retryPublisher);
+
+        return buildTopology(topicCreator, kafkaPublisher::send);
     }
 
     Topology buildTopology(Consumer<List<TopicCreation>> topicCreator) {
@@ -164,13 +173,16 @@ final public class SagaApp<A> {
 
         topicCreator.accept(topics);
 
+        ScheduledExecutorService usedExecutor = executor != null ? executor : Executors.newScheduledThreadPool(1);
+
         SagaContext<A> sagaContext = new SagaContext<>(
                 sagaSpec,
                 actionSpec,
                 sagaTopicConfig.namer,
                 topicNamers,
                 retryStrategyMap,
-                retryPublisher);
+                retryPublisher,
+                usedExecutor);
 
         StreamsBuilder builder = new StreamsBuilder();
         SagaTopologyBuilder.addSubTopology(sagaContext, builder);
