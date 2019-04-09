@@ -38,4 +38,8 @@ public class Saga<A> {
     public Saga<A> updated(Map<ActionId, SagaAction<A>> actions, SagaStatus status, List<SagaError> sagaError) {
         return new Saga<>(sagaId, actions, status, sagaError, sequence.next());
     }
+
+    public Saga<A> updated(Map<ActionId, SagaAction<A>> actions, SagaStatus status) {
+        return new Saga<>(sagaId, actions, status, sagaError, sequence.next());
+    }
 }

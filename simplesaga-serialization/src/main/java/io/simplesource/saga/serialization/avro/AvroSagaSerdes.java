@@ -90,6 +90,7 @@ public class AvroSagaSerdes<A> extends AvroSagaClientSerdes<A> implements SagaSe
                         payloadSerde,
                         topic,
                         uc)).orElse(null))
+                .setIsUndo(actionChange.isUndo)
                 .build();
     }
 
@@ -99,6 +100,7 @@ public class AvroSagaSerdes<A> extends AvroSagaClientSerdes<A> implements SagaSe
                 ActionId.fromString(actionChange.getActionId()),
                 ActionStatus.valueOf(actionChange.getActionStatus()),
                 SagaSerdeUtils.sagaErrorListFromAvro(actionChange.getActionErrors()),
-                Optional.ofNullable(SagaSerdeUtils.actionUndoCommandFromAvro(payloadSerde, topic, actionChange.getUndoCommand())));
+                Optional.ofNullable(SagaSerdeUtils.actionUndoCommandFromAvro(payloadSerde, topic, actionChange.getUndoCommand())),
+                actionChange.getIsUndo());
     }
 }

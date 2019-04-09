@@ -8,7 +8,7 @@ import io.simplesource.saga.action.app.ActionProcessor;
 import io.simplesource.saga.model.messages.UndoCommand;
 import io.simplesource.saga.model.serdes.TopicSerdes;
 import io.simplesource.saga.action.internal.AsyncActionProcessorProxy;
-import io.simplesource.saga.action.internal.AsyncPublisher;
+import io.simplesource.saga.shared.kafka.AsyncPublisher;
 import io.simplesource.saga.avro.avro.generated.test.AsyncTestCommand;
 import io.simplesource.saga.avro.avro.generated.test.AsyncTestId;
 import io.simplesource.saga.avro.avro.generated.test.AsyncTestOutput;
@@ -92,9 +92,7 @@ class AsyncStreamTests {
 
             actionApp.withActionProcessor(getActionProcessor(asyncSpec));
 
-            Properties config = StreamAppConfig.getConfig(new StreamAppConfig("app-id", "http://localhost:9092"));
-
-            StreamBuildResult sb = actionApp.build(config);
+            StreamBuildResult sb = actionApp.build(pb -> pb.withStreamAppConfig(StreamAppConfig.of("app-id", "http://localhost:9092")));
             Topology topology = sb.topologySupplier.get();
             expectedTopics = sb.topicCreations.stream().map(x -> x.topicName).collect(Collectors.toSet());
 
@@ -417,7 +415,7 @@ class AsyncStreamTests {
     }
 
     @Test
-    void returnsNoUndoCommandIfInUndo() {
+    void returnsNoUndoCommandIfIsUndo() {
         returnsAnUndoCommand(true);
     }
 

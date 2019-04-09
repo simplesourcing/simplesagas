@@ -41,10 +41,18 @@ public class RecordVerifier<K, V> {
 
     }
 
+    public V verifySingle() {
+        return verifySingle((k, v) -> {});
+    }
+
     public V verifySingle(BiConsumer<K, V> verifier) {
         V result = verifyAndReturn(verifier::accept);
         assertThat(result).isNotNull();
         return result;
+    }
+
+    public List<V> verifyMultiple(int count) {
+        return verifyMultiple(count, (i, k, v) -> {});
     }
 
     public List<V> verifyMultiple(int count, TriConsumer<Integer, K, V> verifier) {
@@ -61,7 +69,7 @@ public class RecordVerifier<K, V> {
         return eventList;
     }
 
-    public void drainAll() {
-        verifyMultiple(-1, (i, k, v) -> {});
+    public List<V> drainAll() {
+        return verifyMultiple(-1, (i, k, v) -> {});
     }
 }

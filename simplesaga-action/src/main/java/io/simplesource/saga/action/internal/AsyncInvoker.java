@@ -10,6 +10,7 @@ import io.simplesource.saga.model.messages.ActionRequest;
 import io.simplesource.saga.model.messages.ActionResponse;
 import io.simplesource.saga.model.saga.SagaError;
 import io.simplesource.saga.model.saga.SagaId;
+import io.simplesource.saga.shared.kafka.AsyncPublisher;
 import io.simplesource.saga.shared.topics.TopicTypes;
 import lombok.Value;
 
@@ -20,7 +21,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-final class AsyncActionProcessor {
+final class AsyncInvoker {
 
     @Value
     private static class ResultGeneration<A, K, R> {
@@ -36,7 +37,7 @@ final class AsyncActionProcessor {
         public final Optional<UndoCommand<A>> undoCommand;
     }
 
-    static <A, D, K, O, R> void processRecord(
+    static <A, D, K, O, R> void processActionRequest(
             AsyncContext<A, D, K, O, R> asyncContext,
             SagaId sagaId, ActionRequest<A> request,
             AsyncPublisher<SagaId, ActionResponse<A>> responsePublisher,
@@ -156,6 +157,7 @@ final class AsyncActionProcessor {
         ActionResponse<A> actionResponse = ActionResponse.of(request.sagaId,
                 request.actionId,
                 request.actionCommand.commandId,
+                request.isUndo,
                 resultWithUndo);
 
         responsePublisher.send(asyncContext.actionTopicNamer.apply(TopicTypes.ActionTopic.ACTION_RESPONSE),

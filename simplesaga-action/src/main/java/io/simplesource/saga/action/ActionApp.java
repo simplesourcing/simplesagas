@@ -4,6 +4,7 @@ import io.simplesource.saga.action.app.ActionAppContext;
 import io.simplesource.saga.action.app.ActionProcessor;
 import io.simplesource.saga.model.serdes.ActionSerdes;
 import io.simplesource.saga.model.specs.ActionSpec;
+import io.simplesource.saga.shared.kafka.PropertiesBuilder;
 import io.simplesource.saga.shared.streams.*;
 
 import java.time.Duration;
@@ -27,11 +28,15 @@ public class ActionApp<A> {
         return this;
     }
 
-    public StreamBuildResult build(Properties properties) {
+    public StreamBuildResult build(PropertiesBuilder.BuildSteps properties) {
         return streamApp.build(properties);
     }
 
     public void run(StreamAppConfig appConfig) {
         streamApp.run(appConfig);
+    }
+
+    public void run(PropertiesBuilder.BuildSteps properties) {
+        streamApp.run(properties);
     }
 }
