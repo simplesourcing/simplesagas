@@ -5,6 +5,9 @@ import io.simplesource.saga.shared.streams.StreamAppConfig;
 import java.util.Map;
 import java.util.Properties;
 
+/***
+ *
+ */
 public class PropertiesBuilder {
     private Properties defaults;
     private final Properties properties = new Properties();
@@ -48,18 +51,19 @@ public class PropertiesBuilder {
         return newProps;
     }
 
+    @FunctionalInterface
     public interface BuildSteps {
         PropertiesBuilder applyStep(PropertiesBuilder builder);
 
-        public default BuildSteps withNextStep(BuildSteps initial) {
+        default BuildSteps withNextStep(BuildSteps initial) {
             return builder -> initial.applyStep(this.applyStep(builder));
         }
 
-        public default BuildSteps withInitialStep(BuildSteps initial) {
+        default BuildSteps withInitialStep(BuildSteps initial) {
             return builder -> this.applyStep(initial.applyStep(builder));
         }
 
-        public default Properties build() {
+        default Properties build() {
             return this.applyStep(PropertiesBuilder.create()).build();
         }
     }

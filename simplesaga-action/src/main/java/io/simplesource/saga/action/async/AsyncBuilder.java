@@ -1,6 +1,6 @@
 package io.simplesource.saga.action.async;
 
-import io.simplesource.saga.action.app.ActionProcessor;
+import io.simplesource.saga.action.app.ActionProcessorBuildStep;
 import io.simplesource.saga.shared.streams.StreamBuildSpec;
 import io.simplesource.saga.action.internal.*;
 import io.simplesource.saga.model.specs.ActionSpec;
@@ -12,7 +12,7 @@ import java.util.concurrent.ScheduledExecutorService;
 
 public final class AsyncBuilder {
 
-    public static <A, D, K, O, R> ActionProcessor<A> apply(
+    public static <A, D, K, O, R> ActionProcessorBuildStep<A> apply(
             AsyncSpec<A, D, K, O, R> spec,
             TopicConfigBuilder.BuildSteps topicBuildFn,
             ScheduledExecutorService executor) {
@@ -38,7 +38,7 @@ public final class AsyncBuilder {
                 ActionTopologyContext<A> topologyContext = ActionTopologyContext.of(
                         actionSpec,
                         actionTopicConfig.namer,
-                        streamBuildContext.properties,
+                        streamBuildContext.propertiesBuilder,
                         builder);
 
                 ScheduledExecutorService usedExecutor = executor != null ? executor : Executors.newScheduledThreadPool(1);
@@ -53,18 +53,18 @@ public final class AsyncBuilder {
         };
     }
 
-    public static <A, D, K, O, R> ActionProcessor<A> apply(
+    public static <A, D, K, O, R> ActionProcessorBuildStep<A> apply(
             AsyncSpec<A, D, K, O, R> spec,
             TopicConfigBuilder.BuildSteps topicBuildFn) {
         return apply(spec, topicBuildFn, null);
     }
 
-    public static <A, D, K, O, R> ActionProcessor<A> apply(
+    public static <A, D, K, O, R> ActionProcessorBuildStep<A> apply(
             AsyncSpec<A, D, K, O, R> spec) {
         return apply(spec, a -> a, null);
     }
 
-    public static <A, D, K, O, R> ActionProcessor<A> apply(
+    public static <A, D, K, O, R> ActionProcessorBuildStep<A> apply(
             AsyncSpec<A, D, K, O, R> spec,
             ScheduledExecutorService executor) {
         return apply(spec, a -> a, executor);

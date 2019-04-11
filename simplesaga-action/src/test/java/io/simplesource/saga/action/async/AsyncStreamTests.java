@@ -4,7 +4,7 @@ import io.confluent.kafka.schemaregistry.client.MockSchemaRegistryClient;
 import io.simplesource.api.CommandId;
 import io.simplesource.data.Result;
 import io.simplesource.saga.action.ActionApp;
-import io.simplesource.saga.action.app.ActionProcessor;
+import io.simplesource.saga.action.app.ActionProcessorBuildStep;
 import io.simplesource.saga.model.messages.UndoCommand;
 import io.simplesource.saga.model.serdes.TopicSerdes;
 import io.simplesource.saga.action.internal.AsyncActionProcessorProxy;
@@ -130,7 +130,7 @@ class AsyncStreamTests {
                     executor);
         }
 
-        private ActionProcessor<SpecificRecord> getActionProcessor(AsyncSpec<SpecificRecord, AsyncTestCommand, AsyncTestId, Double, AsyncTestOutput> asyncSpec) {
+        private ActionProcessorBuildStep<SpecificRecord> getActionProcessor(AsyncSpec<SpecificRecord, AsyncTestCommand, AsyncTestId, Double, AsyncTestOutput> asyncSpec) {
             return AsyncBuilder.apply(
                             asyncSpec,
                             topicBuilder -> topicBuilder

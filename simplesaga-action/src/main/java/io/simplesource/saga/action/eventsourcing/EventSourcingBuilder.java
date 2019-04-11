@@ -1,6 +1,6 @@
 package io.simplesource.saga.action.eventsourcing;
 
-import io.simplesource.saga.action.app.ActionProcessor;
+import io.simplesource.saga.action.app.ActionProcessorBuildStep;
 import io.simplesource.saga.shared.streams.StreamBuildSpec;
 import io.simplesource.saga.action.internal.*;
 import io.simplesource.saga.model.specs.ActionSpec;
@@ -11,7 +11,7 @@ import java.util.Optional;
 
 public final class EventSourcingBuilder {
 
-    public static <A, D, K, C> ActionProcessor<A> apply(
+    public static <A, D, K, C> ActionProcessorBuildStep<A> apply(
             EventSourcingSpec<A, D, K, C> esSpec,
             TopicConfigBuilder.BuildSteps actionTopicBuilder,
             TopicConfigBuilder.BuildSteps commandTopicBuilder) {
@@ -36,7 +36,7 @@ public final class EventSourcingBuilder {
                 ActionTopologyContext<A> topologyContext = ActionTopologyContext.of(
                         actionSpec,
                         actionTopicConfig.namer,
-                        streamBuildContext.properties,
+                        streamBuildContext.propertiesBuilder,
                         builder);
                 EventSourcingStream.addSubTopology(topologyContext, eventSourcingContext);
 
@@ -45,7 +45,7 @@ public final class EventSourcingBuilder {
         };
     }
 
-    public static <A, D, K, C> ActionProcessor<A> apply(
+    public static <A, D, K, C> ActionProcessorBuildStep<A> apply(
             EventSourcingSpec<A, D, K, C> esSpec) {
         return apply(esSpec, a -> a, c -> c);
     }
