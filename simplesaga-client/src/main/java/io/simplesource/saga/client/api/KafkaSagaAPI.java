@@ -21,9 +21,23 @@ import java.time.Duration;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * The type Kafka saga api.
+ *
+ * @param <A> The this is a representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
+ */
 public final class KafkaSagaAPI<A> implements SagaAPI<A> {
     private final KafkaRequestAPI<SagaId, SagaRequest<A>, SagaId, SagaResponse> requestApi;
 
+    /**
+     * Instantiates a new Kafka saga api.
+     *
+     * @param sagaSpec        the saga spec
+     * @param kConfig         the k config
+     * @param sagaTopicConfig the saga topic config
+     * @param clientId        the client id
+     * @param scheduler       the scheduler
+     */
     public KafkaSagaAPI(SagaSpec<A> sagaSpec,
                         KafkaConfig kConfig,
                         TopicConfig sagaTopicConfig,

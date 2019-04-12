@@ -64,12 +64,8 @@ public class StreamApp<I> {
 
     /**
      * Run the SourcingApp with the given app configuration.
-     * @param appConfig app configuration.
+     * @param properties the app properties
      */
-    public void run(StreamAppConfig appConfig) {
-        run(properties -> properties.withStreamAppConfig(appConfig));
-    }
-
     public void run(PropertiesBuilder.BuildSteps properties) {
         StreamBuildResult streamBuildResult = build(properties);
 
@@ -77,7 +73,9 @@ public class StreamApp<I> {
         streamBuildResult.topicCreations.stream().map(x -> x.topicName).forEach(logger::info);
 
         // create missing topics
-        Properties props = properties.build();
+        Properties props = properties
+                .withInitialStep(PropertiesBuilder::withDefaultStreamProps)
+                .build();
         StreamAppUtils.createMissingTopics(props, streamBuildResult.topicCreations);
         StreamAppUtils.runStreamApp(props, streamBuildResult.topologySupplier.get());
 

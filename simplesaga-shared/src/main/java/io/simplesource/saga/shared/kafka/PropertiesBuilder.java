@@ -1,30 +1,25 @@
 package io.simplesource.saga.shared.kafka;
 
 import io.simplesource.saga.shared.streams.StreamAppConfig;
+import org.apache.kafka.clients.CommonClientConfigs;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.streams.StreamsConfig;
+import org.apache.kafka.streams.errors.LogAndContinueExceptionHandler;
 
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 
 /***
  *
  */
 public class PropertiesBuilder {
-    private Properties defaults;
     private final Properties properties = new Properties();
 
-    PropertiesBuilder(Properties defaults) {
-        this.defaults = defaults;
-    }
-
     public static PropertiesBuilder create() {
-        return new PropertiesBuilder(new Properties());
+        return new PropertiesBuilder();
     }
 
-    public static PropertiesBuilder withDefaults(Properties defaults) {
-        return new PropertiesBuilder(defaults);
-    }
-
-    public PropertiesBuilder withProperty(String key, String value) {
+    public PropertiesBuilder withProperty(String key, Object value) {
         this.properties.put(key, value);
         return this;
     }
@@ -34,21 +29,45 @@ public class PropertiesBuilder {
         return this;
     }
 
-    public PropertiesBuilder withProperties(Map<String, String> properties) {
+    public PropertiesBuilder withProperties(Map<String, Object> properties) {
         properties.forEach(this.properties::put);
         return this;
     }
 
-    public PropertiesBuilder withStreamAppConfig(StreamAppConfig appConfig) {
-        Properties properties = StreamAppConfig.getConfig(appConfig);
-        withProperties(properties);
-        return this;
+    public PropertiesBuilder withStreamAppConfig(StreamAppConfig config) {
+        return this
+                .withProperty(StreamsConfig.APPLICATION_ID_CONFIG, config.appId)
+                .withProperty(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, config.bootstrapServers);
+    }
+
+    public PropertiesBuilder withDefaultConsumerProps() {
+        return this
+                .withProperty(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, true)
+                .withProperty(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG, 1000)
+                .withProperty(ConsumerConfig.ISOLATION_LEVEL_CONFIG, "read_committed")
+                .withProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+    }
+
+    public PropertiesBuilder withDefaultProducerProps() {
+        return this
+                .withProperty(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, true)
+                .withProperty(ProducerConfig.RETRIES_CONFIG, 3)
+                .withProperty(ProducerConfig.COMPRESSION_TYPE_CONFIG, "snappy")
+                .withProperty(ProducerConfig.ACKS_CONFIG, "all");
+    }
+
+    public PropertiesBuilder withDefaultStreamProps() {
+        return this
+                .withProperty(StreamsConfig.PROCESSING_GUARANTEE_CONFIG, StreamsConfig.EXACTLY_ONCE)
+                .withProperty(StreamsConfig.STATE_DIR_CONFIG, "/tmp/kafka-streams")
+                .withProperty(StreamsConfig.DEFAULT_DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG, LogAndContinueExceptionHandler.class)
+                .withProperty(StreamsConfig.PROCESSING_GUARANTEE_CONFIG, StreamsConfig.EXACTLY_ONCE)
+                .withProperty(ProducerConfig.COMPRESSION_TYPE_CONFIG, "snappy")
+                .withProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
     }
 
     public Properties build() {
-        Properties newProps = KafkaUtils.copyProperties(defaults);
-        properties.forEach(newProps::put) ;
-        return newProps;
+        return properties;
     }
 
     @FunctionalInterface
@@ -64,7 +83,8 @@ public class PropertiesBuilder {
         }
 
         default Properties build() {
-            return this.applyStep(PropertiesBuilder.create()).build();
+            return this
+                    .applyStep(PropertiesBuilder.create()).build();
         }
     }
 }

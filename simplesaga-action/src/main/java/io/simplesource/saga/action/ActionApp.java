@@ -76,12 +76,6 @@ public class ActionApp<A> {
         return streamApp.build(properties);
     }
 
-    @Deprecated
-    public void run(StreamAppConfig appConfig) {
-        streamApp.run(appConfig);
-    }
-
-
     /**
      * Builds and runs the stream.
      *

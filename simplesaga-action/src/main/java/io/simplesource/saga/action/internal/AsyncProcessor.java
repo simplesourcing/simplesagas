@@ -1,6 +1,5 @@
 package io.simplesource.saga.action.internal;
 
-import java.util.Properties;
 import java.util.function.Function;
 
 import io.simplesource.saga.action.async.AsyncContext;
@@ -14,7 +13,6 @@ import io.simplesource.saga.shared.kafka.*;
 import io.simplesource.saga.shared.topics.TopicTypes;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.Serdes;
 
 final class AsyncProcessor {
@@ -25,15 +23,11 @@ final class AsyncProcessor {
         ActionSpec<A> actionSpec = asyncContext.actionSpec;
 
         PropertiesBuilder.BuildSteps consumerProps = config
-                .withInitialStep(pb -> pb
-                        .withProperty(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "true")
-                        .withProperty(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG, "1000")
-                        .withProperty(ConsumerConfig.ISOLATION_LEVEL_CONFIG, "read_committed"))
+                .withInitialStep(PropertiesBuilder::withDefaultConsumerProps)
                 .withNextStep(pb -> pb
                         .withProperty(ConsumerConfig.GROUP_ID_CONFIG, asyncSpec.groupId + "_async_consumer_" + asyncSpec.actionType));
 
-        PropertiesBuilder.BuildSteps producerProps = config.withInitialStep(pb -> pb
-                .withProperty(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, "true"));
+        PropertiesBuilder.BuildSteps producerProps = config.withInitialStep(PropertiesBuilder::withDefaultProducerProps);
 
         KafkaProducer<byte[], byte[]> producer =
                 new KafkaProducer<>(producerProps.build(),

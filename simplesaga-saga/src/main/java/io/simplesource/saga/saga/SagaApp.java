@@ -9,13 +9,11 @@ import io.simplesource.saga.saga.app.RetryPublisher;
 import io.simplesource.saga.saga.app.SagaContext;
 import io.simplesource.saga.saga.app.SagaTopologyBuilder;
 import io.simplesource.saga.shared.kafka.AsyncKafkaPublisher;
-import io.simplesource.saga.shared.kafka.KafkaUtils;
 import io.simplesource.saga.shared.kafka.PropertiesBuilder;
 import io.simplesource.saga.shared.topics.*;
 import io.simplesource.saga.shared.streams.StreamAppConfig;
 import io.simplesource.saga.shared.streams.StreamAppUtils;
 import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.Topology;
@@ -126,8 +124,11 @@ final public class SagaApp<A> {
      * @param appConfig app configuration.
      */
     public void run(StreamAppConfig appConfig) {
-        PropertiesBuilder.BuildSteps buildSteps = propertiesBuildSteps.withNextStep(p -> p.withStreamAppConfig(appConfig));
-        Properties config = buildSteps.build();
+        PropertiesBuilder.BuildSteps buildSteps = propertiesBuildSteps
+                .withInitialStep(PropertiesBuilder::withDefaultStreamProps)
+                .withNextStep(builder -> builder.withStreamAppConfig(appConfig));
+        Properties config = buildSteps
+                .build();
         Topology topology = buildTopology(topics -> StreamAppUtils.createMissingTopics(config, topics), buildSteps);
         logger.info("Topology description {}", topology.describe());
         StreamAppUtils.runStreamApp(config, topology);
@@ -135,7 +136,7 @@ final public class SagaApp<A> {
 
     Topology buildTopology(Consumer<List<TopicCreation>> topicCreator, PropertiesBuilder.BuildSteps propertyBuildSteps) {
         Properties producerProps = propertyBuildSteps
-                .withInitialStep(pb -> pb.withProperty(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, "true"))
+                .withInitialStep(PropertiesBuilder::withDefaultProducerProps)
                 .build();
 
         KafkaProducer<byte[], byte[]> producer =
