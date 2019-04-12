@@ -30,7 +30,6 @@ import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 import java.util.Optional;
-import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -65,7 +64,7 @@ class EventSourcingStreamTests {
                     EventSourcingSpec.<SpecificRecord, AccountCommand, AccountId, AccountCommand>builder()
                             .actionType(Constants.ACCOUNT_ACTION_TYPE)
                             .aggregateName(Constants.ACCOUNT_AGGREGATE_NAME)
-                            .decode(a -> Result.success((AccountCommand) a))
+                            .inputDecoder(a -> Result.success((AccountCommand) a))
                             .commandMapper(c -> c)
                             .keyMapper(AccountCommand::getId)
                             .sequenceMapper(c -> Sequence.position(c.getSequence()))

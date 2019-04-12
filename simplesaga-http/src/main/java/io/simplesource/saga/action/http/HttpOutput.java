@@ -25,5 +25,4 @@ public final class HttpOutput<A, K, B, O, R> {
 
     public final HttpResultDecoder<O, R> decoder;
     public final Optional<TopicSerdes<K, R>> outputSerdes;
-    public final BiFunction<HttpRequest<K, B>, R, Optional<UndoCommand<A>>> undoFunction;
 }

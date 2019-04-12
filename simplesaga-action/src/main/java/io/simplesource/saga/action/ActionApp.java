@@ -9,18 +9,21 @@ import io.simplesource.saga.shared.streams.*;
 
 /**
  * An ActionApp is the main component in an KStream action processor application.
- *
+ * <p>
  * An action processor application consists of one or more action processors.
- *
+ * <p>
  * To create an action processor, we provide an implementation of the functional interface {@link ActionProcessorBuildStep}
- *
+ * <p>
  * In this implementation we define both the instructions for building the stream topology, and the details about the topics
  * that are required for this action processor (Note that each action processor uses its own set of topics)
- *
+ * <p>
  * For examples of action processor implementations:
- * {@link io.simplesource.saga.action.eventsourcing.EventSourcingBuilder Event Sourcing Action processor}
- * {@link io.simplesource.saga.action.async.AsyncBuilder  Async Action processor}
- *
+ * <ul>
+ * <li>{@link io.simplesource.saga.action.eventsourcing.EventSourcingBuilder Event Sourcing Action processor}</li>
+ * <li>{@link io.simplesource.saga.action.async.AsyncBuilder  Async Action processor}</li>
+ * <li>{@link io.simplesource.saga.action.http.HttpBuilder Http Action processor}</li>
+ * </ul>
+ * <p>
  * It is recommended to use this pattern to create action processors. {@link ActionProcessorBuildStep} implementations can also be
  * used to provide implementations of other sub-topologies that are not directly related to action processors.
  * This can be useful for transforming stream data that might be used by an action processor, and making this transformation part
@@ -40,7 +43,7 @@ public class ActionApp<A> {
 
     /**
      *
-     * @param serdes - the Serdes for the action topics
+     * @param serdes - the Serdes for the action request and response topics. Note that all action types
      * @param <A> The action command type (shared across all actions)
      * @return the ActionApp
      */
@@ -52,7 +55,7 @@ public class ActionApp<A> {
      *
      * Adds an action processor to the application
      *
-     * @param processorBuildStep
+     * @param processorBuildStep - the action processor build step
      * @return this
      */
     public ActionApp<A> withActionProcessor(ActionProcessorBuildStep<A> processorBuildStep) {

@@ -132,11 +132,11 @@ class AsyncStreamTests {
 
         private ActionProcessorBuildStep<SpecificRecord> getActionProcessor(AsyncSpec<SpecificRecord, AsyncTestCommand, AsyncTestId, Double, AsyncTestOutput> asyncSpec) {
             return AsyncBuilder.apply(
-                            asyncSpec,
-                            topicBuilder -> topicBuilder
-                                    .withTopicPrefix(Constants.ACTION_TOPIC_PREFIX)
-                                    .withTopicNameOverride(TopicTypes.ActionTopic.ACTION_OUTPUT, ASYNC_TEST_OUTPUT_TOPIC)
-                    );
+                    asyncSpec,
+                    topicBuilder -> topicBuilder
+                            .withTopicPrefix(Constants.ACTION_TOPIC_PREFIX)
+                            .withTopicNameOverride(TopicTypes.ActionTopic.ACTION_OUTPUT, ASYNC_TEST_OUTPUT_TOPIC)
+            );
         }
 
         private AsyncSpec<SpecificRecord, AsyncTestCommand, AsyncTestId, Double, AsyncTestOutput> getAsyncSpec(int executionDelayMillis, Optional<Duration> timeout, BiConsumer<AsyncTestCommand, Callback<Double>> asyncFunctionOverride) {
@@ -154,17 +154,17 @@ class AsyncStreamTests {
                 BiConsumer<AsyncTestCommand, Callback<Double>> asyncFunction,
                 Optional<String> undoActionType) {
             return AsyncSpec.of(
-                            actionType,
-                            a -> Result.success((AsyncTestCommand) a),
-                            asyncFunction,
-                            "group_id",
-                            Optional.of(AsyncResult.of(
-                                    o -> Optional.of(Result.success(new AsyncTestOutput(o))),
-                                    AsyncTestCommand::getId,
-                                    (d, k, r) -> undoActionType.map(uat ->
-                                            UndoCommand.of(new AsyncTestCommand(d.getId(), r.getValue()), uat)),
-                                    Optional.of(asyncSerdes))),
-                            timeout);
+                    actionType,
+                    a -> Result.success((AsyncTestCommand) a),
+                    asyncFunction,
+                    "group_id",
+                    Optional.of(AsyncResult.of(
+                            o -> Optional.of(Result.success(new AsyncTestOutput(o))),
+                            AsyncTestCommand::getId,
+                            Optional.of(asyncSerdes))),
+                    (d, o) -> undoActionType.map(uat ->
+                            UndoCommand.of(new AsyncTestCommand(d.getId(), o), uat)),
+                    timeout);
         }
 
         static AsyncTestContext of(int executionDelayMillis) {
@@ -226,8 +226,13 @@ class AsyncStreamTests {
             };
         }
 
-        static AsyncValidation create() { return new AsyncValidation(null);}
-        static AsyncValidation create(RecordPublisher<SagaId, ActionResponse<SpecificRecord>> actionResponsePublisher) { return new AsyncValidation(actionResponsePublisher);}
+        static AsyncValidation create() {
+            return new AsyncValidation(null);
+        }
+
+        static AsyncValidation create(RecordPublisher<SagaId, ActionResponse<SpecificRecord>> actionResponsePublisher) {
+            return new AsyncValidation(actionResponsePublisher);
+        }
     }
 
     private static void delayMillis(int millis) {
@@ -272,7 +277,7 @@ class AsyncStreamTests {
         AsyncValidation validation = AsyncValidation.create();
 
         AsyncTestCommand accountCommand = new AsyncTestCommand(new AsyncTestId("id"), 12.0);
-        ActionRequest<SpecificRecord> actionRequest = createRequest(new AsyncTestCommand(new AsyncTestId("id"), 12.0),CommandId.random());
+        ActionRequest<SpecificRecord> actionRequest = createRequest(new AsyncTestCommand(new AsyncTestId("id"), 12.0), CommandId.random());
         acc.actionRequestPublisher.publish(actionRequest.sagaId, actionRequest);
 
         AsyncActionProcessorProxy.processRecord(acc.asyncContext, actionRequest.sagaId, actionRequest, validation.responseProducer, validation.outputProducer);
@@ -401,7 +406,8 @@ class AsyncStreamTests {
         ActionRequest<SpecificRecord> actionRequest = createRequest(new AsyncTestCommand(new AsyncTestId("id"), 12.0), CommandId.random());
         acc.actionRequestPublisher.publish(actionRequest.sagaId, actionRequest);
 
-        acc.actionUnprocessedRequestVerifier.verifySingle((id, req) -> { });
+        acc.actionUnprocessedRequestVerifier.verifySingle((id, req) -> {
+        });
 
         AsyncActionProcessorProxy.processRecord(acc.asyncContext, actionRequest.sagaId, actionRequest, validation.responseProducer, validation.outputProducer);
 

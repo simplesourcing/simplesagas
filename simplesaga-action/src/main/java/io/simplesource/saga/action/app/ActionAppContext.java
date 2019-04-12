@@ -8,7 +8,7 @@ import java.util.Properties;
 
 /**
  * An ActionAppContext represents the context with all the details required to set up an
- * action processor stream
+ * action processor stream.
  *
  * @param <A> The action command type (shared across all actions)
  *

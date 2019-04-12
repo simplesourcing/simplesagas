@@ -10,8 +10,28 @@ import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
+/**
+ * A class with a single static function that returns an action processor build step that:
+ * <ol>
+ * <li>Defines the stream topology for an Async processor</li>
+ * <li>Creates producers and consumers that handle the asynchronous invocation</li>
+ * <li>The topic configuration (names and configuration properties) for the action processor</li>
+ * <li>A handler that cleans up resources when the stream terminates</li>
+ * </ol>
+ */
 public final class AsyncBuilder {
 
+    /**
+     * @param <A> - common representation form for all action commands (typically Json or GenericRecord/SpecificRecord for Avro)
+     * @param <D> - intermediate decoded input type
+     * @param <K> - key for the output topic (if the result of async invocation is written to an output topic)
+     * @param <O> - output value returned by async function
+     * @param <R> - final result type that ends up in output topic
+     * @param spec         a data structure with all the details of the required
+     * @param topicBuildFn a functional interface representing topic configuration steps
+     * @param executor     the executor service that is used to invoke asynchronously and schedule timeouts
+     * @return the action processor build step
+     */
     public static <A, D, K, O, R> ActionProcessorBuildStep<A> apply(
             AsyncSpec<A, D, K, O, R> spec,
             TopicConfigBuilder.BuildSteps topicBuildFn,

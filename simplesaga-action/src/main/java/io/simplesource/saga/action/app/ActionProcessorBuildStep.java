@@ -3,8 +3,10 @@ package io.simplesource.saga.action.app;
 import io.simplesource.saga.shared.streams.StreamBuildSpec;
 
 /**
- * ActionProcessorBuildStep a functional interface representing a step in the process of building an action processor
- * app. Typically one ActionProcessorBuildStep is required for each action processor we add to the application.
+ * Represents a step in the process of building an action processor
+ * app.
+ *
+ * An {@code ActionProcessorBuildStep} is required for each action processor we add to the application.
  *
  * @param <A> The action command type (shared across all actions)
  *

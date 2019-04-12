@@ -9,8 +9,25 @@ import io.simplesource.saga.shared.topics.*;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * The type Event sourcing builder.
+ */
 public final class EventSourcingBuilder {
 
+    /**
+     * A static function that returns an action processor build step that:
+     * 1.   Defines the stream topology for an EventSourcing processor
+     * 2.   Computes topic configuration (names and configuration properties) for the action processor
+     *
+     * @param <A> - common representation form for all action commands (typically Json / GenericRecord for Avro)
+     * @param <D> - intermediate decoded input type (that can easily be converted to both K and C)
+     * @param <K> - aggregate key type
+     * @param <C> - simple sourcing command type
+     * @param esSpec              data structure specifying how to turn the action request into a command request and interpret the result
+     * @param actionTopicBuilder  the action topic builder - a mechanism for configuring the action topics
+     * @param commandTopicBuilder the command topic builder - a mechanism for configuring the simple sourcing command topics
+     * @return the action processor build step
+     */
     public static <A, D, K, C> ActionProcessorBuildStep<A> apply(
             EventSourcingSpec<A, D, K, C> esSpec,
             TopicConfigBuilder.BuildSteps actionTopicBuilder,
