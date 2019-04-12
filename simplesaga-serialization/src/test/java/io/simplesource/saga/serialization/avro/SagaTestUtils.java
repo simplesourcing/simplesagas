@@ -7,7 +7,7 @@ import io.simplesource.saga.model.action.ActionId;
 import io.simplesource.saga.model.action.SagaAction;
 import io.simplesource.saga.model.saga.Saga;
 import io.simplesource.saga.model.saga.SagaError;
-import io.simplesource.saga.client.dsl.SagaDsl;
+import io.simplesource.saga.client.dsl.SagaDSL;
 import io.simplesource.saga.serialization.avro.generated.test.AddFunds;
 import io.simplesource.saga.serialization.avro.generated.test.CreateAccount;
 import io.simplesource.saga.serialization.avro.generated.test.TransferFunds;
@@ -17,31 +17,31 @@ import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-import static io.simplesource.saga.client.dsl.SagaDsl.inParallel;
+import static io.simplesource.saga.client.dsl.SagaDSL.inParallel;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class SagaTestUtils {
 
     static Saga<SpecificRecord> getTestSaga() {
-        SagaDsl.SagaBuilder<SpecificRecord> builder = SagaDsl.createBuilder();
+        SagaDSL.SagaBuilder<SpecificRecord> builder = SagaDSL.createBuilder();
 
-        Function<SpecificRecord, SagaDsl.SubSaga<SpecificRecord>> addAction = command ->
+        Function<SpecificRecord, SagaDSL.SubSaga<SpecificRecord>> addAction = command ->
                 builder.addAction("actionType", command);
 
-        BiFunction<SpecificRecord, SpecificRecord, SagaDsl.SubSaga<SpecificRecord>> addActionWithUndo = (command, undo) ->
+        BiFunction<SpecificRecord, SpecificRecord, SagaDSL.SubSaga<SpecificRecord>> addActionWithUndo = (command, undo) ->
                 builder.addAction(
                         ActionId.random(),
                         "actionType",
                         command,
                         undo);
 
-        SagaDsl.SubSaga<SpecificRecord> create1 = addAction.apply(new CreateAccount("id1", "User 1"));
-        SagaDsl.SubSaga<SpecificRecord> create2 = addAction.apply(new CreateAccount("id2", "User 2"));
+        SagaDSL.SubSaga<SpecificRecord> create1 = addAction.apply(new CreateAccount("id1", "User 1"));
+        SagaDSL.SubSaga<SpecificRecord> create2 = addAction.apply(new CreateAccount("id2", "User 2"));
 
-        SagaDsl.SubSaga<SpecificRecord> add = addActionWithUndo.apply(
+        SagaDSL.SubSaga<SpecificRecord> add = addActionWithUndo.apply(
                 new AddFunds("id1", 1000.0),
                 new AddFunds("id1", -1000.0));
-        SagaDsl.SubSaga<SpecificRecord> transfer = addActionWithUndo.apply(
+        SagaDSL.SubSaga<SpecificRecord> transfer = addActionWithUndo.apply(
                 new TransferFunds("id1", "id2", 50.0),
                 new TransferFunds("id2", "id1", 50.0));
 

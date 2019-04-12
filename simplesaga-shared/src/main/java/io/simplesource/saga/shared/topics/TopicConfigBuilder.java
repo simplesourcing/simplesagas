@@ -14,27 +14,34 @@ import java.util.function.Function;
 import static org.apache.kafka.common.config.TopicConfig.*;
 
 public class TopicConfigBuilder {
-    private final List<String> topicTypes;
-    private final Map<String, String> defaultConfigs;
-    private final Map<String, Map<String, String>> defaultOverrides;
-
-    private Map<String, TopicSpec> configMap = new HashMap<>();
-    private Function<String, TopicSpec> defaultSpec = topicType -> defaultMap(1, 1, 7, topicType);
-    private ResourceNamingStrategy namingStrategy = null;
-    private Map<String, String> topicNameOverride = new HashMap<>();
-    private String topicBaseName = null;
-    private TopicNamer topicNamer = null;
 
     @FunctionalInterface
     public interface BuildSteps {
         TopicConfigBuilder applyStep(TopicConfigBuilder builder);
 
-        public default BuildSteps withInitialStep(BuildSteps initial) {
+        default BuildSteps withInitialStep(BuildSteps initial) {
             return builder -> this.applyStep(initial.applyStep(builder));
+        }
+
+        default BuildSteps withNextStep(BuildSteps initial) {
+            return builder -> initial.applyStep(this.applyStep(builder));
         }
     }
 
-    public TopicConfigBuilder(
+    private final List<String> topicTypes;
+    private final Map<String, String> defaultConfigs;
+    private ResourceNamingStrategy namingStrategy = null;
+    private String topicBaseName = null;
+    private TopicNamer topicNamer = null;
+
+    private final Map<String, Map<String, String>> defaultOverrides;
+    private final Map<String, TopicSpec> topicSpecOverrides = new HashMap<>();
+    private final Map<String, String> topicNameOverrides = new HashMap<>();
+
+    private Function<String, TopicSpec> defaultTopicSpec = topicType ->
+            topicSpecForParallelismAndRetention(1, 1, 7, topicType);
+
+    private TopicConfigBuilder(
             List<String> topicTypes,
             Map<String, String> defaultConfigs,
             Map<String, Map<String, String>> defaultOverrides) {
@@ -64,18 +71,40 @@ public class TopicConfigBuilder {
     }
 
     public TopicConfigBuilder withTopicNameOverride(String topicType, String topicName) {
-        topicNameOverride.put(topicType, topicName);
+        topicNameOverrides.put(topicType, topicName);
         return this;
     }
 
-    public TopicConfigBuilder withConfigOverride(String topicType, TopicSpec tSpec) {
-        configMap.put(topicType, tSpec);
+    public TopicConfigBuilder withTopicSpecOverride(String topicType, TopicSpec tSpec) {
+        topicSpecOverrides.put(topicType, tSpec);
         return this;
     }
 
-    public TopicConfigBuilder withDefaultConfig(int partitions, int replication, int retentionInDays) {
-        defaultSpec = topicType -> defaultMap(partitions, replication, retentionInDays, topicType);
+    public TopicConfigBuilder withDefaultTopicSpec(int partitions, int replication, int retentionInDays) {
+        defaultTopicSpec = topicType -> topicSpecForParallelismAndRetention(partitions, replication, retentionInDays, topicType);
         return this;
+    }
+
+    public static TopicConfig build(List<String> topicTypes,
+                                    BuildSteps buildSteps) {
+        return build(topicTypes, Collections.emptyMap(), Collections.emptyMap(), buildSteps);
+    }
+
+    public static TopicConfig build(List<String> topicTypes,
+                                    Map<String, String> defaultConfigs,
+                                    Map<String, Map<String, String>> defaultOverrides,
+                                    BuildSteps buildSteps) {
+        TopicConfigBuilder topicBuilder = new TopicConfigBuilder(topicTypes, defaultConfigs, defaultOverrides);
+        buildSteps.applyStep(topicBuilder);
+        return topicBuilder.buildTopicConfig();
+    }
+
+    private TopicConfig buildTopicConfig() {
+        TopicNamer namer = getTopicNamer();
+        Map<String, TopicSpec> topicSpecs = new HashMap<>();
+        topicTypes.forEach(tt ->
+                topicSpecs.put(tt, topicSpecOverrides.getOrDefault(tt, defaultTopicSpec.apply(tt))));
+        return new TopicConfig(namer, topicTypes, topicSpecs);
     }
 
     private TopicNamer baseTopicNamer() {
@@ -89,21 +118,13 @@ public class TopicConfigBuilder {
     private TopicNamer getTopicNamer() {
         TopicNamer baseNamer = baseTopicNamer();
         return name -> {
-            String override = topicNameOverride.get(name);
+            String override = topicNameOverrides.get(name);
             if (override != null) return override;
             return baseNamer.apply(name);
         };
     }
 
-    public TopicConfig build() {
-        TopicNamer namer = getTopicNamer();
-        Map<String, TopicSpec> topicSpecs = new HashMap<>();
-        topicTypes.forEach(tt ->
-                topicSpecs.put(tt, configMap.getOrDefault(tt, defaultSpec.apply(tt))));
-        return new TopicConfig(namer, topicTypes, topicSpecs);
-    }
-
-    public TopicSpec defaultMap(int partitions, int replication, long retentionInDays, String topicType) {
+    private TopicSpec topicSpecForParallelismAndRetention(int partitions, int replication, long retentionInDays, String topicType) {
         Map<String, String> configMap = defaultOverrides.getOrDefault(topicType, defaultConfigs);
         // configure retention if it is not already set
 
@@ -120,19 +141,5 @@ public class TopicConfigBuilder {
         Map<String, String> usedMap = defaultOverrides.getOrDefault(topicType, defaultConfigs);
         usedMap.forEach(dMap::put);
         return new TopicSpec(partitions, (short) replication, dMap);
-    }
-
-    public static TopicConfig build(List<String> topicTypes,
-                                    BuildSteps buildSteps) {
-        return build(topicTypes, Collections.emptyMap(), Collections.emptyMap(), buildSteps);
-    }
-
-    public static TopicConfig build(List<String> topicTypes,
-                                    Map<String, String> defaultConfigs,
-                                    Map<String, Map<String, String>> defaultOverrides,
-                                    BuildSteps buildSteps) {
-        TopicConfigBuilder topicBuilder = new TopicConfigBuilder(topicTypes, defaultConfigs, defaultOverrides);
-        buildSteps.applyStep(topicBuilder);
-        return topicBuilder.build();
     }
 }

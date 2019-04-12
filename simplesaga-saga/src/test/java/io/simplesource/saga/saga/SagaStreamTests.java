@@ -4,7 +4,7 @@ import io.simplesource.api.CommandId;
 import io.simplesource.data.NonEmptyList;
 import io.simplesource.data.Result;
 import io.simplesource.kafka.spec.WindowSpec;
-import io.simplesource.saga.client.dsl.SagaDsl;
+import io.simplesource.saga.client.dsl.SagaDSL;
 import io.simplesource.saga.model.action.ActionCommand;
 import io.simplesource.saga.model.action.ActionId;
 import io.simplesource.saga.model.action.ActionStatus;
@@ -33,7 +33,7 @@ import org.junit.jupiter.api.Test;
 import java.time.Duration;
 import java.util.*;
 
-import static io.simplesource.saga.client.dsl.SagaDsl.inParallel;
+import static io.simplesource.saga.client.dsl.SagaDSL.inParallel;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class SagaStreamTests {
@@ -169,14 +169,14 @@ class SagaStreamTests {
     private ActionId transferFundsId = ActionId.random();
 
     Saga<SpecificRecord> getBasicSaga() {
-        SagaDsl.SagaBuilder<SpecificRecord> builder = SagaDsl.createBuilder();
+        SagaDSL.SagaBuilder<SpecificRecord> builder = SagaDSL.createBuilder();
 
-        SagaDsl.SubSaga<SpecificRecord> createAccount = builder.addAction(
+        SagaDSL.SubSaga<SpecificRecord> createAccount = builder.addAction(
                 createAccountId,
                 Constants.ACCOUNT_ACTION_TYPE,
                 new CreateAccount("id1", "User 1"));
 
-        SagaDsl.SubSaga<SpecificRecord> addFunds = builder.addAction(
+        SagaDSL.SubSaga<SpecificRecord> addFunds = builder.addAction(
                 addFundsId1,
                 Constants.ACCOUNT_ACTION_TYPE,
                 new AddFunds("id1", 1000.0),
@@ -192,15 +192,15 @@ class SagaStreamTests {
     }
 
     Saga<SpecificRecord> getSagaWithUndo() {
-        SagaDsl.SagaBuilder<SpecificRecord> builder = SagaDsl.createBuilder();
+        SagaDSL.SagaBuilder<SpecificRecord> builder = SagaDSL.createBuilder();
 
-        SagaDsl.SubSaga<SpecificRecord> addFunds = builder.addAction(
+        SagaDSL.SubSaga<SpecificRecord> addFunds = builder.addAction(
                 addFundsId1,
                 Constants.ACCOUNT_ACTION_TYPE,
                 new AddFunds("id1", 1000.0),
                 new AddFunds("id1", -1000.0));
 
-        SagaDsl.SubSaga<SpecificRecord> transferFunds = builder.addAction(
+        SagaDSL.SubSaga<SpecificRecord> transferFunds = builder.addAction(
                 transferFundsId,
                 Constants.ACCOUNT_ACTION_TYPE,
                 new TransferFunds("id1", "id2", 50.0),
@@ -230,14 +230,14 @@ class SagaStreamTests {
     }
 
     Saga<SpecificRecord> getParallelSaga() {
-        SagaDsl.SagaBuilder<SpecificRecord> builder = SagaDsl.createBuilder();
+        SagaDSL.SagaBuilder<SpecificRecord> builder = SagaDSL.createBuilder();
 
-        SagaDsl.SubSaga<SpecificRecord> addFunds1 = builder.addAction(
+        SagaDSL.SubSaga<SpecificRecord> addFunds1 = builder.addAction(
                 addFundsId1,
                 Constants.ACCOUNT_ACTION_TYPE,
                 new AddFunds("id1", 1000.0),
                 new AddFunds("id1", -1000.0));
-        SagaDsl.SubSaga<SpecificRecord> addFunds2 = builder.addAction(
+        SagaDSL.SubSaga<SpecificRecord> addFunds2 = builder.addAction(
                 addFundsId2,
                 Constants.ACCOUNT_ACTION_TYPE,
                 new AddFunds("id2", 1000.0),
@@ -252,19 +252,19 @@ class SagaStreamTests {
     }
 
     Saga<SpecificRecord> getParallelSaga3Actions() {
-        SagaDsl.SagaBuilder<SpecificRecord> builder = SagaDsl.createBuilder();
+        SagaDSL.SagaBuilder<SpecificRecord> builder = SagaDSL.createBuilder();
 
-        SagaDsl.SubSaga<SpecificRecord> addFunds1 = builder.addAction(
+        SagaDSL.SubSaga<SpecificRecord> addFunds1 = builder.addAction(
                 addFundsId1,
                 Constants.ACCOUNT_ACTION_TYPE,
                 new AddFunds("id1", 1000.0),
                 new AddFunds("id1", -1000.0));
-        SagaDsl.SubSaga<SpecificRecord> addFunds2 = builder.addAction(
+        SagaDSL.SubSaga<SpecificRecord> addFunds2 = builder.addAction(
                 addFundsId2,
                 Constants.ACCOUNT_ACTION_TYPE,
                 new AddFunds("id2", 1000.0),
                 new AddFunds("id2", -1000.0));
-        SagaDsl.SubSaga<SpecificRecord> transferFunds = builder.addAction(
+        SagaDSL.SubSaga<SpecificRecord> transferFunds = builder.addAction(
                 transferFundsId,
                 Constants.ACCOUNT_ACTION_TYPE,
                 new TransferFunds("id3", "id4", 10.0),
@@ -279,21 +279,21 @@ class SagaStreamTests {
     }
 
     Saga<SpecificRecord> getInvalidActionSaga() {
-        SagaDsl.SagaBuilder<SpecificRecord> builder = SagaDsl.createBuilder();
+        SagaDSL.SagaBuilder<SpecificRecord> builder = SagaDSL.createBuilder();
 
-        SagaDsl.SubSaga<SpecificRecord> createAccount = builder.addAction(
+        SagaDSL.SubSaga<SpecificRecord> createAccount = builder.addAction(
                 createAccountId,
                 Constants.ACCOUNT_ACTION_TYPE,
                 new CreateAccount("id1", "User 1"));
 
-        SagaDsl.SubSaga<SpecificRecord> addFunds1 = builder.addAction(
+        SagaDSL.SubSaga<SpecificRecord> addFunds1 = builder.addAction(
                 addFundsId1,
                 "invalid action type 1",
                 new AddFunds("id1", 1000.0),
                 // this will never undo since it's in the last sub-saga
                 new AddFunds("id1", -1000.0));
 
-        SagaDsl.SubSaga<SpecificRecord> addFunds2 = builder.addAction(
+        SagaDSL.SubSaga<SpecificRecord> addFunds2 = builder.addAction(
                 addFundsId2,
                 "invalid action type 2",
                 new AddFunds("id1", 1000.0),
@@ -309,14 +309,14 @@ class SagaStreamTests {
     }
 
     Saga<SpecificRecord> getMultiActionTypeSaga() {
-        SagaDsl.SagaBuilder<SpecificRecord> builder = SagaDsl.createBuilder();
+        SagaDSL.SagaBuilder<SpecificRecord> builder = SagaDSL.createBuilder();
 
-        SagaDsl.SubSaga<SpecificRecord> createUser = builder.addAction(
+        SagaDSL.SubSaga<SpecificRecord> createUser = builder.addAction(
                 createUserId,
                 Constants.USER_ACTION_TYPE,
                 new CreateUser("First", "Last", 2000));
 
-        SagaDsl.SubSaga<SpecificRecord> createAccount = builder.addAction(
+        SagaDSL.SubSaga<SpecificRecord> createAccount = builder.addAction(
                 createAccountId,
                 Constants.ACCOUNT_ACTION_TYPE,
                 new CreateAccount("id1", "User 1"));

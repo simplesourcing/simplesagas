@@ -8,14 +8,14 @@ import io.simplesource.api.CommandId;
 import io.simplesource.data.NonEmptyList;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static io.simplesource.saga.client.dsl.SagaDsl.*;
+import static io.simplesource.saga.client.dsl.SagaDSL.*;
 
 import io.simplesource.saga.model.action.ActionId;
 import io.simplesource.saga.model.saga.Saga;
 import io.simplesource.saga.shared.utils.Sets;
 import org.junit.jupiter.api.Test;
 
-class DslTest {
+class DSLTest {
     SagaBuilder<String> builder = SagaBuilder.create();
 
     SubSaga<String> create(String a) {
@@ -38,7 +38,7 @@ class DslTest {
     }
 
     @Test
-    void actionDslMustCreateDependencies() {
+    void actionDSLMustCreateDependencies() {
         NonEmptyList<Integer> list = NonEmptyList.of(10, 20, 30, 40);
         assertThat(list.get(2)).isEqualTo(30);
         

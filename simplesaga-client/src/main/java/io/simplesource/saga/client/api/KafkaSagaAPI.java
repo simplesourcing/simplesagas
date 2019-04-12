@@ -22,9 +22,11 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
- * The type Kafka saga api.
+ * The KafkaSagaAPI is the implementation of the SagaAPI.
+ * <p>
+ * This provides a mechanism to invoke a saga from any Java code, and receive the response of the Saga asynchronously.
  *
- * @param <A> The this is a representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
+ * @param <A> This is a representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
  */
 public final class KafkaSagaAPI<A> implements SagaAPI<A> {
     private final KafkaRequestAPI<SagaId, SagaRequest<A>, SagaId, SagaResponse> requestApi;
@@ -32,11 +34,11 @@ public final class KafkaSagaAPI<A> implements SagaAPI<A> {
     /**
      * Instantiates a new Kafka saga api.
      *
-     * @param sagaSpec        the saga spec
-     * @param kConfig         the k config
-     * @param sagaTopicConfig the saga topic config
-     * @param clientId        the client id
-     * @param scheduler       the scheduler
+     * @param sagaSpec        A data structure with saga configuration details
+     * @param kConfig         the kafka configuration
+     * @param sagaTopicConfig the saga topic configuration
+     * @param clientId        this is used to identify the client. If should be unique for a given client. Saga responses are funneled into separate topics per client ID. This saves multiple clients from having to consume the responses for all sagas - they only consume the responses from their private topic.
+     * @param scheduler       the scheduler for scheduling timeouts
      */
     public KafkaSagaAPI(SagaSpec<A> sagaSpec,
                         KafkaConfig kConfig,

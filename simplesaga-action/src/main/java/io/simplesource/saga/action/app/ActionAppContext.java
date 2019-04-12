@@ -4,8 +4,6 @@ import io.simplesource.saga.model.specs.ActionSpec;
 import io.simplesource.saga.shared.kafka.PropertiesBuilder;
 import lombok.Value;
 
-import java.util.Properties;
-
 /**
  * An ActionAppContext represents the context with all the details required to set up an
  * action processor stream.

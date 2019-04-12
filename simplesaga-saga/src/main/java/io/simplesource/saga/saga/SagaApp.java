@@ -160,7 +160,10 @@ final public class SagaApp<A> {
         final List<TopicCreation> topics = new ArrayList<>();
         TopicConfig sagaTopicConfig = TopicConfigBuilder.build(
                 TopicTypes.SagaTopic.all,
-                Collections.emptyMap(),
+                Collections.singletonMap(
+                        org.apache.kafka.common.config.TopicConfig.RETENTION_MS_CONFIG,
+                        "-1"
+                ),
                 Collections.singletonMap(TopicTypes.SagaTopic.SAGA_STATE, Collections.singletonMap(
                         org.apache.kafka.common.config.TopicConfig.CLEANUP_POLICY_CONFIG,
                         org.apache.kafka.common.config.TopicConfig.CLEANUP_POLICY_COMPACT

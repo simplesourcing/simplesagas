@@ -2,14 +2,12 @@ package io.simplesource.saga.shared.streams;
 
 import io.simplesource.saga.shared.kafka.PropertiesBuilder;
 import io.simplesource.saga.shared.topics.TopicCreation;
-import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.Topology;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 

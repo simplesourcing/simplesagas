@@ -15,10 +15,6 @@ import java.util.*;
 public class PropertiesBuilder {
     private final Properties properties = new Properties();
 
-    public static PropertiesBuilder create() {
-        return new PropertiesBuilder();
-    }
-
     public PropertiesBuilder withProperty(String key, Object value) {
         this.properties.put(key, value);
         return this;
@@ -32,6 +28,11 @@ public class PropertiesBuilder {
     public PropertiesBuilder withProperties(Map<String, Object> properties) {
         properties.forEach(this.properties::put);
         return this;
+    }
+
+    public PropertiesBuilder withBootstrapServers(String bootstrapServers) {
+        return this
+                .withProperty(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
     }
 
     public PropertiesBuilder withStreamAppConfig(StreamAppConfig config) {
@@ -66,7 +67,7 @@ public class PropertiesBuilder {
                 .withProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
     }
 
-    public Properties build() {
+    Properties getProperties() {
         return properties;
     }
 
@@ -74,17 +75,17 @@ public class PropertiesBuilder {
     public interface BuildSteps {
         PropertiesBuilder applyStep(PropertiesBuilder builder);
 
-        default BuildSteps withNextStep(BuildSteps initial) {
-            return builder -> initial.applyStep(this.applyStep(builder));
-        }
-
         default BuildSteps withInitialStep(BuildSteps initial) {
             return builder -> this.applyStep(initial.applyStep(builder));
         }
 
+        default BuildSteps withNextStep(BuildSteps initial) {
+            return builder -> initial.applyStep(this.applyStep(builder));
+        }
+
         default Properties build() {
             return this
-                    .applyStep(PropertiesBuilder.create()).build();
+                    .applyStep(new PropertiesBuilder()).getProperties();
         }
     }
 }

@@ -1,9 +1,7 @@
 package io.simplesource.saga.client.dsl;
 
-import io.simplesource.api.CommandId;
 import io.simplesource.data.NonEmptyList;
 import io.simplesource.data.Result;
-import io.simplesource.data.Sequence;
 import io.simplesource.saga.model.action.ActionCommand;
 import io.simplesource.saga.model.action.ActionId;
 import io.simplesource.saga.model.action.ActionStatus;
@@ -16,13 +14,55 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public final class SagaDsl {
+/**
+ * The Saga DSL is used be the client to build a saga.
+ * <p>
+ * To build a saga:
+ * <ol>
+ *     <li>Create a {@link SagaBuilder SagaBuilder} with {@link SagaDSL#createBuilder()}</li>
+ *     <li>Use the {@link SagaBuilder SagaBuilder} to add saga actions. Each {@link SagaBuilder#addAction(ActionId, String, Object, Object) addAction()} creates a {@link SubSaga SubSaga}.</li>
+ *     <li>Define the dependencies between the saga actions with {@link SubSaga#andThen(SubSaga) andThen()}</li>
+ *     <li>Create the saga with {@link SagaBuilder#build() build()}. Any {@link SubSaga SubSaga}s that are not dependent on each other can be executed in parallel.</li>
+ * </ol>
+ * <p>
+ * For example:
+ * <pre>{@code
+ * import io.simplesource.saga.client.dsl.SagaDSL;
+ * import static io.simplesource.saga.client.dsl.SagaDSL;
+ *
+ * SagaBuilder<A> sagaBuilder = SagaDSL.createBuilder();
+ *
+ * SubSaga<A> actionA = sagaBuilder.addAction(actionIdA, actionCommandA, undoCommandA);
+ * SubSaga<A> actionB = sagaBuilder.addAction(actionIdB, actionB, undoActionB);
+ * SubSaga<A> actionC = sagaBuilder.addAction(actionIdC, actionC, undoActionC);
+ *
+ * inParallel(actionA, actionB).andThen(actionC);
+ *
+ * Result<SagaError, Saga<A>> sagaBuildResult = sagaBuilder.build();
+ * }</pre>
+ */
+public final class SagaDSL {
+    /**
+     * A {@code Subsaga} is a subset of a saga consisting of one or more action, with dependencies defined between them.
+     * <p>
+     * When adding an action with {@link SagaBuilder#addAction(ActionId, ActionCommand, Optional) SagaBuilder.addAction()} a SubSaga is created with a single action.
+     * <p>
+     * Defining dependencies with {@link SubSaga#andThen(SubSaga) andThen()} has the effect of combining two {@code Subsaga}s into a combined {@code Subsaga} with the action from both of them in the prescribed order.
+     *
+     * @param <A> This is a representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
+     */
     @Value
     public static final class SubSaga<A> {
-        public final List<ActionId> input;
-        public final List<ActionId> output;
-        public final Optional<SagaBuilder<A>> sagaBuilder;
+        private final List<ActionId> input;
+        private final List<ActionId> output;
+        private final Optional<SagaBuilder<A>> sagaBuilder;
 
+        /**
+         * Defines a dependency between two saga actions (or two sub-sagas).
+         *
+         * @param next the actions of {@code next} subsaga are only executed once the actions of {@code this} has completed.
+         * @return the subsaga comprised of {@code this} and {@code next} combined
+         */
         public SubSaga<A> andThen(SubSaga<A> next) {
             Optional<SagaBuilder<A>> sbO = this.sagaBuilder;
             Optional<SagaBuilder<A>> sbNextO = next.sagaBuilder;
@@ -36,7 +76,6 @@ public final class SagaDsl {
                     for (ActionId nextId : next.input) {
                         Set<ActionId> e = sb.dependencies.get(nextId);
                         if (e != null) {
-                            // TODO: need decent immutable collections
                             Set<ActionId> newSet = new HashSet<>(e);
                             newSet.add(thisId);
                             sb.dependencies.put(nextId, newSet);
@@ -51,19 +90,46 @@ public final class SagaDsl {
         }
     }
 
+    /**
+     * Creates a {@code SagaBuilder}
+     *
+     * @param <A> This is a representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
+     * @return the saga builder
+     */
     public static <A> SagaBuilder<A> createBuilder() {
         return SagaBuilder.create();
     }
 
+    /**
+     * In parallel sub saga.
+     *
+     * @param <A> This is a representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
+     * @param subSagas the sub sagas
+     * @return a sub saga consisting of all the input subsagas executed in parallel
+     */
     public static <A> SubSaga<A> inParallel(SubSaga<A>... subSagas) {
 
         return inParallel(Lists.of(subSagas));
     }
 
+    /**
+     * In series sub saga.
+     *
+     * @param <A> This is a representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
+     * @param subSagas the sub sagas
+     * @return a sub saga consisting of all the input subsagas executed in series
+     */
     public static <A> SubSaga<A> inSeries(SubSaga<A>... subSagas) {
         return inSeries(Lists.of(subSagas));
     }
 
+    /**
+     * In parallel sub saga.
+     *
+     * @param <A> This is a representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
+     * @param subSagas A collection of subsagas
+     * @return a sub saga consisting of all the input subsagas executed in parallel
+     */
     public static <A> SubSaga<A> inParallel(Collection<SubSaga<A>> subSagas) {
         Stream<Optional<SagaBuilder<A>>> a = subSagas.stream().map(x -> x.sagaBuilder);
         Optional<SagaBuilder<A>> c = a.filter(Optional::isPresent).findFirst().flatMap(x -> x);
@@ -74,6 +140,13 @@ public final class SagaDsl {
                 c);
     }
 
+    /**
+     * In series sub saga.
+     *
+     * @param <A> This is a representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
+     * @param subSagas A collection of subsagas
+     * @return a sub saga consisting of all the input subsagas executed in series
+     */
     public static <A> SubSaga<A> inSeries(Iterable<SubSaga<A>> subSagas) {
         SubSaga<A> cumulative = new SubSaga<>(Collections.emptyList(), Collections.emptyList(), Optional.empty());
         for (SubSaga<A> next : subSagas) {
@@ -83,6 +156,11 @@ public final class SagaDsl {
         return cumulative;
     }
 
+    /**
+     * A SagaBuilder. This is used to add actions, and to build the saga once the definition steps are complete.
+     *
+     * @param <A> This is a representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
+     */
     @Value(staticConstructor = "create")
     public static final class SagaBuilder<A> {
         private Map<ActionId, SagaAction<A>> actions = new HashMap<>();
@@ -108,23 +186,55 @@ public final class SagaDsl {
             return new SubSaga<>(actionIdList, actionIdList, Optional.of(this));
         }
 
+        /**
+         * Creates a subsaga with a single action
+         *
+         * @param actionType    the action type
+         * @param actionCommand the action command
+         * @return the sub saga
+         */
         public SubSaga<A> addAction(String actionType,
                                     A actionCommand) {
             return addAction(ActionId.random(), ActionCommand.of(actionCommand, actionType), Optional.empty());
         }
 
+        /**
+         * Add action sub saga.
+         *
+         * @param actionType        the action type
+         * @param actionCommand     the action command
+         * @param undoActionCommand the undo action command
+         * @return the sub saga
+         */
         public SubSaga<A> addAction(String actionType,
                                     A actionCommand,
                                     A undoActionCommand) {
             return addAction(ActionId.random(), ActionCommand.of(actionCommand, actionType), Optional.of(ActionCommand.of(undoActionCommand, actionType)));
         }
 
+        /**
+         * Add action sub saga.
+         *
+         * @param actionId      the action id
+         * @param actionType    the action type
+         * @param actionCommand the action command
+         * @return the sub saga
+         */
         public SubSaga<A> addAction(ActionId actionId,
                                     String actionType,
                                     A actionCommand) {
             return addAction(actionId, ActionCommand.of(actionCommand, actionType), Optional.empty());
         }
 
+        /**
+         * Add action sub saga.
+         *
+         * @param actionId          the action id
+         * @param actionType        the action type
+         * @param actionCommand     the action command
+         * @param undoActionCommand the undo action command
+         * @return the sub saga
+         */
         public SubSaga<A> addAction(ActionId actionId,
                                     String actionType,
                                     A actionCommand,
@@ -132,6 +242,11 @@ public final class SagaDsl {
             return addAction(actionId, ActionCommand.of(actionCommand, actionType), Optional.of(ActionCommand.of(undoActionCommand, actionType)));
         }
 
+        /**
+         * Build result.
+         *
+         * @return the result
+         */
         public Result<SagaError, Saga<A>> build() {
             if (errors.isEmpty()) {
                 Map<ActionId, SagaAction<A>> newActions = actions.entrySet().stream().map(entry -> {
