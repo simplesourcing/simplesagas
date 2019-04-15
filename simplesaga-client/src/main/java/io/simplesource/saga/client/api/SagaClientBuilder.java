@@ -11,7 +11,6 @@ import io.simplesource.saga.shared.topics.TopicConfig;
 import io.simplesource.saga.shared.topics.TopicConfigBuilder;
 import io.simplesource.saga.shared.topics.TopicTypes;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;

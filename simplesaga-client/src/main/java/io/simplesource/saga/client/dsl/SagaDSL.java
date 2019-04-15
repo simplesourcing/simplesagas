@@ -101,30 +101,30 @@ public final class SagaDSL {
     }
 
     /**
-     * In parallel sub saga.
+     * Creates a subsagas consisting of one or more subsagas executing in parallel. In parallel means they have the same dependencies, the same subsagas depend on them, but they are not dependent on each other.
      *
      * @param <A> This is a representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
+     * @param subSagas a sub saga
      * @param subSagas the sub sagas
      * @return a sub saga consisting of all the input subsagas executed in parallel
      */
-    public static <A> SubSaga<A> inParallel(SubSaga<A>... subSagas) {
-
-        return inParallel(Lists.of(subSagas));
+    public static <A> SubSaga<A> inParallel(SubSaga<A> subSaga, SubSaga<A>... subSagas) {
+        return inParallel(asList(subSaga, subSagas));
     }
 
     /**
-     * In series sub saga.
+     * Creates a subsagas consisting of one or more subsagas executing in series.
      *
      * @param <A> This is a representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
      * @param subSagas the sub sagas
      * @return a sub saga consisting of all the input subsagas executed in series
      */
-    public static <A> SubSaga<A> inSeries(SubSaga<A>... subSagas) {
-        return inSeries(Lists.of(subSagas));
+    public static <A> SubSaga<A> inSeries(SubSaga<A> subSaga, SubSaga<A>... subSagas) {
+        return inSeries(asList(subSaga, subSagas));
     }
 
     /**
-     * In parallel sub saga.
+     * Creates a subsagas consisting of a collection of subsagas executing in parallel. In parallel means they have the same dependencies, the same subsagas depend on them, but they are not dependent on each other.
      *
      * @param <A> This is a representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
      * @param subSagas A collection of subsagas
@@ -141,7 +141,7 @@ public final class SagaDSL {
     }
 
     /**
-     * In series sub saga.
+     * Creates a subsagas consisting of an ordered collection of subsagas executing in series.
      *
      * @param <A> This is a representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
      * @param subSagas A collection of subsagas
@@ -156,8 +156,15 @@ public final class SagaDSL {
         return cumulative;
     }
 
+    private static <A> List<SubSaga<A>> asList(SubSaga<A> subSaga, SubSaga<A>[] subSagas) {
+        List<SubSaga<A>> l = new ArrayList<>();
+        l.add(subSaga);
+        l.addAll(Arrays.asList(subSagas));
+        return l;
+    }
+
     /**
-     * A SagaBuilder. This is used to add actions, and to build the saga once the definition steps are complete.
+     * A SagaBuilder is used to add actions by creating a subsaga consisting of a single action, and to build the saga once the definition steps are complete.
      *
      * @param <A> This is a representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
      */
@@ -187,7 +194,7 @@ public final class SagaDSL {
         }
 
         /**
-         * Creates a subsaga with a single action
+         * Creates a subsaga with a single action and no undo action
          *
          * @param actionType    the action type
          * @param actionCommand the action command
@@ -243,9 +250,12 @@ public final class SagaDSL {
         }
 
         /**
-         * Build result.
+         * builds the Saga from all the subsagas that were previously defined by creating single actions with
+         * {@link SagaBuilder#addAction(String, Object, Object) addAction} and by defining the dependencies between these actions.
+         * <p>
+         * The {@link Saga} returned can be considered an immutable data structure. Any mutations to saga state from this point on will result in a new instance being created.
          *
-         * @return the result
+         * @return the result, either successful with the built {@link Saga}, or a {@link SagaError}.
          */
         public Result<SagaError, Saga<A>> build() {
             if (errors.isEmpty()) {

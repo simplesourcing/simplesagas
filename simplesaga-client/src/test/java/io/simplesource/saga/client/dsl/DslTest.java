@@ -41,7 +41,7 @@ class DSLTest {
     void actionDSLMustCreateDependencies() {
         NonEmptyList<Integer> list = NonEmptyList.of(10, 20, 30, 40);
         assertThat(list.get(2)).isEqualTo(30);
-        
+
         SubSaga<String> a1 = create("1");
         SubSaga<String> a2 = create("2");
         SubSaga<String> a3 = create("3");
@@ -97,5 +97,36 @@ class DSLTest {
         dependsOnSet("12", Sets.of("11a", "11b"), saga);
 
         dependsOn("13", "7", saga);
+    }
+
+    @Test
+    void emptyDependencies() {
+        SubSaga<String> a0p = inParallel(Collections.emptyList());
+        SubSaga<String> a0s = inSeries(Collections.emptyList());
+        SubSaga<String> a1 = create("1");
+        SubSaga<String> a1p = inParallel(Collections.emptyList());
+        SubSaga<String> a2 = create("2");
+        SubSaga<String> a2s = inSeries(Collections.emptyList());
+        SubSaga<String> a3 = create("3");
+        SubSaga<String> a3s = inParallel(Collections.emptyList());
+        SubSaga<String> a3p = inSeries(Collections.emptyList());
+
+        a0s.andThen(a0p)
+                .andThen(a0s)
+                .andThen(a1)
+                .andThen(a1p)
+                .andThen(a2)
+                .andThen(a2s)
+                .andThen(a3)
+                .andThen(a3p)
+                .andThen(a3s);
+
+        Saga<String> saga = builder.build().getOrElse(null);
+
+        assertThat(saga.actions.keySet().size()).isEqualTo(3);
+
+        dependsOnSet("1", Collections.emptySet(), saga);
+        dependsOn("2", "1", saga);
+        dependsOn("3", "2", saga);
     }
 }
