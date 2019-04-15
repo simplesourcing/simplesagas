@@ -13,7 +13,7 @@ import io.simplesource.saga.model.action.ActionCommand;
 import io.simplesource.saga.model.action.ActionId;
 import io.simplesource.saga.model.messages.ActionRequest;
 import io.simplesource.saga.model.messages.ActionResponse;
-import io.simplesource.saga.model.messages.UndoCommand;
+import io.simplesource.saga.model.action.UndoCommand;
 import io.simplesource.saga.model.saga.SagaId;
 import io.simplesource.saga.model.serdes.ActionSerdes;
 import io.simplesource.saga.serialization.avro.AvroSerdes;

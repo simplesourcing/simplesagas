@@ -13,7 +13,7 @@ import io.simplesource.saga.action.eventsourcing.EventSourcingContext;
 import io.simplesource.saga.action.eventsourcing.EventSourcingSpec;
 import io.simplesource.saga.model.messages.ActionRequest;
 import io.simplesource.saga.model.messages.ActionResponse;
-import io.simplesource.saga.model.messages.UndoCommand;
+import io.simplesource.saga.model.action.UndoCommand;
 import io.simplesource.saga.model.saga.SagaError;
 import io.simplesource.saga.model.saga.SagaId;
 import io.simplesource.saga.model.serdes.ActionSerdes;
@@ -28,7 +28,6 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.util.Optional;
-import java.util.function.BiFunction;
 
 public final class EventSourcingStream {
 

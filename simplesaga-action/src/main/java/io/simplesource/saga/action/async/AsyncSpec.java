@@ -1,7 +1,7 @@
 package io.simplesource.saga.action.async;
 
 import io.simplesource.data.Result;
-import io.simplesource.saga.model.messages.UndoCommand;
+import io.simplesource.saga.model.action.UndoCommand;
 import lombok.*;
 
 import java.time.Duration;

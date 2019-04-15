@@ -4,7 +4,7 @@ import io.simplesource.api.CommandId;
 import io.simplesource.data.NonEmptyList;
 import io.simplesource.data.Result;
 import io.simplesource.saga.model.action.ActionCommand;
-import io.simplesource.saga.model.messages.UndoCommand;
+import io.simplesource.saga.model.action.UndoCommand;
 import io.simplesource.saga.model.saga.SagaError;
 import io.simplesource.saga.serialization.avro.generated.AvroActionCommand;
 import io.simplesource.saga.serialization.avro.generated.AvroActionUndoCommand;

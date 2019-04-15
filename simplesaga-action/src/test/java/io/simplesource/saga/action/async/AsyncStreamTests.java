@@ -5,7 +5,7 @@ import io.simplesource.api.CommandId;
 import io.simplesource.data.Result;
 import io.simplesource.saga.action.ActionApp;
 import io.simplesource.saga.action.app.ActionProcessorBuildStep;
-import io.simplesource.saga.model.messages.UndoCommand;
+import io.simplesource.saga.model.action.UndoCommand;
 import io.simplesource.saga.model.serdes.TopicSerdes;
 import io.simplesource.saga.action.internal.AsyncActionProcessorProxy;
 import io.simplesource.saga.shared.kafka.AsyncPublisher;

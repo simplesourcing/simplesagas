@@ -5,12 +5,15 @@ import lombok.Value;
 
 import java.util.function.BiFunction;
 
+/**
+ * The type Saga error.
+ */
 @Value
 public class SagaError {
     /**
      * Construct a {@link SagaError} from a {@link Throwable}.
      *
-     * @param reason the reason value
+     * @param reason    the reason value
      * @param throwable for more context
      * @return the constructed {@link SagaError}
      */
@@ -22,7 +25,7 @@ public class SagaError {
      * Construct a {@link SagaError} from a {@link Throwable}.
      *
      * @param reason the reason value
-     * @param msg for more context
+     * @param msg    for more context
      * @return the constructed {@link SagaError}
      */
     public static SagaError of(final Reason reason, final String msg) {
@@ -53,12 +56,30 @@ public class SagaError {
         this.error = error;
     }
 
-    // TODO: flesh out error cases
+    /**
+     * The enum Reason.
+     */
+// TODO: flesh out error cases
     public enum Reason {
+        /**
+         * Invalid saga reason.
+         */
         InvalidSaga,
+        /**
+         * Timeout reason.
+         */
         Timeout,
+        /**
+         * Command error reason.
+         */
         CommandError,
+        /**
+         * Internal error reason.
+         */
         InternalError,
+        /**
+         * Unexpected error code reason.
+         */
         UnexpectedErrorCode
     }
 }

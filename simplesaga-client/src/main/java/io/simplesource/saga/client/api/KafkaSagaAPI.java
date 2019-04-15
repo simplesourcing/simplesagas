@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit;
  * <p>
  * This provides a mechanism to invoke a saga from any Java code, and receive the response of the Saga asynchronously.
  *
- * @param <A> This is a representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
+ * @param <A> A representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
  */
 public final class KafkaSagaAPI<A> implements SagaAPI<A> {
     private final KafkaRequestAPI<SagaId, SagaRequest<A>, SagaId, SagaResponse> requestApi;
@@ -81,8 +81,8 @@ public final class KafkaSagaAPI<A> implements SagaAPI<A> {
     }
 
     @Override
-    public FutureResult<SagaError, SagaResponse> getSagaResponse(SagaId requestId, Duration timeout) {
-        return FutureResult.ofFuture(requestApi.queryResponse(requestId, timeout),
+    public FutureResult<SagaError, SagaResponse> getSagaResponse(SagaId sagaId, Duration timeout) {
+        return FutureResult.ofFuture(requestApi.queryResponse(sagaId, timeout),
                 e -> SagaError.of(SagaError.Reason.InternalError, e));
     }
 }

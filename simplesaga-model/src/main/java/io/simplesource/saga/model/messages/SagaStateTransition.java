@@ -2,6 +2,7 @@ package io.simplesource.saga.model.messages;
 
 import io.simplesource.saga.model.action.ActionId;
 import io.simplesource.saga.model.action.ActionStatus;
+import io.simplesource.saga.model.action.UndoCommand;
 import io.simplesource.saga.model.saga.Saga;
 import io.simplesource.saga.model.saga.SagaError;
 import io.simplesource.saga.model.saga.SagaId;
@@ -15,20 +16,17 @@ import java.util.function.Function;
 /**
  * SagaStateTransition interface. Represents transitions of saga state
  *
- * @param <A> the type parameter
+ * @param <A> A representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
  */
 public interface SagaStateTransition<A> {
 
     /**
      * A transition for setting the initial state of the Saga
      *
-     * @param <A> the type parameter
+     * @param <A> A representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
      */
     @Value(staticConstructor = "of")
     final class SetInitialState<A> implements SagaStateTransition<A> {
-        /**
-         * The Saga state.
-         */
         public final Saga<A> sagaState;
 
         @Override
@@ -40,33 +38,15 @@ public interface SagaStateTransition<A> {
     /**
      * A transition representing state changes of a Saga caused by updates to state of an action
      *
-     * @param <A> the type parameter
+     * @param <A> A representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
      */
     @Value(staticConstructor = "of")
     final class SagaActionStateChanged<A> implements SagaStateTransition<A> {
-        /**
-         * The Saga id.
-         */
         public final SagaId sagaId;
-        /**
-         * The Action id.
-         */
         public final ActionId actionId;
-        /**
-         * The Action status.
-         */
         public final ActionStatus actionStatus;
-        /**
-         * The Action errors.
-         */
         public final List<SagaError> actionErrors;
-        /**
-         * The Undo command.
-         */
         public final Optional<UndoCommand<A>> undoCommand;
-        /**
-         * The Is undo.
-         */
         public final boolean isUndo;
 
         @Override
@@ -78,23 +58,13 @@ public interface SagaStateTransition<A> {
     /**
      * A transition representing state changes of a Saga caused by updating a sagas status
      *
-     * @param <A> the type parameter
+     * @param <A> A representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
      */
     @Value(staticConstructor = "of")
     final class SagaStatusChanged<A> implements SagaStateTransition<A> {
-        /**
-         * The Saga id.
-         */
         public final SagaId sagaId;
-        /**
-         * The Saga status.
-         */
         public final SagaStatus sagaStatus;
-        /**
-         * The Saga errors.
-         */
         public final List<SagaError> sagaErrors;
-
 
         @Override
         public <B> B cata(Function<SetInitialState<A>, B> f1, Function<SagaActionStateChanged<A>, B> f2, Function<SagaStatusChanged<A>, B> f3, Function<TransitionList<A>, B> f4) {
@@ -105,13 +75,10 @@ public interface SagaStateTransition<A> {
     /**
      * A transition representing multiple state changes to a saga
      *
-     * @param <A> the type parameter
+     * @param <A> A representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
      */
     @Value(staticConstructor = "of")
     final class TransitionList<A> implements SagaStateTransition<A> {
-        /**
-         * The Actions.
-         */
         public final List<SagaActionStateChanged<A>> actions;
 
         @Override
@@ -124,10 +91,10 @@ public interface SagaStateTransition<A> {
      * Catamorphism over SagaStateTransition
      *
      * @param <B> the target type of the catamorphism
-     * @param f1  the f 1
-     * @param f2  the f 2
-     * @param f3  the f 3
-     * @param f4  the f 4
+     * @param f1 transition function based on saga initial state
+     * @param f2 transition function based on change in action state
+     * @param f3 transition function based on change in saga status
+     * @param f4 transition function based on a list of transitions
      * @return the b
      */
     <B> B cata(

@@ -1,7 +1,7 @@
 package io.simplesource.saga.action.http;
 
 import io.simplesource.saga.action.async.Callback;
-import io.simplesource.saga.model.messages.UndoCommand;
+import io.simplesource.saga.model.action.UndoCommand;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Value;

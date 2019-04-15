@@ -2,7 +2,7 @@ package io.simplesource.saga.action.internal;
 
 import io.simplesource.data.Result;
 import io.simplesource.saga.action.async.AsyncContext;
-import io.simplesource.saga.model.messages.UndoCommand;
+import io.simplesource.saga.model.action.UndoCommand;
 import io.simplesource.saga.model.serdes.TopicSerdes;
 import io.simplesource.saga.action.async.AsyncSpec;
 import io.simplesource.saga.action.async.Callback;

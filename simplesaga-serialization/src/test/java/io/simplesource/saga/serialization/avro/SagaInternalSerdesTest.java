@@ -3,7 +3,7 @@ package io.simplesource.saga.serialization.avro;
 import io.simplesource.saga.model.action.ActionId;
 import io.simplesource.saga.model.action.ActionStatus;
 import io.simplesource.saga.model.messages.SagaStateTransition;
-import io.simplesource.saga.model.messages.UndoCommand;
+import io.simplesource.saga.model.action.UndoCommand;
 import io.simplesource.saga.model.saga.Saga;
 import io.simplesource.saga.model.saga.SagaError;
 import io.simplesource.saga.model.saga.SagaId;

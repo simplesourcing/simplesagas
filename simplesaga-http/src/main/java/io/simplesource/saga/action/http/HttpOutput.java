@@ -1,14 +1,12 @@
 package io.simplesource.saga.action.http;
 
 import io.simplesource.data.Result;
-import io.simplesource.saga.model.messages.UndoCommand;
 import io.simplesource.saga.model.serdes.TopicSerdes;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Value;
 
 import java.util.Optional;
-import java.util.function.BiFunction;
 
 /**
   * @param <K> - key for the value topic

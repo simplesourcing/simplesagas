@@ -7,7 +7,6 @@ import io.simplesource.saga.model.action.ActionId;
 import io.simplesource.saga.model.action.ActionStatus;
 import io.simplesource.saga.model.action.SagaAction;
 import io.simplesource.saga.model.saga.*;
-import io.simplesource.saga.shared.utils.Lists;
 import lombok.Value;
 
 import java.util.*;
@@ -49,7 +48,7 @@ public final class SagaDSL {
      * <p>
      * Defining dependencies with {@link SubSaga#andThen(SubSaga) andThen()} has the effect of combining two {@code Subsaga}s into a combined {@code Subsaga} with the action from both of them in the prescribed order.
      *
-     * @param <A> This is a representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
+     * @param <A> A representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
      */
     @Value
     public static final class SubSaga<A> {
@@ -93,7 +92,7 @@ public final class SagaDSL {
     /**
      * Creates a {@code SagaBuilder}
      *
-     * @param <A> This is a representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
+     * @param <A> A representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
      * @return the saga builder
      */
     public static <A> SagaBuilder<A> createBuilder() {
@@ -103,7 +102,7 @@ public final class SagaDSL {
     /**
      * Creates a subsagas consisting of one or more subsagas executing in parallel. In parallel means they have the same dependencies, the same subsagas depend on them, but they are not dependent on each other.
      *
-     * @param <A> This is a representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
+     * @param <A> A representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
      * @param subSagas a sub saga
      * @param subSagas the sub sagas
      * @return a sub saga consisting of all the input subsagas executed in parallel
@@ -115,7 +114,7 @@ public final class SagaDSL {
     /**
      * Creates a subsagas consisting of one or more subsagas executing in series.
      *
-     * @param <A> This is a representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
+     * @param <A> A representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
      * @param subSagas the sub sagas
      * @return a sub saga consisting of all the input subsagas executed in series
      */
@@ -126,7 +125,7 @@ public final class SagaDSL {
     /**
      * Creates a subsagas consisting of a collection of subsagas executing in parallel. In parallel means they have the same dependencies, the same subsagas depend on them, but they are not dependent on each other.
      *
-     * @param <A> This is a representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
+     * @param <A> A representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
      * @param subSagas A collection of subsagas
      * @return a sub saga consisting of all the input subsagas executed in parallel
      */
@@ -143,7 +142,7 @@ public final class SagaDSL {
     /**
      * Creates a subsagas consisting of an ordered collection of subsagas executing in series.
      *
-     * @param <A> This is a representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
+     * @param <A> A representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
      * @param subSagas A collection of subsagas
      * @return a sub saga consisting of all the input subsagas executed in series
      */
@@ -166,7 +165,7 @@ public final class SagaDSL {
     /**
      * A SagaBuilder is used to add actions by creating a subsaga consisting of a single action, and to build the saga once the definition steps are complete.
      *
-     * @param <A> This is a representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
+     * @param <A> A representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
      */
     @Value(staticConstructor = "create")
     public static final class SagaBuilder<A> {

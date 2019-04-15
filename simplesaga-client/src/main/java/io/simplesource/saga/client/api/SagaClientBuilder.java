@@ -31,7 +31,7 @@ import static java.util.Objects.requireNonNull;
  *     .withScheduler(scheduler)
  *     .build();
  * }</pre>
- * @param <A> This is a representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
+ * @param <A> A representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
  */
 public final class SagaClientBuilder<A> {
 
