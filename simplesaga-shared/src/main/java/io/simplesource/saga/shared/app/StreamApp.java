@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
  * </ul>
  * It is a functional abstraction on top of the Kafka Stream builder DSL that delays the execution of the stream build steps and allows for decorating the process with extra information.
  *
- * It is applied in this project wrapped in a thin layer by the {@link io.simplesource.saga.action.ActionApp}.
+ * It is applied in this project wrapped in a thin layer by the ActionApp.
  *
  * @param <I> Input into
  */

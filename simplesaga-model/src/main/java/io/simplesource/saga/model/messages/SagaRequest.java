@@ -17,7 +17,7 @@ public class SagaRequest<A> {
      */
     public final SagaId sagaId;
     /**
-     * The initial state of the saga. It is suggested to use the {@link io.simplesource.saga.client.dsl.SagaDSL SagaDSL} to create the saga definition.
+     * The initial state of the saga. It is suggested to use the saga builder DSL to create the saga definition.
      */
     public final Saga<A> initialState;
 }

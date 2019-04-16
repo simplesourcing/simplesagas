@@ -38,7 +38,7 @@ public class Saga<A> {
     /**
      * Static constructor for a Saga.
      * <p>
-     * <i>It is suggested that clients do not define a saga directly through this method, but rather use the {@link io.simplesource.saga.client.dsl.SagaDSL SagaDSL} to build the saga.</i>
+     * <i>It is suggested that clients do not define a saga directly through this method, but rather use the saga client DSL to build the saga.</i>
      *
      * @param <A> a representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
      * @param sagaId   the saga id uniquely defines the saga

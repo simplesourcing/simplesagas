@@ -17,7 +17,7 @@ import io.simplesource.saga.shared.properties.PropertiesBuilder;
  * <ul>
  * <li>{@link io.simplesource.saga.action.eventsourcing.EventSourcingBuilder Event Sourcing Action processor}</li>
  * <li>{@link io.simplesource.saga.action.async.AsyncBuilder  Async Action processor}</li>
- * <li>{@link io.simplesource.saga.action.http.HttpBuilder Http Action processor}</li>
+ * <li>Http Action processor</li>
  * </ul>
  * <p>
  * To create a custom action processor, you can provide an implementation of the functional interface {@link ActionProcessorBuildStep}.
