@@ -406,8 +406,7 @@ class AsyncStreamTests {
         ActionRequest<SpecificRecord> actionRequest = createRequest(new AsyncTestCommand(new AsyncTestId("id"), 12.0), CommandId.random());
         acc.actionRequestPublisher.publish(actionRequest.sagaId, actionRequest);
 
-        acc.actionUnprocessedRequestVerifier.verifySingle((id, req) -> {
-        });
+        acc.actionUnprocessedRequestVerifier.verifySingle();
 
         AsyncActionProcessorProxy.processRecord(acc.asyncContext, actionRequest.sagaId, actionRequest, validation.responseProducer, validation.outputProducer);
 
