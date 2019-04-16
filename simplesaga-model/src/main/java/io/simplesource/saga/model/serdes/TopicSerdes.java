@@ -12,11 +12,11 @@ import org.apache.kafka.common.serialization.Serde;
 @Value
 public final class TopicSerdes<K, V>{
     /**
-     * The Key.
+     * Serde for the key
      */
     public final Serde<K> key;
     /**
-     * The Value.
+     * Serde for the value
      */
     public final Serde<V> value;
 }

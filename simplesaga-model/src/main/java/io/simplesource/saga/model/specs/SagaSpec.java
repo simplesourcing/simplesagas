@@ -9,10 +9,10 @@ import lombok.Value;
  *
  * @param <A> a representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
  */
-@Value
+@Value(staticConstructor = "of")
 public class SagaSpec<A> {
     /**
-     * The serdes required for all the saga coordinator topics.
+     * The serdes required for all the saga coordinator topics (request and response as well as state and state transition topics).
      */
     public final SagaSerdes<A> serdes;
     /**

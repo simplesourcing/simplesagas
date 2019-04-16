@@ -2,6 +2,8 @@ package io.simplesource.saga.model.action;
 
 /**
  * An enum representing the current state of an action within a saga
+ *
+ * @see io.simplesource.saga.model.saga.SagaStatus
  */
 public enum ActionStatus {
     /**

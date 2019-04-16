@@ -104,7 +104,7 @@ class SagaStreamTests {
             TopicNamer userActionTopicNamer = TopicNamer.forPrefix(Constants.ACTION_TOPIC_PREFIX, TopicUtils.actionTopicBaseName(Constants.USER_ACTION_TYPE));
 
             SagaApp<SpecificRecord> sagaApp = SagaApp.of(
-                    new SagaSpec<>(sagaSerdes, new WindowSpec(60)),
+                    SagaSpec.of(sagaSerdes, new WindowSpec(60)),
                     ActionSpec.of(actionSerdes),
                     topicBuilder -> topicBuilder.withTopicPrefix(Constants.SAGA_TOPIC_PREFIX))
                     .withAction(

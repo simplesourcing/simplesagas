@@ -9,7 +9,7 @@ import io.simplesource.saga.shared.topics.TopicConfigBuilder;
 import java.util.concurrent.ScheduledExecutorService;
 
 /**
- * The type Http builder. This is a thin wrapper around the {@link AsyncBuilder} that makes it easier
+ * The Http builder is a thin wrapper around the {@link AsyncBuilder} that makes it easier
  * to wrap Http web service calls as async actions.
  *
  * The client still has to provide an {@link HttpSpec#asyncHttpFunction}

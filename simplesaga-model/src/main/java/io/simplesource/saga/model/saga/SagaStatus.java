@@ -1,7 +1,9 @@
 package io.simplesource.saga.model.saga;
 
 /**
- * The enum Saga status.
+ * Represents the overall status of the saga.
+ *
+ * @see io.simplesource.saga.model.action.ActionStatus
  */
 public enum SagaStatus {
     /**

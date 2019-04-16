@@ -12,14 +12,14 @@ import org.apache.kafka.common.serialization.Serde;
  */
 public interface SagaSerdes<A> extends SagaClientSerdes<A> {
     /**
-     * State serde.
+     * Serde for the saga state.
      *
      * @return the serde
      */
     Serde<Saga<A>> state();
 
     /**
-     * Transition serde.
+     * Serde for the saga state transitions.
      *
      * @return the serde
      */

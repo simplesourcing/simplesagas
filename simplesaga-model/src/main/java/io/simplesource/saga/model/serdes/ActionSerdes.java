@@ -14,21 +14,21 @@ import org.apache.kafka.common.serialization.Serde;
  */
 public interface ActionSerdes<A> {
     /**
-     * Saga id serde.
+     * Serde for the saga id.
      *
      * @return the serde
      */
     Serde<SagaId> sagaId();
 
     /**
-     * Action id serde.
+     * Serde for the action id.
      *
      * @return the serde
      */
     Serde<ActionId> actionId();
 
     /**
-     * Command id serde.
+     * Serde for the command id.
      *
      * @return the serde
      */

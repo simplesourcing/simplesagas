@@ -12,21 +12,21 @@ import org.apache.kafka.common.serialization.Serde;
  */
 public interface SagaClientSerdes<A> {
     /**
-     * Saga id serde.
+     * Serde for the saga id.
      *
      * @return the serde
      */
     Serde<SagaId> sagaId();
 
     /**
-     * Request serde.
+     * Serde for the saga request.
      *
      * @return the serde
      */
     Serde<SagaRequest<A>> request();
 
     /**
-     * Response serde.
+     * Serde for the saga response.
      *
      * @return the serde
      */

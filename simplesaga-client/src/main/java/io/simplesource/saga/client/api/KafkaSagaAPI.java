@@ -11,8 +11,8 @@ import io.simplesource.saga.model.messages.SagaRequest;
 import io.simplesource.saga.model.messages.SagaResponse;
 import io.simplesource.saga.model.saga.SagaError;
 import io.simplesource.saga.model.saga.SagaId;
-import io.simplesource.saga.model.serdes.SagaSerdes;
-import io.simplesource.saga.model.specs.SagaSpec;
+import io.simplesource.saga.model.serdes.SagaClientSerdes;
+import io.simplesource.saga.model.specs.SagaClientSpec;
 import io.simplesource.saga.shared.topics.TopicConfig;
 import io.simplesource.saga.shared.topics.TopicTypes;
 import io.simplesource.saga.shared.app.StreamAppUtils;
@@ -22,7 +22,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
- * The KafkaSagaAPI is the implementation of the SagaAPI.
+ * The KafkaSagaAPI is an implementation of the SagaAPI.
  * <p>
  * This provides a mechanism to invoke a saga from any Java code, and receive the saga response asynchronously.
  * <p>
@@ -33,12 +33,12 @@ import java.util.concurrent.TimeUnit;
 public final class KafkaSagaAPI<A> implements SagaAPI<A> {
     private final KafkaRequestAPI<SagaId, SagaRequest<A>, SagaId, SagaResponse> requestApi;
 
-    private KafkaSagaAPI(SagaSpec<A> sagaSpec,
+    private KafkaSagaAPI(SagaClientSpec<A> sagaSpec,
                         KafkaConfig kConfig,
                         TopicConfig sagaTopicConfig,
                         String clientId,
                         ScheduledExecutorService scheduler) {
-        SagaSerdes<A> serdes = sagaSpec.serdes;
+        SagaClientSerdes<A> serdes = sagaSpec.serdes;
 
         RequestAPIContext<SagaId, SagaRequest<A>, SagaId, SagaResponse> apiContext = RequestAPIContext
                 .<SagaId, SagaRequest<A>, SagaId, SagaResponse>builder()
@@ -75,11 +75,11 @@ public final class KafkaSagaAPI<A> implements SagaAPI<A> {
      * @param clientId        this is used to identify the client. If should be unique for a given client. Saga responses are funneled into separate topics per client ID. This saves multiple clients from having to consume the responses for all sagas - they only consume the responses from their private topic.
      * @param scheduler       the scheduler for scheduling timeouts
      */
-    static <A> SagaAPI<A> of(SagaSpec<A> sagaSpec,
-                         KafkaConfig kConfig,
-                         TopicConfig sagaTopicConfig,
-                         String clientId,
-                         ScheduledExecutorService scheduler) {
+    static <A> SagaAPI<A> of(SagaClientSpec<A> sagaSpec,
+                             KafkaConfig kConfig,
+                             TopicConfig sagaTopicConfig,
+                             String clientId,
+                             ScheduledExecutorService scheduler) {
         return new KafkaSagaAPI<>(sagaSpec, kConfig, sagaTopicConfig, clientId, scheduler);
     }
 

@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * The Saga DSL is used be the client to build a saga.
+ * The saga DSL is used be the client to build a saga.
  * <p>
  * To build a saga:
  * <ol>

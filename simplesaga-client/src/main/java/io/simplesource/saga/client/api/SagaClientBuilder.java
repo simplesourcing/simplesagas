@@ -2,10 +2,9 @@ package io.simplesource.saga.client.api;
 
 import io.simplesource.kafka.dsl.KafkaConfig;
 import io.simplesource.kafka.internal.util.NamedThreadFactory;
-import io.simplesource.kafka.spec.WindowSpec;
 import io.simplesource.saga.model.api.SagaAPI;
-import io.simplesource.saga.model.serdes.SagaSerdes;
-import io.simplesource.saga.model.specs.SagaSpec;
+import io.simplesource.saga.model.serdes.SagaClientSerdes;
+import io.simplesource.saga.model.specs.SagaClientSpec;
 import io.simplesource.saga.shared.properties.PropertiesBuilder;
 import io.simplesource.saga.shared.topics.TopicConfig;
 import io.simplesource.saga.shared.topics.TopicConfigBuilder;
@@ -20,7 +19,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import static java.util.Objects.requireNonNull;
 
 /**
- * Saga client builder is a builder for setting the properties need to create, and then creating a {@link SagaAPI}.
+ * The saga client builder is used to create a {@link SagaAPI}.
  * <p>
  * To create an instance of a {@link SagaAPI}, use code like this:
  * <pre>{@code
@@ -37,10 +36,9 @@ public final class SagaClientBuilder<A> {
 
     private PropertiesBuilder.BuildSteps propertiesBuildSteps = null;
     private ScheduledExecutorService scheduler = null;
-    private SagaSerdes<A> serdes = null;
+    private SagaClientSerdes<A> serdes = null;
     private TopicConfigBuilder.BuildSteps topicConfigBuildSteps = builder -> builder;
     private String clientId = null;
-    private WindowSpec windowSpec = new WindowSpec(3600L);
 
     /**
      * Create saga client builder.
@@ -77,23 +75,11 @@ public final class SagaClientBuilder<A> {
     /**
      * Sets the Serdes required for the saga request and saga response topics.
      *
-     * @param serdes the saga serdes
+     * @param serdes the serdes for the action
      * @return the saga client builder
      */
-    public SagaClientBuilder<A> withSerdes(SagaSerdes<A> serdes) {
+    public SagaClientBuilder<A> withSerdes(SagaClientSerdes<A> serdes) {
         this.serdes = serdes;
-        return this;
-    }
-
-    /**
-     * Sets the response window for the saga client. This specifies the maximum time the client should wait for a response from the saga.
-     * Defaults to one hour.
-     *
-     * @param windowSpec the window spec
-     * @return the saga client builder
-     */
-    public SagaClientBuilder<A> withResponseWindow(WindowSpec windowSpec) {
-        this.windowSpec = windowSpec;
         return this;
     }
 
@@ -147,7 +133,7 @@ public final class SagaClientBuilder<A> {
                 .withInitialStep(tcBuilder -> tcBuilder.withTopicBaseName(TopicTypes.SagaTopic.SAGA_BASE_NAME))
                 .build(TopicTypes.SagaTopic.client);
 
-        SagaSpec<A> sagaSpec =new SagaSpec<>(serdes, windowSpec);
+        SagaClientSpec<A> sagaSpec = SagaClientSpec.of(serdes);
 
         Properties properties = propertiesBuildSteps.build();
         Map<String, Object> propsMap = new HashMap<>();
