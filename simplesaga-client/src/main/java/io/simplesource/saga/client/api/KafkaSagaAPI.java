@@ -25,6 +25,8 @@ import java.util.concurrent.TimeUnit;
  * The KafkaSagaAPI is the implementation of the SagaAPI.
  * <p>
  * This provides a mechanism to invoke a saga from any Java code, and receive the saga response asynchronously.
+ * <p>
+ * The client can be hosted in a separate process. It only needs to be able to access the same cluster as the {@link io.simplesource.saga.saga.app.SagaApp SagaApp} is running on, and share the same serdes for the saga request and response topics.
  *
  * @param <A> a representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
  */

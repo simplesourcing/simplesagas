@@ -10,7 +10,7 @@ import lombok.Value;
 @Value(staticConstructor="of")
 public class UndoCommand<A> {
     /**
-     * An action command, expressed in a generic type {code A}, that the action processor is able to decode.
+     * An action command, expressed in a generic type {@code A}, that the action processor is able to decode.
      */
     public final A command;
     /**

@@ -419,7 +419,7 @@
                         </executions>
                         <configuration>
                             <aggregate>true</aggregate>
-                            <excludePackageNames>*.internal:io.simplesource.kafka.serialization.avro.mappers:io.simplesource.saga.testutils</excludePackageNames>
+                            <excludePackageNames>*.internal:io.simplesource.kafka.serialization.avro.mappers:io.simplesource.saga.testutils:io.simplesource.saga.shared.data</excludePackageNames>
                             <show>public</show>
                         </configuration>
                     </plugin>

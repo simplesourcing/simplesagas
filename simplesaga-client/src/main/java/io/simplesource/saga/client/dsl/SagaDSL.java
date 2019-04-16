@@ -202,7 +202,7 @@ public final class SagaDSL {
         }
 
         /**
-         * Creates a subsaga with a single action and no undo action
+         * Adds an action with a random Id and no undo action command, creating a sub saga with a single action.
          *
          * @param actionType    the action type
          * @param actionCommand the action command
@@ -214,7 +214,7 @@ public final class SagaDSL {
         }
 
         /**
-         * Add action sub saga.
+         * Adds an action with a random Id and an undo action command, creating a sub saga with a single action.
          *
          * @param actionType        the action type
          * @param actionCommand     the action command
@@ -228,7 +228,7 @@ public final class SagaDSL {
         }
 
         /**
-         * Add action sub saga.
+         * Adds an action with no undo action command, creating a sub saga with a single action.
          *
          * @param actionId      the action id
          * @param actionType    the action type
@@ -242,7 +242,7 @@ public final class SagaDSL {
         }
 
         /**
-         * Add action sub saga.
+         * Adds an action with an undo action command, creating a sub saga with a single action.
          *
          * @param actionId          the action id
          * @param actionType        the action type
