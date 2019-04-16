@@ -56,7 +56,7 @@ import java.util.function.Consumer;
  * It does not need to know anything about the action processor implementations. Neither does it need to know the
  * topology of the saga graph. This is left up to the client to define dynamically.
  *
- * @param <A> A representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
+ * @param <A> a representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
  */
 final public class SagaApp<A> {
 
@@ -84,7 +84,7 @@ final public class SagaApp<A> {
     /**
      * Static constructor for a {@code SagaApp} saga coordinator application.
      *
-     * @param <A>               A representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
+     * @param <A>               a representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
      * @param sagaSpec          Information common to all sagas, such as Serdes for the saga topics
      * @param actionSpec        Information common to all saga actions and action processors, such as Serdes for the action topics
      * @param topicBuildFn      a function to set topic configuration details incrementally

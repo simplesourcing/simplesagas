@@ -16,14 +16,14 @@ import java.util.function.Function;
 /**
  * SagaStateTransition interface. Represents transitions of saga state
  *
- * @param <A> A representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
+ * @param <A> a representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
  */
 public interface SagaStateTransition<A> {
 
     /**
      * A transition for setting the initial state of the Saga
      *
-     * @param <A> A representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
+     * @param <A> a representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
      */
     @Value(staticConstructor = "of")
     final class SetInitialState<A> implements SagaStateTransition<A> {
@@ -38,7 +38,7 @@ public interface SagaStateTransition<A> {
     /**
      * A transition representing state changes of a Saga caused by updates to state of an action
      *
-     * @param <A> A representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
+     * @param <A> a representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
      */
     @Value(staticConstructor = "of")
     final class SagaActionStateChanged<A> implements SagaStateTransition<A> {
@@ -58,7 +58,7 @@ public interface SagaStateTransition<A> {
     /**
      * A transition representing state changes of a Saga caused by updating a sagas status
      *
-     * @param <A> A representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
+     * @param <A> a representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
      */
     @Value(staticConstructor = "of")
     final class SagaStatusChanged<A> implements SagaStateTransition<A> {
@@ -75,7 +75,7 @@ public interface SagaStateTransition<A> {
     /**
      * A transition representing multiple state changes to a saga
      *
-     * @param <A> A representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
+     * @param <A> a representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
      */
     @Value(staticConstructor = "of")
     final class TransitionList<A> implements SagaStateTransition<A> {

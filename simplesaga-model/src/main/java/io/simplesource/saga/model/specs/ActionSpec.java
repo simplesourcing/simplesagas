@@ -6,9 +6,9 @@ import lombok.Value;
 import java.time.Duration;
 
 /**
- * The type Action spec.
+ * Represents the details common to all action processors
  *
- * @param <A> the type parameter
+ * @param <A> a representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
  */
 @Value(staticConstructor = "of")
 public class ActionSpec<A> {

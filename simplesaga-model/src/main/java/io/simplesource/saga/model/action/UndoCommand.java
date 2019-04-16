@@ -5,7 +5,7 @@ import lombok.Value;
 /**
  * Represents an undo action returned in the {@link io.simplesource.saga.model.messages.ActionResponse action response} to dynamically set the undo (compensation) command for the action for if the saga later fails.
  *
- * @param <A> the type parameter
+ * @param <A> a representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
  */
 @Value(staticConstructor="of")
 public class UndoCommand<A> {

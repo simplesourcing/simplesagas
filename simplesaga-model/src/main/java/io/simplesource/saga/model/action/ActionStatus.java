@@ -1,11 +1,11 @@
 package io.simplesource.saga.model.action;
 
 /**
- * An enum representing the current state of an action within the Saga
+ * An enum representing the current state of an action within a saga
  */
 public enum ActionStatus {
     /**
-     * The initial state of action, before execution of the action starts.
+     * The initial state of action, before execution of the action has started.
      */
     Pending,
     /**
@@ -13,7 +13,7 @@ public enum ActionStatus {
      */
     InProgress,
     /**
-     * Action has been completed successfully.
+     * Action has completed successfully, and an action response has been received.
      */
     Completed,
     /**

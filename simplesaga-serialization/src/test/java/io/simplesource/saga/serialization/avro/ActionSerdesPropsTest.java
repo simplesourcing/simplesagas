@@ -20,7 +20,7 @@ class ActionSerdesPropsTest {
     ActionSerdes<User> serdes = AvroSerdes.Specific.actionSerdes(SCHEMA_URL, true);
 
     @Property
-    boolean ActionRequest_serialises_and_deserialises(@ForAll("userActionRequest") ActionRequest<User> original) {
+    boolean ActionRequest_serializes_and_deserializes(@ForAll("userActionRequest") ActionRequest<User> original) {
 
         byte[] serialized = serdes.request().serializer().serialize(FAKE_TOPIC, original);
         ActionRequest<User> deserialized = serdes.request().deserializer().deserialize(FAKE_TOPIC, serialized);

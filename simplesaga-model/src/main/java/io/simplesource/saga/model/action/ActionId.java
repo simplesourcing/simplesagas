@@ -10,7 +10,7 @@ import java.util.UUID;
 @Value(staticConstructor = "of")
 public final class ActionId {
     /**
-     * The Id.
+     * The id, represented internally as a UUID.
      */
     public final UUID id;
 

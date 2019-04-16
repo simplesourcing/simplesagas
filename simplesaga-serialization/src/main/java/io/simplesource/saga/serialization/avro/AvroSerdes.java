@@ -26,7 +26,7 @@ final public class AvroSerdes {
     /**
      * Create action serdes (serdes required for serializing to and from action request and response topics)
      *
-     * @param <A>                   A representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
+     * @param <A>                   a representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
      * @param payloadSerde          the payload serde required for serializing to and from the shared action command type {@code A}
      * @param schemaRegistryUrl     the schema registry url
      * @param useMockSchemaRegistry the use mock schema registry
@@ -42,7 +42,7 @@ final public class AvroSerdes {
     /**
      * Saga client serdes (serdes required for the saga request and response topics)
      *
-     * @param <A>                   A representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
+     * @param <A>                   a representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
      * @param payloadSerde          the payload serde required for serializing to and from the shared action command type {@code A}
      * @param schemaRegistryUrl     the schema registry url
      * @param useMockSchemaRegistry the use mock schema registry
@@ -58,7 +58,7 @@ final public class AvroSerdes {
     /**
      * Saga serdes (saga client topics, as well as the saga internal state and state transition topics)
      *
-     * @param <A>                   A representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
+     * @param <A>                   a representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
      * @param payloadSerde          the payload serde required for serializing to and from the shared action command type {@code A}
      * @param schemaRegistryUrl     the schema registry url
      * @param useMockSchemaRegistry the use mock schema registry
@@ -84,7 +84,7 @@ final public class AvroSerdes {
         /**
          * Create action serdes (serdes required for serializing to and from action request and response topics)
          *
-         * @param <A>                   A representation of an action command that is shared across all actions in the saga. This is must be a subclass of {@link SpecificRecord}
+         * @param <A>                   a representation of an action command that is shared across all actions in the saga. This is must be a subclass of {@link SpecificRecord}
          * @param schemaRegistryUrl     the schema registry url
          * @param useMockSchemaRegistry the use mock schema registry
          * @return the action serdes
@@ -102,7 +102,7 @@ final public class AvroSerdes {
         /**
          * Saga client serdes (serdes required for the saga request and response topics)
          *
-         * @param <A>                   A representation of an action command that is shared across all actions in the saga. This is must be a subclass of {@link SpecificRecord}
+         * @param <A>                   a representation of an action command that is shared across all actions in the saga. This is must be a subclass of {@link SpecificRecord}
          * @param schemaRegistryUrl     the schema registry url
          * @param useMockSchemaRegistry the use mock schema registry
          * @return the saga client serdes
@@ -120,7 +120,7 @@ final public class AvroSerdes {
         /**
          * Saga serdes (saga client topics, as well as the saga internal state and state transition topics)
          *
-         * @param <A>                   A representation of an action command that is shared across all actions in the saga. This is must be a subclass of {@link SpecificRecord}
+         * @param <A>                   a representation of an action command that is shared across all actions in the saga. This is must be a subclass of {@link SpecificRecord}
          * @param schemaRegistryUrl     the schema registry url
          * @param useMockSchemaRegistry the use mock schema registry
          * @return the saga client serdes
@@ -143,7 +143,7 @@ final public class AvroSerdes {
         /**
          * Create action serdes (serdes required for serializing to and from action request and response topics)
          *
-         * @param <A>                   A representation of an action command that is shared across all actions in the saga. This is must be a subclass of {@link GenericRecord}
+         * @param <A>                   a representation of an action command that is shared across all actions in the saga. This is must be a subclass of {@link GenericRecord}
          * @param schemaRegistryUrl     the schema registry url
          * @param useMockSchemaRegistry the use mock schema registry
          * @return the action serdes
@@ -161,7 +161,7 @@ final public class AvroSerdes {
         /**
          * Saga client serdes (serdes required for the saga request and response topics)
          *
-         * @param <A>                   A representation of an action command that is shared across all actions in the saga. This is must be a subclass of {@link GenericRecord}
+         * @param <A>                   a representation of an action command that is shared across all actions in the saga. This is must be a subclass of {@link GenericRecord}
          * @param schemaRegistryUrl     the schema registry url
          * @param useMockSchemaRegistry the use mock schema registry
          * @return the saga client serdes
@@ -179,7 +179,7 @@ final public class AvroSerdes {
         /**
          * Saga serdes (saga client topics, as well as the saga internal state and state transition topics)
          *
-         * @param <A>                   A representation of an action command that is shared across all actions in the saga. This is must be a subclass of {@link GenericRecord}
+         * @param <A>                   a representation of an action command that is shared across all actions in the saga. This is must be a subclass of {@link GenericRecord}
          * @param schemaRegistryUrl     the schema registry url
          * @param useMockSchemaRegistry the use mock schema registry
          * @return the saga client serdes

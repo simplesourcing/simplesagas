@@ -4,7 +4,6 @@ import io.simplesource.saga.model.action.ActionId;
 import io.simplesource.saga.model.action.ActionStatus;
 import io.simplesource.saga.model.action.SagaAction;
 import io.simplesource.saga.model.saga.Saga;
-import io.simplesource.saga.model.saga.SagaActionExecution;
 import io.simplesource.saga.model.saga.SagaStatus;
 
 import java.util.*;

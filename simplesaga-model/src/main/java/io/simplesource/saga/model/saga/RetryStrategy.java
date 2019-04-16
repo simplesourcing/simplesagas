@@ -4,20 +4,20 @@ import java.time.Duration;
 import java.util.Optional;
 
 /**
- * The interface Retry strategy.
+ * This interface specifies how the saga coordinator should attempt retries, both how many times and how long between them
  */
 @FunctionalInterface
 public interface RetryStrategy {
     /**
-     * Next retry optional.
+     * A wait period until the next retry. {@code Optional.empty()} indicates no retry should be processed, and action should be failed.
      *
-     * @param retryCount the retry count
-     * @return the optional
+     * @param retryCount the number of retries that have already been been processed.
+     * @return the optional wait period until the next retry.
      */
     Optional<Duration> nextRetry(int retryCount);
 
     /**
-     * Fail fast retry strategy.
+     * This strategy indicates no retries should be processed.
      *
      * @return the retry strategy
      */
@@ -26,7 +26,7 @@ public interface RetryStrategy {
     }
 
     /**
-     * Repeat retry strategy.
+     * This strategy retries a certain number of times, with a fixed delay between attempts.
      *
      * @param numberOfRetries the number of retries
      * @param delay           the delay

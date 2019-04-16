@@ -11,7 +11,7 @@ import java.time.Duration;
 /**
  * The Saga API, used for submitting saga requests and asynchronously waiting for the result of the saga execution/
  *
- * @param <A> A representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
+ * @param <A> a representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
  */
 public interface SagaAPI<A> {
     /**

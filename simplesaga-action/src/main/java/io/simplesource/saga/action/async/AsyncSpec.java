@@ -17,7 +17,7 @@ import java.util.function.Function;
  *     <li>The conversion from the shared type {@code A} to the decode input type {@code D}.</li>
  *     <li>The asynchronous function itself.</li>
  *     <li>An undo (compensation) action if there is one.</li>
- *     <li>The conversion to an output result type, if serialised output is required</li>
+ *     <li>The conversion to an output result type, if serialized output is required</li>
  *     <li>The serdes for serialisation to the output topic</li>
  * </ul>
  *
@@ -33,11 +33,11 @@ import java.util.function.Function;
 @AllArgsConstructor(staticName = "of")
 public final class AsyncSpec<A, D, K, O, R> {
     /**
-     * The UndoFunction is a mechanism to take the result of the async invocation and turns it into an
+     * The UndoFunction is a mechanism to take the result of the async invocation and turn it into an
      * undo action command. This action command is passed back to the saga coordinator, and if the saga fails,
      * this updated undo function will be invoked.
      * <p>
-     * For example, if the async function calls an endpoint to book a hotel, the return value will include a booking reference.
+     * For example, if the async function calls an endpoint to book a hotel, the return value may include a booking reference.
      * This booking reference is then used to create an undo action command that calls the corresponding cancel endpoint,
      * passing in the booking reference.
      */
@@ -52,11 +52,11 @@ public final class AsyncSpec<A, D, K, O, R> {
     }
 
     /**
-     * Each action processor must have a unique action type.
+     * Each action processor must have a unique action type associated with it.
      */
     public final String actionType;
     /**
-     * The Input decoder. This converts the common action command representation to an intermediate decoded type.
+     * The Input decoder converts the common action command representation to an intermediate decoded type.
      * The {@code A} type is common across all action processors and action types. This enables working with a type that
      * is specific to this action processor.
      */

@@ -8,41 +8,43 @@ import lombok.Value;
 import java.util.*;
 
 /**
- * The type Saga.
+ * The internal representation of a saga.
  *
- * @param <A> the type parameter
+ * @param <A> a representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
  */
 @Value
 public class Saga<A> {
     /**
-     * The Saga id.
+     * The Saga id uniquely identifies the saga.
      */
     public final SagaId sagaId;
     /**
-     * The Actions.
+     * Actions are stored in a map by {@code ActionId}. {@code ActionId} uniquely identifies the action (consisting of the command definition, the undo command definition if there is one and the action state).
      */
     public final Map<ActionId, SagaAction<A>> actions;
     /**
-     * The Status.
+     * The status of the saga.
      */
     public final SagaStatus status;
     /**
-     * The Saga error.
+     * If the saga fails, the cumulative list of errors that occurred in the processing for the saga.
      */
     public final List<SagaError> sagaError;
     /**
-     * The Sequence.
+     * The sequence number of the saga, indicating the number of saga state transitions that have occurred.
      */
     public final Sequence sequence;
 
     /**
-     * Of saga.
+     * Static constructor for a Saga.
+     * <p>
+     * <i>It is suggested that clients do not define a saga directly through this method, but rather use the {@link io.simplesource.saga.client.dsl.SagaDSL SagaDSL} to build the saga.</i>
      *
-     * @param <A>      the type parameter
-     * @param sagaId   the saga id
-     * @param actions  the actions
-     * @param status   the status
-     * @param sequence the sequence
+     * @param <A> a representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
+     * @param sagaId   the saga id uniquely defines the saga
+     * @param actions  a map of saga actions
+     * @param status   the saga status
+     * @param sequence the sequence number of the saga
      * @return the saga
      */
     public static <A> Saga<A> of(
@@ -53,19 +55,12 @@ public class Saga<A> {
         return new Saga<>(sagaId, actions, status, Collections.emptyList(), sequence);
     }
 
-    /**
-     * Of saga.
-     *
-     * @param <A>     the type parameter
-     * @param actions the actions
-     * @return the saga
-     */
     public static <A> Saga<A> of(Map<ActionId, SagaAction<A>> actions) {
         return new Saga<>(SagaId.random(), actions, SagaStatus.NotStarted, Collections.emptyList(), Sequence.first());
     }
 
     /**
-     * Updated saga.
+     * Creates a new saga instances with an updated saga status.
      *
      * @param status the status
      * @return the saga
@@ -75,7 +70,7 @@ public class Saga<A> {
     }
 
     /**
-     * Updated saga.
+     * Creates a new saga instances with an updated saga status and error list.
      *
      * @param status    the status
      * @param sagaError the saga error
@@ -86,7 +81,7 @@ public class Saga<A> {
     }
 
     /**
-     * Updated saga.
+     * Creates a new saga instances with an updated set of actions, saga status and error list.
      *
      * @param actions   the actions
      * @param status    the status
@@ -98,7 +93,7 @@ public class Saga<A> {
     }
 
     /**
-     * Updated saga.
+     * Creates a new saga instances with an updated set of actions and saga status.
      *
      * @param actions the actions
      * @param status  the status

@@ -12,7 +12,7 @@ import java.util.concurrent.ScheduledExecutorService;
  * The type Http builder. This is a thin wrapper around the {@link AsyncBuilder} that makes it easier
  * to wrap Http web service calls as async actions.
  *
- * This is still an interface, as the client still has to provide an {@link HttpSpec#asyncHttpFunction}
+ * The client still has to provide an {@link HttpSpec#asyncHttpFunction}
  * implementation using the Http client of their choice.
  */
 // TODO: does this belong in userland?
@@ -20,7 +20,7 @@ public final class HttpBuilder {
 
     /**
      * A static function that delegates the {@link AsyncBuilder} to provide an implementation of an
-     * action processor that can process http requests asynchronously as part of a saga.
+     * action processor that can process http web service calls asynchronously as part of a saga.
      *
      * @param <A> common representation type for all action commands (typically Json / GenericRecord for Avro)
      * @param <K> key for the output topic for the result of Http topics

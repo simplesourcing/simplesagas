@@ -8,7 +8,7 @@ import lombok.Value;
  * A request to execute a saga, published by client (either directly, or via the {@link io.simplesource.saga.model.api.SagaAPI SagaAPI} in the
  * saga request topic, and consumed by the saga coordinator.
  *
- * @param <A> A representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
+ * @param <A> a representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
  */
 @Value(staticConstructor = "of")
 public class SagaRequest<A> {

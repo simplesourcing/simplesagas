@@ -6,7 +6,7 @@ import lombok.Value;
 import java.util.function.BiFunction;
 
 /**
- * The type Saga error.
+ * Represents an error in saga processing
  */
 @Value
 public class SagaError {
@@ -57,28 +57,28 @@ public class SagaError {
     }
 
     /**
-     * The enum Reason.
+     * Represents the reason for an action processor or saga failing.
      */
 // TODO: flesh out error cases
     public enum Reason {
         /**
-         * Invalid saga reason.
+         * The build steps used to create a saga are invalid.
          */
         InvalidSaga,
         /**
-         * Timeout reason.
+         * A saga or action processing step timed out.
          */
         Timeout,
         /**
-         * Command error reason.
+         * There was an error with a simple sourcing or other command.
          */
         CommandError,
         /**
-         * Internal error reason.
+         * An undetermined error occurred.
          */
         InternalError,
         /**
-         * Unexpected error code reason.
+         * An unexpected error occurred.
          */
         UnexpectedErrorCode
     }

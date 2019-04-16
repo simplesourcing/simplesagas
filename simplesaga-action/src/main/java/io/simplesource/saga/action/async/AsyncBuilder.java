@@ -12,7 +12,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 /**
- * A class with a single static function that returns an action processor build step
+ * A class with a single static function that returns an action processor build step for an async action.
+ * <p>
+ * An async action is an action that executes an arbitrary asynchronous function in a saga. The result of the function can be
+ * optionally piped to an output topic.
  * <p>
  * This build step:
  * <ol>

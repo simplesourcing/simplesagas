@@ -5,18 +5,19 @@ import io.simplesource.saga.model.serdes.SagaSerdes;
 import lombok.Value;
 
 /**
- * The type Saga spec.
+ * Represents the details required to create a saga coordinator
  *
- * @param <A> the type parameter
+ * @param <A> a representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
  */
 @Value
 public class SagaSpec<A> {
     /**
-     * The Serdes.
+     * The serdes required for all the saga coordinator topics.
      */
     public final SagaSerdes<A> serdes;
     /**
-     * The Response window.
+     * Represents the response window for the Saga API. This defines how long the saga API should be able to access the results of any saga in execution or previously completed saga.
+     * @see io.simplesource.saga.model.api.SagaAPI
      */
     public final WindowSpec responseWindow;
 }

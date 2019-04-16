@@ -20,9 +20,9 @@ import java.util.concurrent.ScheduledExecutorService;
 import static java.util.Objects.requireNonNull;
 
 /**
- * Saga builder is a builder for setting the properties need to create, and then creating a {@link SagaAPI}.
+ * Saga client builder is a builder for setting the properties need to create, and then creating a {@link SagaAPI}.
  * <p>
- * To Build, use code like this:
+ * To create an instance of a {@link SagaAPI}, use code like this:
  * <pre>{@code
  * SagaAPI<A> sagaApi = SagaClientBuilder
  *     .create(a -> a.withBootstrapServers("kafka_broker:9092"))
@@ -31,7 +31,7 @@ import static java.util.Objects.requireNonNull;
  *     .withScheduler(scheduler)
  *     .build();
  * }</pre>
- * @param <A> A representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
+ * @param <A> a representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
  */
 public final class SagaClientBuilder<A> {
 
@@ -45,7 +45,7 @@ public final class SagaClientBuilder<A> {
     /**
      * Create saga client builder.
      *
-     * @param <A> the type parameter
+     * @param <A> a representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
      * @return the saga client builder
      */
     public static <A> SagaClientBuilder<A> create() {
@@ -53,9 +53,9 @@ public final class SagaClientBuilder<A> {
     }
 
     /**
-     * Create saga builder with config properties.
+     * Create saga client builder with config properties.
      *
-     * @param <A>              the type parameter
+     * @param <A> a representation of an action command that is shared across all actions in the saga. This is typically a generic type, such as Json, or if using Avro serialization, SpecificRecord or GenericRecord
      * @param configBuildSteps a function that allows setting Kafka config properties incrementally.
      * @return the saga client builder
      */
@@ -66,7 +66,7 @@ public final class SagaClientBuilder<A> {
     /**
      * Sets the config properties.
      *
-     * @param configBuildSteps the config build steps
+     * @param configBuildSteps a sequence of configuration steps
      * @return the saga client builder
      */
     public SagaClientBuilder<A> withProperties(PropertiesBuilder.BuildSteps configBuildSteps) {
@@ -75,9 +75,9 @@ public final class SagaClientBuilder<A> {
     }
 
     /**
-     * Sets the Serdes required for the saga request and saga response topics
+     * Sets the Serdes required for the saga request and saga response topics.
      *
-     * @param serdes the serdes
+     * @param serdes the saga serdes
      * @return the saga client builder
      */
     public SagaClientBuilder<A> withSerdes(SagaSerdes<A> serdes) {
@@ -154,6 +154,6 @@ public final class SagaClientBuilder<A> {
         properties.forEach((key, value) -> propsMap.put(key.toString(), value.toString()));
 
         KafkaConfig kafkaConfig = new KafkaConfig.Builder().withSettings(propsMap).build();
-        return new KafkaSagaAPI<>(sagaSpec, kafkaConfig, topicConfig, clientId, scheduler);
+        return KafkaSagaAPI.of(sagaSpec, kafkaConfig, topicConfig, clientId, scheduler);
     }
 }

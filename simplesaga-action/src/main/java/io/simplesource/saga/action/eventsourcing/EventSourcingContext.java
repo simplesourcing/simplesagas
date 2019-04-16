@@ -8,8 +8,6 @@ import io.simplesource.saga.shared.topics.TopicNamer;
 import lombok.Value;
 
 /**
- * The type Event sourcing context. This is applied
- *
  * @param <A> common representation form for all action commands (typically Json / GenericRecord for Avro)
  * @param <D> intermediate decoded input type (that can easily be converted to both K and C)
  * @param <K> aggregate key

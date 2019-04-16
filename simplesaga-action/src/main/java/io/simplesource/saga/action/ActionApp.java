@@ -13,16 +13,16 @@ import io.simplesource.saga.shared.properties.PropertiesBuilder;
  * <p>
  * An action processor application consists of one or more action processors.
  * <p>
- * To create an action processor, you provide an implementation of the functional interface {@link ActionProcessorBuildStep}.
- * In this implementation you define both the instructions for building the stream topology, and the details about the topics
- * that are required for this action processor (Note that each action processor uses its own set of topics)
- * <p>
- * For examples of action processor implementations:
+ * The following action processors are provided out-the-box in Simple Sagas:
  * <ul>
  * <li>{@link io.simplesource.saga.action.eventsourcing.EventSourcingBuilder Event Sourcing Action processor}</li>
  * <li>{@link io.simplesource.saga.action.async.AsyncBuilder  Async Action processor}</li>
  * <li>{@link io.simplesource.saga.action.http.HttpBuilder Http Action processor}</li>
  * </ul>
+ * <p>
+ * To create a custom action processor, you can provide an implementation of the functional interface {@link ActionProcessorBuildStep}.
+ * In this implementation you define both the instructions for building the stream topology, and the details about the topics
+ * that are required for this action processor (Note that each action processor uses its own set of topics)
  * <p>
  * It is recommended, though note essential to use this pattern to create action processors.
  * <p>
@@ -45,7 +45,7 @@ public class ActionApp<A> {
 
     /**
      *
-     * @param serdes - the Serdes for the action request and response topics. Note that all action types
+     * @param serdes - the Serdes for the action request and response topics. Note that all action types share the same serdes
      * @param <A> The action command type (shared across all actions)
      * @return the ActionApp
      */
@@ -55,7 +55,11 @@ public class ActionApp<A> {
 
     /**
      *
-     * Adds an action processor to the application
+     * Adds an action processor build step to the application.
+     * <p>
+     * Note that it is only possible to add one action processor per action type to a given action app instance, and this is enforced by the framework.
+     * <p>
+     * It is up to the user to ensure that there is only one action processor per action type running on the cluster (to ensure single processing of an action).
      *
      * @param processorBuildStep - the action processor build step
      * @return this
@@ -69,7 +73,7 @@ public class ActionApp<A> {
     /**
      * Builds the stream.
      *
-     * This creates the stream topology and the topic definitions, but doesn't create the topics or run the application
+     * This creates the stream topology and the topic definitions, but doesn't create the topics or run the application.
      *
      * @param properties a functional interface for setting or overriding the Kafka properties
      * @return a structure with the result of the build
