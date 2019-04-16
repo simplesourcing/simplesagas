@@ -8,11 +8,11 @@ import lombok.Value;
 import java.util.concurrent.ScheduledExecutorService;
 
 /**
-  * @param <A> - common representation form for all action commands (typically Json / or GenericRecord for Avro)
-  * @param <D> - intermediate decoded input type
-  * @param <K> - key for the value topic
-  * @param <O> - value returned by async function
-  * @param <R> - final result type that ends up in value topic
+  * @param <A> common representation form for all action commands (typically Json or GenericRecord/SpecificRecord for Avro)
+  * @param <D> intermediate decoded input type (this can be specific to this action processor)
+  * @param <K> key for the output topic (if the result of async invocation is written to an output topic)
+  * @param <O> output value returned by async function
+  * @param <R> final result type that ends up in output topic (if output is generated)
   */
 @Value
 public final class AsyncContext<A, D, K, O, R> {

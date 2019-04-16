@@ -10,7 +10,7 @@ import org.apache.kafka.common.serialization.Serde;
 import java.util.HashMap;
 import java.util.Map;
 
-public class GenericSerdeUtils {
+final public class GenericSerdeUtils {
 
     public static <T extends GenericRecord> Serde<T> genericAvroSerde(String schemaRegistryUrl, Boolean isSerdeForRecordKeys) {
         return genericAvroSerde(schemaRegistryUrl, isSerdeForRecordKeys, null);

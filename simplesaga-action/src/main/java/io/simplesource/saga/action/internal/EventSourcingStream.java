@@ -10,14 +10,14 @@ import io.simplesource.kafka.internal.util.Tuple2;
 import io.simplesource.kafka.model.CommandRequest;
 import io.simplesource.kafka.model.CommandResponse;
 import io.simplesource.saga.action.eventsourcing.EventSourcingContext;
+import io.simplesource.saga.action.eventsourcing.EventSourcingSpec;
 import io.simplesource.saga.model.messages.ActionRequest;
 import io.simplesource.saga.model.messages.ActionResponse;
-import io.simplesource.saga.model.messages.UndoCommand;
+import io.simplesource.saga.model.action.UndoCommand;
 import io.simplesource.saga.model.saga.SagaError;
 import io.simplesource.saga.model.saga.SagaId;
 import io.simplesource.saga.model.serdes.ActionSerdes;
-import io.simplesource.saga.shared.serialization.TupleSerdes;
-import io.simplesource.saga.shared.streams.StreamUtils;
+import io.simplesource.saga.shared.serdes.TupleSerdes;
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KeyValue;
@@ -27,7 +27,6 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.util.Optional;
-import java.util.function.BiFunction;
 
 public final class EventSourcingStream {
 
@@ -78,7 +77,7 @@ public final class EventSourcingStream {
      * Unfortunately we have to keep invoking this decoder step
      */
     private static <A, D> D getDecoded(EventSourcingContext<A, D, ?, ?> ctx, ActionRequest<A> aReq) {
-        D d = ctx.eventSourcingSpec.decode.apply(aReq.actionCommand.command).getOrElse(null);
+        D d = ctx.eventSourcingSpec.inputDecoder.apply(aReq.actionCommand.command).getOrElse(null);
         assert d != null; // this should have already been checked
         return d;
     }
@@ -93,7 +92,7 @@ public final class EventSourcingStream {
 
         KStream<SagaId, Tuple2<ActionRequest<A>, Result<Throwable, D>>> reqsWithDecoded =
                 actionRequests
-                        .mapValues((k, ar) -> Tuple2.of(ar, ctx.eventSourcingSpec.decode.apply(ar.actionCommand.command)))
+                        .mapValues((k, ar) -> Tuple2.of(ar, ctx.eventSourcingSpec.inputDecoder.apply(ar.actionCommand.command)))
                         .peek(StreamUtils.logValues(logger, "reqsWithDecoded"));
 
         KStream<SagaId, Tuple2<ActionRequest<A>, Result<Throwable, D>>>[] branchSuccessFailure = reqsWithDecoded.branch((k, v) -> v.v2().isSuccess(), (k, v) -> v.v2().isFailure());
@@ -159,7 +158,9 @@ public final class EventSourcingStream {
         // Join the action request and command response by commandID
         KStream<CommandId, Tuple2<CommandResponse<K>, ActionRequest<A>>> crArByCi = commandResponseByAggregate
                 .selectKey((k, v) -> v.commandId())
-                .join(actionRequests.selectKey((k, v) -> v.actionCommand.commandId), Tuple2::of, JoinWindows.of(ctx.eventSourcingSpec.timeout).until(ctx.eventSourcingSpec.timeout.toMillis() * 2 + 1),
+                .join(actionRequests.selectKey((k, v) -> v.actionCommand.commandId),
+                        Tuple2::of,
+                        JoinWindows.of(ctx.eventSourcingSpec.timeout).until(ctx.eventSourcingSpec.timeout.toMillis() * 2 + 1),
                         Joined.with(cSerdes.commandId(), cSerdes.commandResponse(), aSerdes.request()));
 
 
@@ -210,7 +211,7 @@ public final class EventSourcingStream {
                                 D decodedInput = getDecoded(ctx, aReq);
                                 C command = ctx.eventSourcingSpec.commandMapper.apply(decodedInput);
                                 K key = ctx.eventSourcingSpec.keyMapper.apply(decodedInput);
-                                BiFunction<K, C, Optional<A>> undoFunction = ctx.eventSourcingSpec.undoCommand;
+                                EventSourcingSpec.UndoFunction<A, K, C> undoFunction = ctx.eventSourcingSpec.undoCommand;
                                 undoAction = undoFunction == null ?
                                         Optional.empty() :
                                         undoFunction.apply(key, command).map(undoA -> UndoCommand.of(undoA, aReq.actionCommand.actionType));

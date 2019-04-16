@@ -1,6 +1,5 @@
 package io.simplesource.saga.serialization.utils;
 
-import org.apache.avro.specific.SpecificRecord;
 import org.apache.kafka.common.serialization.Deserializer;
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serializer;
@@ -9,6 +8,9 @@ import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+/**
+ * A utility class with methods that enable the derivation of a serde from a serde from an another type.
+ */
 public class SerdeUtils {
     public static <S, V> Serde<V> iMap(Serde<S> sSerde, Function<V, S> toGeneric, Function<S, V> fromGeneric) {
         return iMap(sSerde, (topic, v) -> toGeneric.apply(v), (topic, s) -> fromGeneric.apply(s));

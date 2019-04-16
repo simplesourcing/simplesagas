@@ -2,7 +2,7 @@ package io.simplesource.saga.action.internal;
 
 import io.simplesource.data.Result;
 import io.simplesource.saga.action.async.AsyncContext;
-import io.simplesource.saga.model.messages.UndoCommand;
+import io.simplesource.saga.model.action.UndoCommand;
 import io.simplesource.saga.model.serdes.TopicSerdes;
 import io.simplesource.saga.action.async.AsyncSpec;
 import io.simplesource.saga.action.async.Callback;
@@ -10,7 +10,6 @@ import io.simplesource.saga.model.messages.ActionRequest;
 import io.simplesource.saga.model.messages.ActionResponse;
 import io.simplesource.saga.model.saga.SagaError;
 import io.simplesource.saga.model.saga.SagaId;
-import io.simplesource.saga.shared.kafka.AsyncPublisher;
 import io.simplesource.saga.shared.topics.TopicTypes;
 import lombok.Value;
 
@@ -23,9 +22,9 @@ import java.util.function.Supplier;
 
 final class AsyncInvoker {
 
-    @Value
+    @Value(staticConstructor = "of")
     private static class ResultGeneration<A, K, R> {
-        @Value
+        @Value(staticConstructor = "of")
         static class ToTopic<K, R> {
             public final String topicName;
             public final TopicSerdes<K, R> outputSerdes;
@@ -33,9 +32,15 @@ final class AsyncInvoker {
 
         public final K key;
         public final R result;
-        public final Optional<ToTopic<K, R>> toTopic;
-        public final Optional<UndoCommand<A>> undoCommand;
+        public final ToTopic<K, R> toTopic;
     }
+
+    @Value(staticConstructor = "of")
+    private static class ResultWithUndo<A, K, R> {
+        public final Optional<UndoCommand<A>> undoCommand;
+        public final Optional<ResultGeneration<A, K, R>> resultGeneration;
+    }
+
 
     static <A, D, K, O, R> void processActionRequest(
             AsyncContext<A, D, K, O, R> asyncContext,
@@ -49,42 +54,29 @@ final class AsyncInvoker {
         AtomicBoolean completed = new AtomicBoolean(false);
         Function<D, Callback<O>> callbackProvider = input -> result -> {
             if (completed.compareAndSet(false, true)) {
-                Result<Throwable, Optional<ResultGeneration<A, K, R>>> resultWithOutput = tryWrap(() ->
+                Result<Throwable, ResultWithUndo<A, K, R>> resultWithOutput = tryWrap(() ->
                         result.flatMap(output -> {
+                            Optional<UndoCommand<A>> undo = asyncSpec.undoFunction == null || request.isUndo ?
+                                    Optional.empty() :
+                                    asyncSpec.undoFunction.apply(input, output);
+
                             Optional<Result<Throwable, ResultGeneration<A, K, R>>> optResultGen =
-                                    asyncSpec.resultSpec.flatMap(rSpec -> {
-                                        K outputKey = rSpec.keyMapper.apply(input);
-
-                                        Optional<Result<Throwable, ResultGeneration<A, K, R>>> resultGeneration = rSpec.outputMapper.apply(output).map(t -> t.map(r -> {
-                                            Optional<UndoCommand<A>> undo = rSpec.undoFunction == null || request.isUndo ?
-                                                    Optional.empty() :
-                                                    rSpec.undoFunction.apply(input, outputKey, r);
-
-                                            Optional<ResultGeneration.ToTopic<K, R>> toTopic = rSpec.outputSerdes.map(outputSerdes ->
-                                                    new ResultGeneration.ToTopic<>(
-                                                            asyncContext.actionTopicNamer.apply(TopicTypes.ActionTopic.ACTION_OUTPUT),
-                                                            outputSerdes));
-
-                                            return new ResultGeneration<>(outputKey, r, toTopic, undo);
-                                        }));
-
-                                        return resultGeneration;
-                                    });
+                                    getResultGeneration(asyncContext, asyncSpec, input, output);
 
                             // this is just `sequence` in FP - swapping Result and Option
-                            Optional<Result<Throwable, Optional<ResultGeneration<A, K, R>>>> y = optResultGen.map(r -> r.fold(Result::failure, r0 -> Result.success(Optional.of(r0))));
-                            return y.orElseGet(() -> Result.success(Optional.empty()));
+                            Optional<Result<Throwable, Optional<ResultGeneration<A, K, R>>>> ortOrg =
+                                    optResultGen.map(r -> r.fold(Result::failure, r0 -> Result.success(Optional.of(r0))));
+                            return ortOrg.orElseGet(() -> Result.success(Optional.empty()))
+                                    .map(optResGen -> ResultWithUndo.of(undo, optResGen));
                         }));
 
                 resultWithOutput.ifSuccessful(resultGenOpt ->
-                        resultGenOpt.ifPresent(rg -> {
-                            rg.toTopic.ifPresent(toTopic -> {
-                                AsyncPublisher<K, R> publisher = outputPublisher.apply(toTopic.outputSerdes);
-                                publisher.send(toTopic.topicName, rg.key, rg.result);
-                            });
+                        resultGenOpt.resultGeneration.ifPresent(rg -> {
+                                AsyncPublisher<K, R> publisher = outputPublisher.apply(rg.toTopic.outputSerdes);
+                                publisher.send(rg.toTopic.topicName, rg.key, rg.result);
                         }));
 
-                Result<Throwable, Optional<UndoCommand<A>>> e = resultWithOutput.map(rg -> rg.flatMap(r -> r.undoCommand));
+                Result<Throwable, Optional<UndoCommand<A>>> e = resultWithOutput.map(rg -> rg.undoCommand);
                 publishActionResult(asyncContext, sagaId, request, responsePublisher, e);
             }
         };
@@ -115,6 +107,27 @@ final class AsyncInvoker {
                 }
             });
         }
+    }
+
+    private static <A, D, K, O, R> Optional<Result<Throwable, ResultGeneration<A, K, R>>> getResultGeneration(
+            AsyncContext<A, D, K, O, R> asyncContext,
+            AsyncSpec<A, D, K, O, R> asyncSpec,
+            D decodedInput,
+            O output) {
+        return asyncSpec.resultSpec.flatMap(rSpec -> rSpec
+                .outputMapper
+                .apply(output)
+                .map((Result<Throwable, R> outResult) ->
+                        outResult.map(r -> {
+                            K outputKey = rSpec.keyMapper.apply(decodedInput);
+
+                            ResultGeneration.ToTopic<K, R> toTopic =
+                                    new ResultGeneration.ToTopic<>(
+                                            asyncContext.actionTopicNamer.apply(TopicTypes.ActionTopic.ACTION_OUTPUT),
+                                            rSpec.outputSerdes);
+
+                            return ResultGeneration.of(outputKey, r, toTopic);
+                        })));
     }
 
     // evaluates code returning a Result that may throw an exception,

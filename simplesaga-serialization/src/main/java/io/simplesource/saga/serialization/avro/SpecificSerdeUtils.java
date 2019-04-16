@@ -9,7 +9,7 @@ import org.apache.kafka.common.serialization.Serde;
 import java.util.HashMap;
 import java.util.Map;
 
-public class SpecificSerdeUtils {
+final public class SpecificSerdeUtils {
 
     public static <T extends SpecificRecord> Serde<T> specificAvroSerde(String registryUrl, Boolean isSerdeForRecordKeys) {
         return specificAvroSerde(registryUrl, isSerdeForRecordKeys, null);

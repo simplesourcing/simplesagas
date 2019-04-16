@@ -8,12 +8,11 @@ import io.simplesource.saga.shared.topics.TopicNamer;
 import lombok.Value;
 
 /**
-  * @param <A> - common representation form for all action commands (typically Json / GenericRecord for Avro)
-  * @param <D> - intermediate decoded input type (that can easily be converted to both K and C)
-  * @param <K> - aggregate key
-  * @param <C> - simple sourcing command type
-  */
-
+ * @param <A> common representation form for all action commands (typically Json / GenericRecord for Avro)
+ * @param <D> intermediate decoded input type (that can easily be converted to both K and C)
+ * @param <K> aggregate key
+ * @param <C> simple sourcing command type
+ */
 @Value(staticConstructor = "of")
 public final class EventSourcingContext<A, D, K, C> {
     public final ActionSpec<A> actionSpec;
@@ -26,5 +25,6 @@ public final class EventSourcingContext<A, D, K, C> {
     }
 
     public final CommandSerdes<K, C> cSerdes() { return eventSourcingSpec.commandSerdes; }
+
     public final ActionSerdes<A> aSerdes() { return actionSpec.serdes; }
 }

@@ -4,7 +4,7 @@ import io.simplesource.api.CommandId;
 import io.simplesource.data.NonEmptyList;
 import io.simplesource.data.Result;
 import io.simplesource.saga.model.action.ActionCommand;
-import io.simplesource.saga.model.messages.UndoCommand;
+import io.simplesource.saga.model.action.UndoCommand;
 import io.simplesource.saga.model.saga.SagaError;
 import io.simplesource.saga.serialization.avro.generated.AvroActionCommand;
 import io.simplesource.saga.serialization.avro.generated.AvroActionUndoCommand;
@@ -22,8 +22,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class SagaSerdeUtils {
-    public static String PAYLOAD_TOPIC_SUFFIX = "payload";
+final class SagaSerdeUtils {
+    private static String PAYLOAD_TOPIC_SUFFIX = "payload";
 
     static <R, T> Result<SagaError, T> sagaResultFromAvro(Object aRes, Function<R, T> successTransformer) {
         // TODO: remove the casting

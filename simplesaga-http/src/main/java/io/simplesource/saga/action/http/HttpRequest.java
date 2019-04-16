@@ -8,11 +8,13 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
-  * @param <K> - key for the value topic
-  * @param <B> - body for Http request
+  * @param <K> key for the value topic
+  * @param <B> body for Http request
   */
 @Value
 public final class HttpRequest<K, B> {
+
+    @FunctionalInterface
     public interface HttpRequestDecoder<A, K, B> {
         Result<Throwable,  HttpRequest<K, B>> decode(A input);
     }

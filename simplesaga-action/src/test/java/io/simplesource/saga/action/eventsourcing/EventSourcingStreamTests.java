@@ -13,14 +13,14 @@ import io.simplesource.saga.model.action.ActionCommand;
 import io.simplesource.saga.model.action.ActionId;
 import io.simplesource.saga.model.messages.ActionRequest;
 import io.simplesource.saga.model.messages.ActionResponse;
-import io.simplesource.saga.model.messages.UndoCommand;
+import io.simplesource.saga.model.action.UndoCommand;
 import io.simplesource.saga.model.saga.SagaId;
 import io.simplesource.saga.model.serdes.ActionSerdes;
 import io.simplesource.saga.serialization.avro.AvroSerdes;
-import io.simplesource.saga.shared.streams.StreamBuildResult;
+import io.simplesource.saga.shared.app.StreamBuildResult;
 import io.simplesource.saga.shared.topics.TopicNamer;
 import io.simplesource.saga.shared.topics.TopicTypes;
-import io.simplesource.saga.shared.streams.StreamAppConfig;
+import io.simplesource.saga.model.config.StreamAppConfig;
 import io.simplesource.saga.shared.topics.TopicUtils;
 import io.simplesource.saga.testutils.*;
 import lombok.Value;
@@ -30,7 +30,6 @@ import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 import java.util.Optional;
-import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -65,7 +64,7 @@ class EventSourcingStreamTests {
                     EventSourcingSpec.<SpecificRecord, AccountCommand, AccountId, AccountCommand>builder()
                             .actionType(Constants.ACCOUNT_ACTION_TYPE)
                             .aggregateName(Constants.ACCOUNT_AGGREGATE_NAME)
-                            .decode(a -> Result.success((AccountCommand) a))
+                            .inputDecoder(a -> Result.success((AccountCommand) a))
                             .commandMapper(c -> c)
                             .keyMapper(AccountCommand::getId)
                             .sequenceMapper(c -> Sequence.position(c.getSequence()))
