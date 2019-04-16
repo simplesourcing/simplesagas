@@ -229,7 +229,7 @@ final public class SagaApp<A> {
         return buildTopology(topicCreator, kafkaPublisher::send);
     }
 
-    public Topology buildTopology(Consumer<List<TopicCreation>> topicCreator, RetryPublisher<A> retryPublisher) {
+    Topology buildTopology(Consumer<List<TopicCreation>> topicCreator, RetryPublisher<A> retryPublisher) {
         final List<TopicCreation> topics = new ArrayList<>();
         TopicConfig sagaTopicConfig = sagaTopicBuildSteps
                 .withInitialStep(tcBuilder ->

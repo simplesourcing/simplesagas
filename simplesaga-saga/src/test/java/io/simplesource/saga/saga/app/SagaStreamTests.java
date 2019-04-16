@@ -1,4 +1,4 @@
-package io.simplesource.saga.saga;
+package io.simplesource.saga.saga.app;
 
 import io.simplesource.api.CommandId;
 import io.simplesource.data.NonEmptyList;
