@@ -5,6 +5,7 @@ import io.simplesource.saga.model.saga.RetryStrategy;
 import io.simplesource.saga.model.saga.SagaId;
 import io.simplesource.saga.model.specs.ActionSpec;
 import io.simplesource.saga.model.specs.SagaSpec;
+import io.simplesource.saga.saga.internal.SagaContext;
 import io.simplesource.saga.saga.internal.SagaTopologyBuilder;
 import io.simplesource.saga.shared.kafka.KafkaPublisher;
 import io.simplesource.saga.shared.properties.PropertiesBuilder;

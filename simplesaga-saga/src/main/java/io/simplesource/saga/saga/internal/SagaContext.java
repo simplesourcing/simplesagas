@@ -1,4 +1,4 @@
-package io.simplesource.saga.saga.app;
+package io.simplesource.saga.saga.internal;
 
 
 import io.simplesource.saga.model.saga.RetryStrategy;

@@ -3,7 +3,6 @@ package io.simplesource.saga.saga.internal;
 import io.simplesource.kafka.internal.util.Tuple2;
 import io.simplesource.saga.model.messages.*;
 import io.simplesource.saga.model.saga.*;
-import io.simplesource.saga.saga.app.SagaContext;
 import org.apache.kafka.streams.kstream.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -9,7 +9,6 @@ import io.simplesource.saga.model.saga.Saga;
 import io.simplesource.saga.model.saga.SagaId;
 import io.simplesource.saga.model.specs.SagaSpec;
 import io.simplesource.saga.saga.app.RetryPublisher;
-import io.simplesource.saga.saga.app.SagaContext;
 import io.simplesource.saga.shared.topics.TopicNamer;
 import io.simplesource.saga.shared.topics.TopicTypes;
 import org.apache.kafka.streams.StreamsBuilder;
