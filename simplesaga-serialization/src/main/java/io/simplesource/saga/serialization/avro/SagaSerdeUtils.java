@@ -22,8 +22,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class SagaSerdeUtils {
-    public static String PAYLOAD_TOPIC_SUFFIX = "payload";
+final class SagaSerdeUtils {
+    private static String PAYLOAD_TOPIC_SUFFIX = "payload";
 
     static <R, T> Result<SagaError, T> sagaResultFromAvro(Object aRes, Function<R, T> successTransformer) {
         // TODO: remove the casting

@@ -22,30 +22,28 @@ import java.util.function.Function;
  * </ul>
  *
  *
- * @param <A> - common representation form for all action commands (typically Json / GenericRecord for Avro)
- * @param <D> - intermediate decoded input type (this can be specific to this action processor)
- * @param <K> - key for the value topic
- * @param <O> - value returned by async function
- * @param <R> - final result type that ends up in value topic
+ * @param <A> common representation form for all action commands (typically Json / GenericRecord for Avro)
+ * @param <D> intermediate decoded input type (this can be specific to this action processor)
+ * @param <K> key for the value topic
+ * @param <O> value returned by async function
+ * @param <R> final result type that ends up in value topic
  */
 @Value
 @Builder
 @AllArgsConstructor(staticName = "of")
 public final class AsyncSpec<A, D, K, O, R> {
     /**
-     * The UndoFunction functional interface.
+     * The UndoFunction is a mechanism to take the result of the async invocation and turns it into an
+     * undo action command. This action command is passed back to the saga coordinator, and if the saga fails,
+     * this updated undo function will be invoked.
+     * <p>
+     * For example, if the async function calls an endpoint to book a hotel, the return value will include a booking reference.
+     * This booking reference is then used to create an undo action command that calls the corresponding cancel endpoint,
+     * passing in the booking reference.
      */
     @FunctionalInterface
     public interface UndoFunction<A, D, O> {
         /**
-         * The UndoFunction is a mechanism to take the result of the async invocation and turning it into an
-         * undo action command. This action command is passed back to the saga coordinator, and if the saga fails,
-         * this undo function will be invoked.
-         * <p>
-         * For example, if the async function calls an endpoint to book a hotel, the return value will include a booking reference.
-         * This booking reference is then used to create an undo action command that calls the corresponding cancel endpoint,
-         * passing in the booking reference
-         * <p>
          * @param decodedInput the decoded input type
          * @param output       the result of the async invocation
          * @return an undo command, or {@code Optional.empty()} if no undo function is to be generated

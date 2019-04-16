@@ -22,11 +22,11 @@ public final class HttpBuilder {
      * A static function that delegates the {@link AsyncBuilder} to provide an implementation of an
      * action processor that can process http requests asynchronously as part of a saga.
      *
-     * @param <A> - common representation type for all action commands (typically Json / GenericRecord for Avro)
-     * @param <K> - key for the output topic for the result of Http topics
-     * @param <B> - body for Http request
-     * @param <O> - value returned by the Http request - also normally quite generic
-     * @param <R> - final result type that ends up in value topic
+     * @param <A> common representation type for all action commands (typically Json / GenericRecord for Avro)
+     * @param <K> key for the output topic for the result of Http topics
+     * @param <B> body for Http request
+     * @param <O> value returned by the Http request - also normally quite generic
+     * @param <R> final result type that ends up in value topic
      * @param httpSpec     the http spec
      * @param topicBuildFn the topic build fn
      * @param executor     the executor service that is used to invoke asynchronously and schedule timeouts

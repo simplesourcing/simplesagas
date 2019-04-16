@@ -10,6 +10,7 @@ import io.simplesource.saga.model.messages.ActionResponse;
 import io.simplesource.saga.model.saga.SagaId;
 import io.simplesource.saga.model.specs.ActionSpec;
 import io.simplesource.saga.shared.kafka.*;
+import io.simplesource.saga.shared.properties.PropertiesBuilder;
 import io.simplesource.saga.shared.topics.TopicTypes;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -36,8 +37,14 @@ final class AsyncProcessor {
         if (useTransactions)
             producer.initTransactions();
 
-        AsyncPublisher<SagaId, ActionResponse<A>> responsePublisher = new AsyncKafkaPublisher<>(producer, asyncContext.actionSpec.serdes.sagaId(), asyncContext.actionSpec.serdes.response());
-        Function<TopicSerdes<K, R>, AsyncPublisher<K, R>> outputPublisher = serdes -> new AsyncKafkaPublisher<>(producer, serdes.key, serdes.value);
+        AsyncPublisher<SagaId, ActionResponse<A>> responsePublisher = new KafkaPublisher<>(
+                producer,
+                asyncContext.actionSpec.serdes.sagaId(),
+                asyncContext.actionSpec.serdes.response()
+        )::send;
+
+        Function<TopicSerdes<K, R>, AsyncPublisher<K, R>> outputPublisher = serdes ->
+                new KafkaPublisher<>(producer, serdes.key, serdes.value)::send;
 
         ConsumerRunner<SagaId, ActionRequest<A>> runner = new ConsumerRunner<>(
                 consumerProps.build(),

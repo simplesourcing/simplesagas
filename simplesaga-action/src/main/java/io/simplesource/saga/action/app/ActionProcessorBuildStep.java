@@ -1,6 +1,6 @@
 package io.simplesource.saga.action.app;
 
-import io.simplesource.saga.shared.streams.StreamBuildSpec;
+import io.simplesource.saga.shared.app.StreamBuildSpec;
 
 /**
  * Represents a step in the process of building an action processor

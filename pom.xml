@@ -420,6 +420,7 @@
                         <configuration>
                             <aggregate>true</aggregate>
                             <excludePackageNames>*.internal:io.simplesource.kafka.serialization.avro.mappers</excludePackageNames>
+                            <show>public</show>
                         </configuration>
                     </plugin>
                 </plugins>

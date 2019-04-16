@@ -13,7 +13,7 @@ import io.simplesource.saga.model.saga.SagaError;
 import io.simplesource.saga.model.saga.SagaId;
 import io.simplesource.saga.model.serdes.ActionSerdes;
 import io.simplesource.saga.serialization.avro.generated.test.User;
-import io.simplesource.saga.shared.serialization.TupleSerdes;
+import io.simplesource.saga.shared.serdes.TupleSerdes;
 import org.apache.avro.specific.SpecificRecord;
 import org.apache.kafka.common.serialization.Serde;
 import org.junit.jupiter.api.Test;

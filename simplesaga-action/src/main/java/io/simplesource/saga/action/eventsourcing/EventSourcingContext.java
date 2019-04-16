@@ -10,10 +10,10 @@ import lombok.Value;
 /**
  * The type Event sourcing context. This is applied
  *
- * @param <A> - common representation form for all action commands (typically Json / GenericRecord for Avro)
- * @param <D> - intermediate decoded input type (that can easily be converted to both K and C)
- * @param <K> - aggregate key
- * @param <C> - simple sourcing command type
+ * @param <A> common representation form for all action commands (typically Json / GenericRecord for Avro)
+ * @param <D> intermediate decoded input type (that can easily be converted to both K and C)
+ * @param <K> aggregate key
+ * @param <C> simple sourcing command type
  */
 @Value(staticConstructor = "of")
 public final class EventSourcingContext<A, D, K, C> {

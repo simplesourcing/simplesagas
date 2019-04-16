@@ -1,7 +1,7 @@
 package io.simplesource.saga.action.eventsourcing;
 
 import io.simplesource.saga.action.app.ActionProcessorBuildStep;
-import io.simplesource.saga.shared.streams.StreamBuildSpec;
+import io.simplesource.saga.shared.app.StreamBuildSpec;
 import io.simplesource.saga.action.internal.*;
 import io.simplesource.saga.model.specs.ActionSpec;
 import io.simplesource.saga.shared.topics.*;
@@ -19,10 +19,10 @@ public final class EventSourcingBuilder {
      * 1.   Defines the stream topology for an EventSourcing processor
      * 2.   Computes topic configuration (names and configuration properties) for the action processor
      *
-     * @param <A> - common representation form for all action commands (typically Json / GenericRecord for Avro)
-     * @param <D> - intermediate decoded input type (that can easily be converted to both K and C)
-     * @param <K> - aggregate key type
-     * @param <C> - simple sourcing command type
+     * @param <A>                 - common representation form for all action commands (typically Json / GenericRecord for Avro)
+     * @param <D>                 - intermediate decoded input type (that can easily be converted to both K and C)
+     * @param <K>                 - aggregate key type
+     * @param <C>                 - simple sourcing command type
      * @param esSpec              data structure specifying how to turn the action request into a command request and interpret the result
      * @param actionTopicBuilder  the action topic builder - a mechanism for configuring the action topics
      * @param commandTopicBuilder the command topic builder - a mechanism for configuring the simple sourcing command topics
@@ -35,15 +35,13 @@ public final class EventSourcingBuilder {
         return streamBuildContext -> {
             ActionSpec<A> actionSpec = streamBuildContext.actionSpec;
 
-            TopicConfig actionTopicConfig = TopicConfigBuilder.build(
-                    TopicTypes.ActionTopic.all,
-                    actionTopicBuilder.withInitialStep(builder ->
-                            builder.withTopicBaseName(TopicUtils.actionTopicBaseName(esSpec.actionType))));
+            TopicConfig actionTopicConfig = actionTopicBuilder
+                    .withInitialStep(builder -> builder.withTopicBaseName(TopicUtils.actionTopicBaseName(esSpec.actionType)))
+                    .build(TopicTypes.ActionTopic.all);
 
-            TopicConfig commandTopicConfig = TopicConfigBuilder.build(
-                    TopicTypes.CommandTopic.all,
-                    commandTopicBuilder.withInitialStep(builder ->
-                            builder.withTopicBaseName(esSpec.aggregateName.toLowerCase())));
+            TopicConfig commandTopicConfig = commandTopicBuilder
+                    .withInitialStep(builder -> builder.withTopicBaseName(esSpec.aggregateName.toLowerCase()))
+                    .build(TopicTypes.CommandTopic.all);
 
             List<TopicCreation> topics = actionTopicConfig.allTopics();
             topics.addAll(commandTopicConfig.allTopics());

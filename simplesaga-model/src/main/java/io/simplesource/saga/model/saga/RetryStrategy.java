@@ -6,6 +6,7 @@ import java.util.Optional;
 /**
  * The interface Retry strategy.
  */
+@FunctionalInterface
 public interface RetryStrategy {
     /**
      * Next retry optional.

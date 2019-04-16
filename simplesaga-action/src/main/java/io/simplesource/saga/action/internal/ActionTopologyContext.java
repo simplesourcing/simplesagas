@@ -4,7 +4,7 @@ import io.simplesource.saga.model.messages.ActionRequest;
 import io.simplesource.saga.model.messages.ActionResponse;
 import io.simplesource.saga.model.saga.SagaId;
 import io.simplesource.saga.model.specs.ActionSpec;
-import io.simplesource.saga.shared.kafka.PropertiesBuilder;
+import io.simplesource.saga.shared.properties.PropertiesBuilder;
 import io.simplesource.saga.shared.topics.TopicNamer;
 import lombok.Value;
 import org.apache.kafka.streams.StreamsBuilder;

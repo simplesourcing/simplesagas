@@ -1,11 +1,17 @@
 package io.simplesource.saga.shared.topics;
 
-import io.simplesource.saga.shared.utils.Lists;
+import io.simplesource.saga.shared.data.Lists;
 
 import java.util.List;
 
+/**
+ * A collation of the different topic types for various families of topics.
+ */
 public class TopicTypes {
-    
+
+    /**
+     * Topic types for event sourcing commands
+     */
     public static final class CommandTopic {
         public static final String COMMAND_REQUEST = "command_request";
         public static final String COMMAND_RESPONSE = "command_response";
@@ -13,6 +19,9 @@ public class TopicTypes {
         public static final List<String> all = Lists.of(COMMAND_REQUEST, COMMAND_RESPONSE);
     }
 
+    /**
+     * Topic types for action processors
+     */
     public static final class ActionTopic {
         public static final String ACTION_REQUEST = "action_request";
         public static final String ACTION_RESPONSE = "action_response";
@@ -21,6 +30,9 @@ public class TopicTypes {
         public static final String ACTION_OUTPUT = "action_output";
     }
 
+    /**
+     * Topic types for the saga coordinator
+     */
     public static final class SagaTopic {
         public static final String SAGA_BASE_NAME = "saga_coordinator";
         public static final String SAGA_REQUEST = "saga_request";

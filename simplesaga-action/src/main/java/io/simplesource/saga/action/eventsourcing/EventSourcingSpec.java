@@ -15,10 +15,10 @@ import java.util.function.Function;
 /**
  * The type Event sourcing spec.
  *
- * @param <A> - common representation form for all action commands (typically Json / GenericRecord for Avro)
- * @param <D> - intermediate decoded input type (that can easily be converted to both K and C)
- * @param <K> - aggregate key type
- * @param <C> - simple sourcing command type
+ * @param <A> common representation form for all action commands (typically Json / GenericRecord for Avro)
+ * @param <D> intermediate decoded input type (that can easily be converted to both K and C)
+ * @param <K> aggregate key type
+ * @param <C> simple sourcing command type
  *
  * @see io.simplesource.kafka.spec.CommandSpec
  */

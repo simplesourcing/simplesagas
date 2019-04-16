@@ -11,11 +11,11 @@ import java.util.Optional;
 import java.util.function.BiConsumer;
 
 /**
-  * @param <A> - common representation type for all action commands (typically Json / GenericRecord for Avro)
-  * @param <K> - key for the output topic for the result of Http topics
-  * @param <B> - body for Http request
-  * @param <O> - value returned by the Http request - also normally quite generic
-  * @param <R> - final result type that ends up in value topic
+  * @param <A> common representation type for all action commands (typically Json / GenericRecord for Avro)
+  * @param <K> key for the output topic for the result of Http topics
+  * @param <B> body for Http request
+  * @param <O> value returned by the Http request - also normally quite generic
+  * @param <R> final result type that ends up in value topic
   */
 @Value
 @Builder
@@ -46,7 +46,7 @@ public final class HttpSpec<A, K, B, O, R> {
     public final HttpRequest.HttpRequestDecoder<A, K, B> decoder;
     public final BiConsumer<HttpRequest<K, B>, Callback<O>> asyncHttpFunction;
     public final String groupId;
-    public final Optional<HttpOutput<A, K, B, O, R>> outputSpec;
+    public final Optional<HttpOutput<K, O, R>> outputSpec;
     public final UndoFunction<A, K, B, O> undoFunction;
     public final Optional<Duration> timeout;
 }

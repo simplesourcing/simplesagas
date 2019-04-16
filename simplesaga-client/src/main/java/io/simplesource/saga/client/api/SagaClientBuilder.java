@@ -6,7 +6,7 @@ import io.simplesource.kafka.spec.WindowSpec;
 import io.simplesource.saga.model.api.SagaAPI;
 import io.simplesource.saga.model.serdes.SagaSerdes;
 import io.simplesource.saga.model.specs.SagaSpec;
-import io.simplesource.saga.shared.kafka.PropertiesBuilder;
+import io.simplesource.saga.shared.properties.PropertiesBuilder;
 import io.simplesource.saga.shared.topics.TopicConfig;
 import io.simplesource.saga.shared.topics.TopicConfigBuilder;
 import io.simplesource.saga.shared.topics.TopicTypes;
@@ -111,7 +111,7 @@ public final class SagaClientBuilder<A> {
     /**
      * Sets the topic configuration for naming and creating the saga request and response topics.
      *
-     * @param topicBuildFn a function that allows setting topic configuration details incrementally.
+     * @param topicBuildFn a function to set topic configuration details incrementally.
      * @return the saga client builder
      */
     public SagaClientBuilder<A> withTopicConfig(TopicConfigBuilder.BuildSteps topicBuildFn) {
@@ -143,10 +143,9 @@ public final class SagaClientBuilder<A> {
         if (scheduler == null)
             scheduler = Executors.newSingleThreadScheduledExecutor(new NamedThreadFactory("SagaApp-scheduler"));
 
-        TopicConfig topicConfig = TopicConfigBuilder.build(
-                TopicTypes.SagaTopic.client,
-                topicConfigBuildSteps
-                        .withInitialStep(tcBuilder -> tcBuilder.withTopicBaseName(TopicTypes.SagaTopic.SAGA_BASE_NAME)));
+        TopicConfig topicConfig = topicConfigBuildSteps
+                .withInitialStep(tcBuilder -> tcBuilder.withTopicBaseName(TopicTypes.SagaTopic.SAGA_BASE_NAME))
+                .build(TopicTypes.SagaTopic.client);
 
         SagaSpec<A> sagaSpec =new SagaSpec<>(serdes, windowSpec);
 

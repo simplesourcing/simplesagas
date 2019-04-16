@@ -15,7 +15,7 @@ import io.simplesource.saga.model.serdes.SagaSerdes;
 import io.simplesource.saga.model.specs.SagaSpec;
 import io.simplesource.saga.shared.topics.TopicConfig;
 import io.simplesource.saga.shared.topics.TopicTypes;
-import io.simplesource.saga.shared.streams.StreamAppUtils;
+import io.simplesource.saga.shared.app.StreamAppUtils;
 
 import java.time.Duration;
 import java.util.concurrent.ScheduledExecutorService;

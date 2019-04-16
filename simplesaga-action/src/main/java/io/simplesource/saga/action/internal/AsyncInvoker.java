@@ -10,7 +10,6 @@ import io.simplesource.saga.model.messages.ActionRequest;
 import io.simplesource.saga.model.messages.ActionResponse;
 import io.simplesource.saga.model.saga.SagaError;
 import io.simplesource.saga.model.saga.SagaId;
-import io.simplesource.saga.shared.kafka.AsyncPublisher;
 import io.simplesource.saga.shared.topics.TopicTypes;
 import lombok.Value;
 
@@ -33,7 +32,7 @@ final class AsyncInvoker {
 
         public final K key;
         public final R result;
-        public final Optional<ToTopic<K, R>> toTopic;
+        public final ToTopic<K, R> toTopic;
     }
 
     @Value(staticConstructor = "of")
@@ -73,10 +72,8 @@ final class AsyncInvoker {
 
                 resultWithOutput.ifSuccessful(resultGenOpt ->
                         resultGenOpt.resultGeneration.ifPresent(rg -> {
-                            rg.toTopic.ifPresent(toTopic -> {
-                                AsyncPublisher<K, R> publisher = outputPublisher.apply(toTopic.outputSerdes);
-                                publisher.send(toTopic.topicName, rg.key, rg.result);
-                            });
+                                AsyncPublisher<K, R> publisher = outputPublisher.apply(rg.toTopic.outputSerdes);
+                                publisher.send(rg.toTopic.topicName, rg.key, rg.result);
                         }));
 
                 Result<Throwable, Optional<UndoCommand<A>>> e = resultWithOutput.map(rg -> rg.undoCommand);
@@ -124,10 +121,10 @@ final class AsyncInvoker {
                         outResult.map(r -> {
                             K outputKey = rSpec.keyMapper.apply(decodedInput);
 
-                            Optional<ResultGeneration.ToTopic<K, R>> toTopic = rSpec.outputSerdes.map(outputSerdes ->
+                            ResultGeneration.ToTopic<K, R> toTopic =
                                     new ResultGeneration.ToTopic<>(
                                             asyncContext.actionTopicNamer.apply(TopicTypes.ActionTopic.ACTION_OUTPUT),
-                                            outputSerdes));
+                                            rSpec.outputSerdes);
 
                             return ResultGeneration.of(outputKey, r, toTopic);
                         })));

@@ -4,7 +4,6 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import io.simplesource.api.CommandId;
 import io.simplesource.data.NonEmptyList;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -12,7 +11,7 @@ import static io.simplesource.saga.client.dsl.SagaDSL.*;
 
 import io.simplesource.saga.model.action.ActionId;
 import io.simplesource.saga.model.saga.Saga;
-import io.simplesource.saga.shared.utils.Sets;
+import io.simplesource.saga.shared.data.Sets;
 import org.junit.jupiter.api.Test;
 
 class DSLTest {

@@ -1,7 +1,7 @@
 package io.simplesource.saga.action.app;
 
 import io.simplesource.saga.model.specs.ActionSpec;
-import io.simplesource.saga.shared.kafka.PropertiesBuilder;
+import io.simplesource.saga.shared.properties.PropertiesBuilder;
 import lombok.Value;
 
 /**
@@ -11,6 +11,7 @@ import lombok.Value;
  * @param <A> The action command type (shared across all actions)
  *
  * @see io.simplesource.saga.action.ActionApp
+ * @see io.simplesource.saga.action.app.ActionProcessorBuildStep
  */
 @Value(staticConstructor = "of")
 public class ActionAppContext<A> {

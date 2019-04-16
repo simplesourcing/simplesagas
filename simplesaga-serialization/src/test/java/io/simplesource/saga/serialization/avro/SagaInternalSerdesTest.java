@@ -10,7 +10,7 @@ import io.simplesource.saga.model.saga.SagaId;
 import io.simplesource.saga.model.saga.SagaStatus;
 import io.simplesource.saga.model.serdes.SagaSerdes;
 import io.simplesource.saga.serialization.avro.generated.test.TransferFunds;
-import io.simplesource.saga.shared.utils.Lists;
+import io.simplesource.saga.shared.data.Lists;
 import org.apache.avro.specific.SpecificRecord;
 import org.junit.jupiter.api.Test;
 

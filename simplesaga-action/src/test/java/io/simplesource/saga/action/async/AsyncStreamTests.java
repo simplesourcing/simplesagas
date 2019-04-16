@@ -8,7 +8,7 @@ import io.simplesource.saga.action.app.ActionProcessorBuildStep;
 import io.simplesource.saga.model.action.UndoCommand;
 import io.simplesource.saga.model.serdes.TopicSerdes;
 import io.simplesource.saga.action.internal.AsyncActionProcessorProxy;
-import io.simplesource.saga.shared.kafka.AsyncPublisher;
+import io.simplesource.saga.action.internal.AsyncPublisher;
 import io.simplesource.saga.avro.avro.generated.test.AsyncTestCommand;
 import io.simplesource.saga.avro.avro.generated.test.AsyncTestId;
 import io.simplesource.saga.avro.avro.generated.test.AsyncTestOutput;
@@ -21,10 +21,10 @@ import io.simplesource.saga.model.serdes.ActionSerdes;
 import io.simplesource.saga.model.specs.ActionSpec;
 import io.simplesource.saga.serialization.avro.AvroSerdes;
 import io.simplesource.saga.serialization.avro.SpecificSerdeUtils;
-import io.simplesource.saga.shared.streams.StreamBuildResult;
+import io.simplesource.saga.shared.app.StreamBuildResult;
 import io.simplesource.saga.shared.topics.TopicNamer;
 import io.simplesource.saga.shared.topics.TopicTypes;
-import io.simplesource.saga.shared.streams.StreamAppConfig;
+import io.simplesource.saga.model.config.StreamAppConfig;
 import io.simplesource.saga.shared.topics.TopicUtils;
 import io.simplesource.saga.testutils.*;
 import lombok.Value;
@@ -161,7 +161,7 @@ class AsyncStreamTests {
                     Optional.of(AsyncResult.of(
                             o -> Optional.of(Result.success(new AsyncTestOutput(o))),
                             AsyncTestCommand::getId,
-                            Optional.of(asyncSerdes))),
+                            asyncSerdes)),
                     (d, o) -> undoActionType.map(uat ->
                             UndoCommand.of(new AsyncTestCommand(d.getId(), o), uat)),
                     timeout);

@@ -23,7 +23,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-public class AvroSagaClientSerdes<A> implements SagaClientSerdes<A> {
+class AvroSagaClientSerdes<A> implements SagaClientSerdes<A> {
 
     final Serde<A> payloadSerde;
     private final Serde<AvroSagaRequest> avroSagaRequestSerde;

@@ -2,7 +2,6 @@ package io.simplesource.saga.action.internal;
 
 import io.simplesource.kafka.model.CommandResponse;
 import io.simplesource.saga.action.eventsourcing.EventSourcingSpec;
-import io.simplesource.saga.shared.streams.StreamUtils;
 import io.simplesource.saga.shared.topics.TopicNamer;
 import io.simplesource.saga.shared.topics.TopicTypes;
 import org.apache.kafka.streams.StreamsBuilder;

@@ -18,7 +18,7 @@ import org.apache.kafka.common.serialization.Serdes;
 import java.util.Optional;
 import java.util.UUID;
 
-public class AvroActionSerdes<A> implements ActionSerdes<A> {
+final class AvroActionSerdes<A> implements ActionSerdes<A> {
 
     private final Serde<A> payloadSerde;
     private final Serde<AvroActionRequest> avroActionRequestSerde;

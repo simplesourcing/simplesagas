@@ -9,7 +9,7 @@ import lombok.Value;
 /**
  * An action request, published by the saga coordinator in the action request topic.
  * <p>
- * The action request topic is the topic for the {@link ActionCommand#actionType} action type of {@code actionCommand} (note that each action type has its own set of request and respense topics).
+ * The action request topic is the topic for {@link ActionCommand#actionType actionCommand.actionType} action type (note that each action type has its own set of request and respense topics).
  * <p>
  * The action processor for this action type consumes this request, starts processing the action, and publishes an {@link ActionResponse} when processing is complete.
  * <p>

@@ -11,8 +11,6 @@ import org.apache.kafka.common.serialization.Serde;
  * @param <A> the type parameter
  */
 public interface SagaSerdes<A> extends SagaClientSerdes<A> {
-    Serde<SagaId> sagaId();
-
     /**
      * State serde.
      *

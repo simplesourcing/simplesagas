@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-public class AvroSagaSerdes<A> extends AvroSagaClientSerdes<A> implements SagaSerdes<A> {
+final class AvroSagaSerdes<A> extends AvroSagaClientSerdes<A> implements SagaSerdes<A> {
 
     private final Serde<AvroSaga> avroSagaSerde;
     private final Serde<AvroSagaTransition> avroSagaTransitionSerde;
