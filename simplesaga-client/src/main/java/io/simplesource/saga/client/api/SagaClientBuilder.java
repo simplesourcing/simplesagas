@@ -135,7 +135,7 @@ public final class SagaClientBuilder<A> {
 
         SagaClientSpec<A> sagaSpec = SagaClientSpec.of(serdes);
 
-        Properties properties = propertiesBuildSteps.build();
+        Properties properties = propertiesBuildSteps.build(PropertiesBuilder.Target.ApiClient);
         Map<String, Object> propsMap = new HashMap<>();
         properties.forEach((key, value) -> propsMap.put(key.toString(), value.toString()));
 

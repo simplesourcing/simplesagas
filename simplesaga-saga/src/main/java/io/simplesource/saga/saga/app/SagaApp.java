@@ -190,23 +190,18 @@ final public class SagaApp<A> {
      * Run the SagaApp with the given stream app configuration.
      * <p>
      * This builds the topology, create the saga and action topic streams, and starts the KStream execution
-     *
-     * @param appConfig app configuration.
      */
-    public void run(StreamAppConfig appConfig) {
-        PropertiesBuilder.BuildSteps buildSteps = propertiesBuildSteps
-                .withNextStep(builder -> builder.withStreamAppConfig(appConfig));
+    public void run() {
+        PropertiesBuilder.BuildSteps buildSteps = propertiesBuildSteps;
 
         Properties adminProps = buildSteps
-                .build();
+                .build(PropertiesBuilder.Target.AdminClient);
 
         Properties streamProps = buildSteps
-                .withInitialStep(PropertiesBuilder::withDefaultStreamProps)
-                .build();
+                .build(PropertiesBuilder.Target.StreamApp);
 
         Properties producerProps = buildSteps
-                .withInitialStep(PropertiesBuilder::withDefaultProducerProps)
-                .build();
+                .build(PropertiesBuilder.Target.Producer);
 
         Topology topology = buildTopology(topics -> StreamAppUtils.createMissingTopics(adminProps, topics), producerProps);
         logger.info("Topology description {}", topology.describe());

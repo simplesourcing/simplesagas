@@ -10,7 +10,7 @@ import io.simplesource.saga.shared.app.StreamBuildSpec;
  *
  * @param <A> The action command type (shared across all actions)
  *
- * @see io.simplesource.saga.action.ActionApp
+ * @see ActionApp
  */
 @FunctionalInterface
 public interface ActionProcessorBuildStep<A> {

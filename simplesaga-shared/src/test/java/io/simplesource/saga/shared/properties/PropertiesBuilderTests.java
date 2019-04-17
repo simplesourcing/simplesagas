@@ -13,6 +13,7 @@ class PropertiesBuilderTests {
     @Test
     void testInitialAndFinalSteps() {
         PropertiesBuilder.BuildSteps userSteps = pb -> pb
+                .withBootstrapServers("localhost:9092")
                 .withProperty("A", "user's value for A")
                 .withProperty("B", "user's value for B");
 
@@ -20,7 +21,7 @@ class PropertiesBuilderTests {
                 .withInitialStep(pb ->
                         pb.withProperty("A", "framework's value for A"))
                 .withNextStep(pb ->
-                        pb.withProperty("B", "framework's value for B")).build();
+                        pb.withProperty("B", "framework's value for B")).build(PropertiesBuilder.Target.AdminClient);
 
         assertPropValues(props);
     }
@@ -32,18 +33,21 @@ class PropertiesBuilderTests {
         userProps.put("B", "user's value for B");
 
         PropertiesBuilder.BuildSteps userSteps = pb -> pb
+                .withBootstrapServers("localhost:9092")
                 .withProperties(userProps);
 
         Properties props = userSteps
                 .withInitialStep(pb ->
                         pb.withProperty("A", "framework's value for A"))
                 .withNextStep(pb ->
-                        pb.withProperty("B", "framework's value for B")).build();
+                        pb.withProperty("B", "framework's value for B")).build(PropertiesBuilder.Target.AdminClient);
 
         assertPropValues(props);
-        PropertiesBuilder.BuildSteps copySteps = pb -> pb.withProperties(props);
+        PropertiesBuilder.BuildSteps copySteps = pb -> pb
+                .withBootstrapServers("localhost:9092")
+                .withProperties(props);
 
-        assertPropValues(copySteps.build());
+        assertPropValues(copySteps.build(PropertiesBuilder.Target.AdminClient));
     }
 
 

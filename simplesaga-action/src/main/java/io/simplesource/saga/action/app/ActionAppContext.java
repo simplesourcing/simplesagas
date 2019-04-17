@@ -10,7 +10,7 @@ import lombok.Value;
  *
  * @param <A> The action command type (shared across all actions)
  *
- * @see io.simplesource.saga.action.ActionApp
+ * @see ActionApp
  * @see io.simplesource.saga.action.app.ActionProcessorBuildStep
  */
 @Value(staticConstructor = "of")

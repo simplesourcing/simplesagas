@@ -3,7 +3,7 @@ package io.simplesource.saga.action.async;
 import io.confluent.kafka.schemaregistry.client.MockSchemaRegistryClient;
 import io.simplesource.api.CommandId;
 import io.simplesource.data.Result;
-import io.simplesource.saga.action.ActionApp;
+import io.simplesource.saga.action.app.ActionApp;
 import io.simplesource.saga.action.app.ActionProcessorBuildStep;
 import io.simplesource.saga.model.action.UndoCommand;
 import io.simplesource.saga.model.serdes.TopicSerdes;

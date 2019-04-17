@@ -1,7 +1,5 @@
-package io.simplesource.saga.action;
+package io.simplesource.saga.action.app;
 
-import io.simplesource.saga.action.app.ActionAppContext;
-import io.simplesource.saga.action.app.ActionProcessorBuildStep;
 import io.simplesource.saga.model.serdes.ActionSerdes;
 import io.simplesource.saga.model.specs.ActionSpec;
 import io.simplesource.saga.shared.app.StreamApp;
