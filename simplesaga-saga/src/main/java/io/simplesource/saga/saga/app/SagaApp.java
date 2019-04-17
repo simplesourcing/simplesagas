@@ -10,7 +10,6 @@ import io.simplesource.saga.saga.internal.SagaTopologyBuilder;
 import io.simplesource.saga.shared.kafka.KafkaPublisher;
 import io.simplesource.saga.shared.properties.PropertiesBuilder;
 import io.simplesource.saga.shared.topics.*;
-import io.simplesource.saga.model.config.StreamAppConfig;
 import io.simplesource.saga.shared.app.StreamAppUtils;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.common.serialization.Serdes;

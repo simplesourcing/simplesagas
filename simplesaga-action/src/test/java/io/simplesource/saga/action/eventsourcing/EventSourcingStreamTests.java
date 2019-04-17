@@ -20,7 +20,6 @@ import io.simplesource.saga.serialization.avro.AvroSerdes;
 import io.simplesource.saga.shared.app.StreamBuildResult;
 import io.simplesource.saga.shared.topics.TopicNamer;
 import io.simplesource.saga.shared.topics.TopicTypes;
-import io.simplesource.saga.model.config.StreamAppConfig;
 import io.simplesource.saga.shared.topics.TopicUtils;
 import io.simplesource.saga.testutils.*;
 import lombok.Value;
@@ -81,7 +80,7 @@ class EventSourcingStreamTests {
                     topicBuilder -> topicBuilder.withTopicPrefix((Constants.COMMAND_TOPIC_PREFIX))));
 
             StreamBuildResult sb = streamApp.build(pb ->
-                    pb.withStreamAppConfig(StreamAppConfig.of("app-id", "http://localhost:9092")));
+                    pb.withStreamAppConfig("app-id", "http://localhost:9092"));
 
             Topology topology = sb.topologySupplier.get();
             expectedTopics = sb.topicCreations.stream().map(x -> x.topicName).collect(Collectors.toSet());

@@ -1,6 +1,5 @@
 package io.simplesource.saga.shared.properties;
 
-import io.simplesource.saga.model.config.StreamAppConfig;
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
@@ -36,7 +35,9 @@ public class PropertiesBuilder {
         Consumer,
         AdminClient,
         ApiClient,
-    };
+    }
+
+    ;
 
     /**
      * A functional interface representing a configuration step that is applied to a properties builder
@@ -96,13 +97,14 @@ public class PropertiesBuilder {
     /**
      * Sets the essential properties for Kafka Streams applications (app id and bootstrap servers)
      *
-     * @param config the config
+     * @param appId            the application id, used for consumer groups and internal topic prefixes
+     * @param bootstrapServers the bootstrap servers, used to connect to the Kafka cluster
      * @return the properties builder
      */
-    public PropertiesBuilder withStreamAppConfig(StreamAppConfig config) {
+    public PropertiesBuilder withStreamAppConfig(String appId, String bootstrapServers) {
         return this
-                .withProperty(StreamsConfig.APPLICATION_ID_CONFIG, config.appId)
-                .withProperty(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, config.bootstrapServers);
+                .withProperty(StreamsConfig.APPLICATION_ID_CONFIG, appId)
+                .withProperty(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
     }
 
     /**
