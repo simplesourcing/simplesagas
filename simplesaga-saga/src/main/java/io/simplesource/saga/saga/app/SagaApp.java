@@ -114,7 +114,7 @@ final public class SagaApp<A> {
      * @return the saga app
      */
     public SagaApp<A> withAction(String actionType, TopicConfigBuilder.BuildSteps buildFn) {
-        registerAction(actionType.toLowerCase(), buildFn);
+        buildFuncMap.put(actionType.toLowerCase(), buildFn);
         return this;
     }
 
@@ -126,7 +126,7 @@ final public class SagaApp<A> {
      * @return the saga app
      */
     public SagaApp<A> withActions(Collection<String> actionTypes, TopicConfigBuilder.BuildSteps buildFn) {
-        actionTypes.forEach(at -> registerAction(at.toLowerCase(), buildFn));
+        actionTypes.forEach(at -> buildFuncMap.put(at.toLowerCase(), buildFn));
         return this;
     }
 
@@ -268,11 +268,6 @@ final public class SagaApp<A> {
         StreamsBuilder builder = new StreamsBuilder();
         SagaTopologyBuilder.addSubTopology(sagaContext, builder);
         return builder.build();
-    }
-
-    private void registerAction(String atlc, TopicConfigBuilder.BuildSteps buildFn) {
-        buildFuncMap.put(atlc, buildFn);
-
     }
 
     private Map<String, RetryStrategy> getRetryStrategyMap() {
