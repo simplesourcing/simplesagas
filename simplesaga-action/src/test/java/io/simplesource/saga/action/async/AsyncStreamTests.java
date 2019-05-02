@@ -3,7 +3,7 @@ package io.simplesource.saga.action.async;
 import io.confluent.kafka.schemaregistry.client.MockSchemaRegistryClient;
 import io.simplesource.api.CommandId;
 import io.simplesource.data.Result;
-import io.simplesource.saga.action.ActionApp;
+import io.simplesource.saga.action.app.ActionApp;
 import io.simplesource.saga.action.app.ActionProcessorBuildStep;
 import io.simplesource.saga.model.action.UndoCommand;
 import io.simplesource.saga.model.serdes.TopicSerdes;
@@ -24,7 +24,6 @@ import io.simplesource.saga.serialization.avro.SpecificSerdeUtils;
 import io.simplesource.saga.shared.app.StreamBuildResult;
 import io.simplesource.saga.shared.topics.TopicNamer;
 import io.simplesource.saga.shared.topics.TopicTypes;
-import io.simplesource.saga.model.config.StreamAppConfig;
 import io.simplesource.saga.shared.topics.TopicUtils;
 import io.simplesource.saga.testutils.*;
 import lombok.Value;
@@ -92,7 +91,7 @@ class AsyncStreamTests {
 
             actionApp.withActionProcessor(getActionProcessor(asyncSpec));
 
-            StreamBuildResult sb = actionApp.build(pb -> pb.withStreamAppConfig(StreamAppConfig.of("app-id", "http://localhost:9092")));
+            StreamBuildResult sb = actionApp.build(pb -> pb.withStreamAppConfig("app-id", "http://localhost:9092"));
             Topology topology = sb.topologySupplier.get();
             expectedTopics = sb.topicCreations.stream().map(x -> x.topicName).collect(Collectors.toSet());
 

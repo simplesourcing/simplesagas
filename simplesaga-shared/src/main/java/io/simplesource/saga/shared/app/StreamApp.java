@@ -84,8 +84,7 @@ public class StreamApp<I> {
 
         // create missing topics
         Properties props = properties
-                .withInitialStep(PropertiesBuilder::withDefaultStreamProps)
-                .build();
+                .build(PropertiesBuilder.Target.StreamApp);
         StreamAppUtils.createMissingTopics(props, streamBuildResult.topicCreations);
         StreamAppUtils.runStreamApp(props, streamBuildResult.topologySupplier.get());
 

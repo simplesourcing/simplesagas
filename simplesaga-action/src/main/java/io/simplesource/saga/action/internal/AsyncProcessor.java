@@ -24,14 +24,11 @@ final class AsyncProcessor {
         ActionSpec<A> actionSpec = asyncContext.actionSpec;
 
         PropertiesBuilder.BuildSteps consumerProps = config
-                .withInitialStep(PropertiesBuilder::withDefaultConsumerProps)
                 .withNextStep(pb -> pb
                         .withProperty(ConsumerConfig.GROUP_ID_CONFIG, asyncSpec.groupId + "_async_consumer_" + asyncSpec.actionType));
 
-        PropertiesBuilder.BuildSteps producerProps = config.withInitialStep(PropertiesBuilder::withDefaultProducerProps);
-
         KafkaProducer<byte[], byte[]> producer =
-                new KafkaProducer<>(producerProps.build(),
+                new KafkaProducer<>(config.build(PropertiesBuilder.Target.Producer),
                         Serdes.ByteArray().serializer(),
                         Serdes.ByteArray().serializer());
         if (useTransactions)
@@ -47,7 +44,7 @@ final class AsyncProcessor {
                 new KafkaPublisher<>(producer, serdes.key, serdes.value)::send;
 
         ConsumerRunner<SagaId, ActionRequest<A>> runner = new ConsumerRunner<>(
-                consumerProps.build(),
+                consumerProps.build(PropertiesBuilder.Target.Consumer),
                 (sagaId, request) ->
                         AsyncInvoker.processActionRequest(asyncContext, sagaId, request, responsePublisher, outputPublisher),
                 actionSpec.serdes.sagaId(),
