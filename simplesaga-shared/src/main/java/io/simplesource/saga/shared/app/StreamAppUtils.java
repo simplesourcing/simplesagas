@@ -50,10 +50,7 @@ public final class StreamAppUtils {
 
     public static void runStreamApp(Properties config, Topology topology) {
         KafkaStreams streams = new KafkaStreams(topology, config);
-
-        streams.cleanUp();
         streams.start();
-
         addShutdownHook(streams::close);
     }
 

@@ -59,7 +59,7 @@ public class StreamApp<I> {
 
         List<StreamAppUtils.ShutdownHandler> shutdownHandlers = streamBuilders.stream()
                 .map(sb -> sb.topologyBuildStep.apply(builder))
-                .filter(sh -> sh.isPresent())
+                .filter(Optional::isPresent)
                 .map(sb -> sb.orElse(null))
                 .collect(Collectors.toList());
 
@@ -88,7 +88,6 @@ public class StreamApp<I> {
         StreamAppUtils.createMissingTopics(props, streamBuildResult.topicCreations);
         StreamAppUtils.runStreamApp(props, streamBuildResult.topologySupplier.get());
 
-        // streamBuildResult.shutdownHandlers.forEach(StreamAppUtils.ShutdownHandler::shutDown);
         streamBuildResult.shutdownHandlers.forEach(StreamAppUtils::addShutdownHook);
     }
 }
