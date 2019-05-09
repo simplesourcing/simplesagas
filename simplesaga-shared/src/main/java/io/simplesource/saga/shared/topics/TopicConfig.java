@@ -9,7 +9,7 @@ import java.util.Map;
 /**
  * TopicConfig represents configuration information for topic names and for topic properties for topic creation
  * <p>
- * If ensures that the topic names for a family of topics are consistent
+ * It ensures that the topic names for a family of topics are consistent
  * <p>
  * Examples of families of topics are:
  * <ul>
