@@ -5,7 +5,7 @@
 
     <groupId>io.simplesource</groupId>
     <artifactId>simplesaga-parent</artifactId>
-    <version>0.1.7-SNAPSHOT</version>
+    <version>0.1.7</version>
     <packaging>pom</packaging>
 
     <name>simplesagas</name>
