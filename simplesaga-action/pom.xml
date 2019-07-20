@@ -6,12 +6,12 @@
     <parent>
         <groupId>io.simplesource</groupId>
         <artifactId>simplesaga-parent</artifactId>
-        <version>0.1.7</version>
+        <version>0.1.8-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
 
     <artifactId>simplesaga-action</artifactId>
-    <version>0.1.7</version>
+    <version>0.1.8-SNAPSHOT</version>
 
     <packaging>jar</packaging>
 
